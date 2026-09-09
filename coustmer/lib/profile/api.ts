@@ -318,6 +318,11 @@ export const profileApi = {
             isActive: Boolean(d.program.isActive),
             referrerBonusInr: Number(d.program.referrerBonusInr ?? 0),
             refereeBonusInr: Number(d.program.refereeBonusInr ?? 0),
+            maxReferralsPerUser: Number(d.program.maxReferralsPerUser ?? 0),
+            referralsRemaining:
+              d.program.referralsRemaining == null
+                ? null
+                : Number(d.program.referralsRemaining),
           }
         : undefined,
     };

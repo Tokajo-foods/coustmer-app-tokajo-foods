@@ -87,6 +87,9 @@ export function ReferralScreen() {
           <Text style={styles.codeValue}>{data?.referralCode ?? '—'}</Text>
           <Text style={styles.codeMeta}>
             {data?.referralCount ?? 0} successful referrals
+            {program?.maxReferralsPerUser && program.maxReferralsPerUser > 0
+              ? ` · ${program.referralsRemaining ?? 0} left (max ${program.maxReferralsPerUser})`
+              : ''}
           </Text>
           {program?.isActive ? (
             <Text style={styles.rewardMeta}>

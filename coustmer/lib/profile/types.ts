@@ -129,6 +129,10 @@ export type ReferralInfo = {
     isActive: boolean;
     referrerBonusInr: number;
     refereeBonusInr: number;
+    /** Max invites this code can give. 0 = unlimited. */
+    maxReferralsPerUser?: number;
+    /** null when unlimited */
+    referralsRemaining?: number | null;
   };
 };
 
