@@ -22,6 +22,8 @@ export type RegisterPayload = {
   phone?: string;
   password: string;
   confirmPassword: string;
+  /** Optional friend code — one-time wallet bonus for both when valid */
+  referralCode?: string;
 };
 
 export type LoginPayload = {

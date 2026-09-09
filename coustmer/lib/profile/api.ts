@@ -307,9 +307,19 @@ export const profileApi = {
 
   getReferral: async (): Promise<ReferralInfo> => {
     const res = await request<ReferralInfo>(`${USERS_BASE}/referral`);
+    const d = res.data;
     return {
-      referralCode: String(res.data?.referralCode ?? ''),
-      referralCount: Number(res.data?.referralCount ?? 0),
+      referralCode: String(d?.referralCode ?? ''),
+      referralCount: Number(d?.referralCount ?? 0),
+      hasApplied: Boolean(d?.hasApplied ?? d?.referredBy),
+      referredBy: d?.referredBy,
+      program: d?.program
+        ? {
+            isActive: Boolean(d.program.isActive),
+            referrerBonusInr: Number(d.program.referrerBonusInr ?? 0),
+            refereeBonusInr: Number(d.program.refereeBonusInr ?? 0),
+          }
+        : undefined,
     };
   },
 

@@ -194,7 +194,14 @@ export const authApi = {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/register`, {
       method: 'POST',
       body: {
-        ...payload,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        phone: payload.phone,
+        password: payload.password,
+        ...(payload.referralCode?.trim()
+          ? { referralCode: payload.referralCode.trim().toUpperCase() }
+          : {}),
         // Always register as a customer in this app.
         role: 'customer',
       },

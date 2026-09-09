@@ -21,11 +21,17 @@ export function ReferralScreen() {
 
   const copyCode = async () => {
     if (!data?.referralCode) return;
-    await Share.share({ message: data.referralCode });
+    await Share.share({
+      message: `Use my Tokajo code ${data.referralCode} when you sign up — we both get wallet credit!`,
+    });
     setBanner({ message: 'Referral code shared!', type: 'success' });
   };
 
   const handleApply = () => {
+    if (data?.hasApplied) {
+      setBanner({ message: 'You already used a referral code', type: 'error' });
+      return;
+    }
     if (!code.trim()) {
       setBanner({ message: 'Enter a referral code', type: 'error' });
       return;
@@ -38,6 +44,7 @@ export function ReferralScreen() {
         onSuccess: (message) => {
           setCode('');
           setBanner({ message, type: 'success' });
+          void refetch();
         },
         onError: (err) =>
           setBanner({
@@ -48,13 +55,22 @@ export function ReferralScreen() {
     );
   };
 
+  const program = data?.program;
+  const showApply = !data?.hasApplied;
+
   return (
     <ProfileFormLayout
       title="Refer & earn"
-      subtitle="Share your code with friends"
+      subtitle="Share your code — both of you get Tokajo wallet credit once"
       banner={banner}
-      onSave={handleApply}
-      saveLabel={applyReferral.isPending ? 'Applying…' : 'Apply referral code'}
+      onSave={showApply ? handleApply : undefined}
+      saveLabel={
+        applyReferral.isPending
+          ? 'Applying…'
+          : showApply
+            ? 'Apply referral code'
+            : undefined
+      }
       saving={applyReferral.isPending}
     >
       {isLoading ? (
@@ -72,20 +88,34 @@ export function ReferralScreen() {
           <Text style={styles.codeMeta}>
             {data?.referralCount ?? 0} successful referrals
           </Text>
+          {program?.isActive ? (
+            <Text style={styles.rewardMeta}>
+              You get ₹{program.referrerBonusInr} · Friend gets ₹
+              {program.refereeBonusInr} (one time)
+            </Text>
+          ) : (
+            <Text style={styles.rewardMeta}>Program currently paused</Text>
+          )}
           <Pressable style={styles.copyButton} onPress={copyCode}>
             <Copy color="#FFFFFF" size={16} />
-            <Text style={styles.copyText}>Copy code</Text>
+            <Text style={styles.copyText}>Share code</Text>
           </Pressable>
         </View>
       )}
 
-      <AuthInput
-        label="Have a referral code?"
-        value={code}
-        onChangeText={setCode}
-        placeholder="Enter code"
-        autoCapitalize="characters"
-      />
+      {showApply ? (
+        <AuthInput
+          label="Have a referral code?"
+          value={code}
+          onChangeText={(t) => setCode(t.toUpperCase())}
+          placeholder="Enter code"
+          autoCapitalize="characters"
+        />
+      ) : (
+        <Text style={styles.appliedNote}>
+          You already joined with a referral — wallet credit is one-time only.
+        </Text>
+      )}
     </ProfileFormLayout>
   );
 }
@@ -118,6 +148,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 6,
   },
+  rewardMeta: {
+    color: authTheme.textMuted,
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+  },
   copyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -132,5 +168,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 14,
+  },
+  appliedNote: {
+    color: authTheme.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

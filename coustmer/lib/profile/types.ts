@@ -123,6 +123,13 @@ export type RegisterDevicePayload = {
 export type ReferralInfo = {
   referralCode: string;
   referralCount: number;
+  hasApplied?: boolean;
+  referredBy?: string;
+  program?: {
+    isActive: boolean;
+    referrerBonusInr: number;
+    refereeBonusInr: number;
+  };
 };
 
 export type ApplyReferralPayload = {

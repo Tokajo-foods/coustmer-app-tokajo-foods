@@ -1,6 +1,6 @@
 import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
-import { Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react-native';
+import { Eye, EyeOff, Gift, Lock, Mail, Phone, User } from 'lucide-react-native';
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView,
   Platform,
@@ -32,6 +32,7 @@ type FocusField =
   | 'phone'
   | 'password'
   | 'confirmPassword'
+  | 'referralCode'
   | null;
 
 type FieldKey = Exclude<FocusField, null>;
@@ -77,6 +78,9 @@ function mapRegisterApiError(message: string): { field?: FieldKey; message: stri
   if (lower.includes('last name') || lower.includes('lastname')) {
     return { field: 'lastName', message };
   }
+  if (lower.includes('referral')) {
+    return { field: 'referralCode', message };
+  }
 
   return { message };
 }
@@ -92,6 +96,7 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<FocusField>(null);
@@ -144,6 +149,7 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
         phone: phone.trim() || undefined,
         password,
         confirmPassword,
+        referralCode: referralCode.trim() || undefined,
       });
       onRegisterSuccess?.();
       router.replace('/home');
@@ -336,6 +342,23 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
             </Pressable>
           ),
         })}
+
+        <SectionLabel>Referral (optional)</SectionLabel>
+        {renderInput('referralCode', {
+          icon: Gift,
+          placeholder: 'Friend’s referral code',
+          value: referralCode,
+          onChangeText: (t) => setReferralCode(t.toUpperCase()),
+          error: errors.referralCode,
+          autoCapitalize: 'characters',
+          maxLength: 20,
+          returnKeyType: 'done',
+        })}
+        {!errors.referralCode ? (
+          <Text style={registerStyles.hint}>
+            Have a code? You and your friend both get wallet credit once.
+          </Text>
+        ) : null}
 
         <TouchableOpacity
           style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
