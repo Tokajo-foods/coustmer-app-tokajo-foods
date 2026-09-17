@@ -124,7 +124,7 @@ export function TokajoFeedSections(props: Props) {
       ) : null}
 
       {suggested.length > 0 ? (
-        <View style={styles.section}>
+        <View style={[styles.section, styles.bandOrange]}>
           <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
           <TokajoDishRail
             dishes={suggested}
@@ -154,7 +154,7 @@ export function TokajoFeedSections(props: Props) {
       ) : null}
 
       {topRated.length > 0 ? (
-        <View style={styles.section}>
+        <View style={[styles.section, styles.bandOrange]}>
           <TokajoSectionHeader
             Icon={Trophy}
             title="Top Rated Near You"
@@ -202,6 +202,15 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 22,
+  },
+  bandOrange: {
+    marginHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 10,
+    borderRadius: 22,
+    backgroundColor: '#FFF3E8',
+    borderWidth: 1,
+    borderColor: '#FFE3CB',
   },
   restaurantsHeader: {
     marginTop: 4,
