@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     paddingTop: 12,
     paddingBottom: 8,
     shadowColor: '#0B1220',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     paddingVertical: 2,
-    minWidth: 52,
+    minWidth: 60,
   },
   tabLabel: {
     fontSize: 11,
