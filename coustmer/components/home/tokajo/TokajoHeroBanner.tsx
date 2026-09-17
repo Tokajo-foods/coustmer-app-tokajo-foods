@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ArrowRight } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -9,15 +8,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
 import { HERO_BANNER } from '@/components/home/tokajo/assets';
-import { fonts } from '@/constants/typography';
 import type { HomeBanner } from '@/lib/customer/types';
 
-const ORANGE = '#F97316';
 const H_MARGIN = 16;
 const HEIGHT = 152;
 const AUTO_MS = 4200;
@@ -108,10 +104,6 @@ export function TokajoHeroBanner({ banners }: Props) {
               contentFit="cover"
               transition={200}
             />
-            <View style={styles.orderBtn}>
-              <Text style={styles.orderText}>Order Now</Text>
-              <ArrowRight color="#FFFFFF" size={14} strokeWidth={2.8} />
-            </View>
           </Pressable>
         ))}
       </ScrollView>
@@ -144,23 +136,6 @@ const styles = StyleSheet.create({
   },
   image: {
     ...StyleSheet.absoluteFillObject,
-  },
-  orderBtn: {
-    position: 'absolute',
-    left: 18,
-    bottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: ORANGE,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-  },
-  orderText: {
-    color: '#FFFFFF',
-    fontFamily: fonts.uiBold,
-    fontSize: 13,
   },
   dots: {
     position: 'absolute',

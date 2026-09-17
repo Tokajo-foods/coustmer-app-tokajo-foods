@@ -124,8 +124,8 @@ const CIRCLE = 58;
 const styles = StyleSheet.create({
   row: {
     paddingHorizontal: 14,
-    paddingBottom: 6,
-    gap: 14,
+    paddingBottom: 10,
+    gap: 16,
   },
   item: {
     width: 62,

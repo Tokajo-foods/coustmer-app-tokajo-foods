@@ -21,6 +21,7 @@ type Props = {
 /** White header: delivery location (left) · TOKAJO logo (center) · bell (right). */
 export function TokajoTopBar({
   deliveryTitle,
+  deliverySubtitle,
   isDetectingLocation,
   onLocationPress,
 }: Props) {
@@ -40,7 +41,6 @@ export function TokajoTopBar({
     <View style={styles.root}>
       <View style={styles.logoRow}>
         <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
-        <Text style={styles.foods}>FOODS</Text>
       </View>
 
       <View style={styles.bottomRow}>
@@ -59,6 +59,11 @@ export function TokajoTopBar({
               </Text>
               <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
             </View>
+            {deliverySubtitle ? (
+              <Text style={styles.locationSub} numberOfLines={1}>
+                {deliverySubtitle}
+              </Text>
+            ) : null}
           </View>
         </SmoothPressable>
 
@@ -86,24 +91,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   logoRow: {
-    height: 50,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logo: {
-    width: 150,
-    height: 46,
-  },
-  foods: {
-    marginTop: -4,
-    fontFamily: fonts.uiBold,
-    fontSize: 10,
-    letterSpacing: 6,
-    color: '#5A5A5A',
-    textAlign: 'center',
+    width: 184,
+    height: 50,
   },
   bottomRow: {
-    marginTop: 8,
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -134,6 +131,12 @@ const styles = StyleSheet.create({
     color: '#0B0B0B',
     letterSpacing: -0.2,
     flexShrink: 1,
+  },
+  locationSub: {
+    marginTop: 1,
+    fontFamily: fonts.ui,
+    fontSize: 11.5,
+    color: '#6B6B6B',
   },
   bell: {
     width: 42,

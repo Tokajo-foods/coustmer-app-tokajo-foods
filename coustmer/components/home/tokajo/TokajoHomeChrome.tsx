@@ -61,7 +61,7 @@ export function TokajoHomeChrome({
         onLocationPress={onLocationPress}
       />
 
-      <TokajoSearchDock onFilterPress={() => setSheetOpen(true)} />
+      <TokajoSearchDock />
 
       <TokajoCategoryStrip
         categories={categories}
@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   heroSpacer: {
-    height: 14,
+    height: 20,
   },
 });

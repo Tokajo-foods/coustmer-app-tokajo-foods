@@ -1,12 +1,9 @@
 import { useRouter } from 'expo-router';
-import { Search, SlidersHorizontal } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
-
-const ORANGE = '#F97316';
 
 const HINTS = [
   'Search for restaurants, dishes, cuisines...',
@@ -15,12 +12,8 @@ const HINTS = [
   'Search for “burger”',
 ];
 
-type Props = {
-  onFilterPress?: () => void;
-};
-
-/** Rounded search field + square filter button. */
-export function TokajoSearchDock({ onFilterPress }: Props) {
+/** Full-width rounded search field. */
+export function TokajoSearchDock() {
   const router = useRouter();
   const [i, setI] = useState(0);
 
@@ -36,40 +29,27 @@ export function TokajoSearchDock({ onFilterPress }: Props) {
         onPress={() => router.push('/search')}
         accessibilityRole="search"
       >
-        <Search color="#9A9A9A" size={19} strokeWidth={2.3} />
+        <Search color="#9A9A9A" size={20} strokeWidth={2.3} />
         <Text style={styles.placeholder} numberOfLines={1}>
           {HINTS[i]}
         </Text>
       </Pressable>
-
-      <SmoothPressable
-        style={styles.filterBtn}
-        onPress={onFilterPress}
-        pressScale={0.94}
-        accessibilityLabel="Filters"
-      >
-        <SlidersHorizontal color={ORANGE} size={20} strokeWidth={2.4} />
-      </SmoothPressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 16,
   },
   search: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    height: 50,
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    gap: 12,
+    height: 54,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#EDEDED',
@@ -77,15 +57,7 @@ const styles = StyleSheet.create({
   placeholder: {
     flex: 1,
     fontFamily: fonts.ui,
-    fontSize: 14,
+    fontSize: 14.5,
     color: '#9A9A9A',
-  },
-  filterBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: '#FFF1E6',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
