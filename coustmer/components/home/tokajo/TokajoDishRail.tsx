@@ -51,18 +51,19 @@ export function TokajoDishRail({
 const styles = StyleSheet.create({
   row: {
     paddingHorizontal: 16,
-    gap: 12,
-    paddingBottom: 4,
+    paddingVertical: 6,
+    gap: 14,
   },
   skeletonRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 12,
+    paddingVertical: 6,
+    gap: 14,
   },
   skeletonCard: {
-    width: 152,
-    height: 190,
-    borderRadius: 16,
+    width: 168,
+    height: 214,
+    borderRadius: 18,
     backgroundColor: '#F2F2F2',
   },
 });

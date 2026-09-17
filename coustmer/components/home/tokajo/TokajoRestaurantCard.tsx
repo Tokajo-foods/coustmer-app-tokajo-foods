@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Heart, Star } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -8,7 +9,7 @@ import { fonts } from '@/constants/typography';
 import type { Restaurant } from '@/lib/restaurant/types';
 
 const ORANGE = '#F97316';
-const GREEN = '#16A34A';
+const GREEN = '#12833B';
 
 function formatCount(n?: number): string {
   if (!n || n <= 0) return '';
@@ -82,10 +83,26 @@ export function TokajoRestaurantCard({
           <View style={[styles.image, styles.imageEmpty]} />
         )}
 
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.4)']}
+          style={styles.imageShade}
+          pointerEvents="none"
+        />
+
         {eta ? (
           <View style={styles.etaBadge}>
             <Clock color="#FFFFFF" size={12} strokeWidth={2.6} />
             <Text style={styles.etaText}>{eta}</Text>
+          </View>
+        ) : null}
+
+        {typeof rating === 'number' && rating > 0 ? (
+          <View style={styles.ratingPill}>
+            <Star color="#FFFFFF" fill="#FFFFFF" size={11} strokeWidth={2} />
+            <Text style={styles.ratingPillText}>
+              {rating.toFixed(1)}
+              {count ? ` (${count})` : ''}
+            </Text>
           </View>
         ) : null}
 
@@ -112,14 +129,6 @@ export function TokajoRestaurantCard({
         <Text style={styles.name} numberOfLines={1}>
           {r.name}
         </Text>
-
-        {typeof rating === 'number' && rating > 0 ? (
-          <View style={styles.ratingRow}>
-            <Star color={ORANGE} fill={ORANGE} size={13} strokeWidth={2} />
-            <Text style={styles.rating}>{rating.toFixed(1)}</Text>
-            {count ? <Text style={styles.count}>({count})</Text> : null}
-          </View>
-        ) : null}
 
         {cuisines ? (
           <Text style={styles.cuisines} numberOfLines={1}>
@@ -149,14 +158,19 @@ export function TokajoRestaurantCard({
 const styles = StyleSheet.create({
   card: {
     width: 264,
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    overflow: 'hidden',
+    shadowColor: '#0B1220',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   imageWrap: {
-    height: 132,
+    height: 138,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    overflow: 'hidden',
     backgroundColor: '#F3F4F6',
   },
   image: {
@@ -165,6 +179,30 @@ const styles = StyleSheet.create({
   },
   imageEmpty: {
     backgroundColor: '#EFEFEF',
+  },
+  imageShade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 60,
+  },
+  ratingPill: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: GREEN,
+    borderRadius: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  ratingPillText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.uiBold,
+    fontSize: 11,
   },
   etaBadge: {
     position: 'absolute',
@@ -214,21 +252,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1C1C1C',
     letterSpacing: -0.2,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  rating: {
-    fontFamily: fonts.uiBold,
-    fontSize: 13,
-    color: '#1C1C1C',
-  },
-  count: {
-    fontFamily: fonts.ui,
-    fontSize: 12,
-    color: '#9A9A9A',
   },
   cuisines: {
     fontFamily: fonts.ui,
