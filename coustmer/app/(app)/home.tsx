@@ -250,12 +250,14 @@ export default function HomeScreen() {
       id: c.id || c.slug || c.name,
       label: c.name,
       slug: c.slug || c.name,
+      imageUrl: c.imageUrl,
     }));
     if (fromMind.length > 0) return fromMind;
     return (homeCategories.data ?? []).map((c) => ({
       id: c.id || c.slug || c.label,
       label: c.label,
       slug: c.slug || c.label,
+      imageUrl: c.imageUrl,
     }));
   }, [mindCategoriesForHome, homeCategories.data]);
 

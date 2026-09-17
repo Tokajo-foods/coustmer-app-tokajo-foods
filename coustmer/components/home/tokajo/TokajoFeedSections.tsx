@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Clock, Flame, MapPin } from 'lucide-react-native';
+import { Clock, Flame, MapPin, Sparkles, Trophy } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FilteredHomeResults } from '@/components/home/FilteredHomeResults';
@@ -10,8 +10,23 @@ import { TokajoSectionHeader } from '@/components/home/tokajo/TokajoSectionHeade
 import { fonts } from '@/constants/typography';
 import type { HomeFeed } from '@/lib/customer/types';
 import type { HomeFilterState } from '@/lib/home/filters';
-import type { HomeCategory } from '@/lib/home/types';
+import type { HomeCategory, HomeRestaurantCard } from '@/lib/home/types';
 import type { CuisineChip, Restaurant } from '@/lib/restaurant/types';
+
+/** Map a home-feed restaurant card to the shape the Tokajo card reads. */
+function toRestaurant(card: HomeRestaurantCard): Restaurant {
+  return {
+    id: card.id,
+    name: card.name,
+    imageUrl: card.image ?? undefined,
+    rating: card.rating,
+    reviewCount: card.reviewCount,
+    deliveryTime: card.deliveryTime ?? undefined,
+    cuisines: card.cuisines,
+    isPureVeg: card.isPureVeg,
+    offer: card.hasOffers ? 'Offers' : undefined,
+  } as Restaurant;
+}
 
 type Props = {
   filtersActive: boolean;
@@ -85,7 +100,9 @@ export function TokajoFeedSections(props: Props) {
     (feedRails?.trendingDishes?.length
       ? feedRails.trendingDishes
       : feedRails?.dishesToTry) ?? [];
+  const suggested = feedRails?.suggestedItems ?? [];
   const orderAgain = feedRails?.orderAgain ?? [];
+  const topRated = (feedRails?.topRated ?? []).map(toRestaurant);
 
   return (
     <View style={styles.wrap}>
@@ -98,6 +115,19 @@ export function TokajoFeedSections(props: Props) {
           />
           <TokajoDishRail
             dishes={trending}
+            favoriteIds={favoriteIds}
+            loading={railsBusy}
+            onToggleFavorite={onToggleFavorite}
+            onPressDish={openDish}
+          />
+        </View>
+      ) : null}
+
+      {suggested.length > 0 ? (
+        <View style={styles.section}>
+          <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
+          <TokajoDishRail
+            dishes={suggested}
             favoriteIds={favoriteIds}
             loading={railsBusy}
             onToggleFavorite={onToggleFavorite}
@@ -136,6 +166,22 @@ export function TokajoFeedSections(props: Props) {
             loading={railsBusy}
             onToggleFavorite={onToggleFavorite}
             onPressDish={openDish}
+          />
+        </View>
+      ) : null}
+
+      {topRated.length > 0 ? (
+        <View style={styles.section}>
+          <TokajoSectionHeader
+            Icon={Trophy}
+            title="Top Rated Near You"
+            onSeeAll={() => router.push('/restaurants')}
+          />
+          <TokajoRestaurantRail
+            restaurants={topRated}
+            favoriteIds={favoriteIds}
+            onToggleFavorite={onToggleFavorite}
+            onPressRestaurant={onPressRestaurant}
           />
         </View>
       ) : null}

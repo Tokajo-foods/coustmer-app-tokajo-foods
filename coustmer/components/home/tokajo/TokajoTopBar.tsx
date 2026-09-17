@@ -39,6 +39,10 @@ export function TokajoTopBar({
 
   return (
     <View style={styles.row}>
+      <View style={styles.logoWrap} pointerEvents="none">
+        <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
+      </View>
+
       <SmoothPressable
         style={styles.location}
         onPress={onLocationPress}
@@ -61,10 +65,6 @@ export function TokajoTopBar({
           ) : null}
         </View>
       </SmoothPressable>
-
-      <View style={styles.logoWrap} pointerEvents="none">
-        <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
-      </View>
 
       <SmoothPressable
         style={styles.bell}
@@ -125,12 +125,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
-    zIndex: -1,
+    justifyContent: 'center',
   },
   logo: {
-    width: 120,
-    height: 46,
+    width: 118,
+    height: 40,
   },
   bell: {
     width: 42,

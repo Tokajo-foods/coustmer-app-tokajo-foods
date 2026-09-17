@@ -6,13 +6,26 @@ import { Pressable } from '@/components/common/Pressable';
 import {
   CATEGORY_ALL_ICON,
   CATEGORY_MORE_ICON,
-  categoryIcon,
+  localCategoryIcon,
 } from '@/components/home/tokajo/assets';
 import { fonts } from '@/constants/typography';
 
 const ORANGE = '#F97316';
 
-export type TokajoCategory = { id: string; label: string; slug: string };
+export type TokajoCategory = {
+  id: string;
+  label: string;
+  slug: string;
+  imageUrl?: string;
+};
+
+/** Prefer a local design icon; else the API image; else the fallback icon. */
+function iconFor(cat: TokajoCategory) {
+  const local = localCategoryIcon(cat.slug || cat.label);
+  if (local) return local;
+  if (cat.imageUrl) return { uri: cat.imageUrl };
+  return CATEGORY_MORE_ICON;
+}
 
 type Props = {
   categories: TokajoCategory[];
@@ -77,7 +90,7 @@ export function TokajoCategoryStrip({
                   style={[styles.circle, active && styles.circleActive]}
                 >
                   <Image
-                    source={categoryIcon(cat.slug || cat.label)}
+                    source={iconFor(cat)}
                     style={styles.icon}
                     contentFit="cover"
                   />
