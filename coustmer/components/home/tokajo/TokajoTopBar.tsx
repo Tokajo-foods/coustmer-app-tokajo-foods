@@ -21,7 +21,6 @@ type Props = {
 /** White header: delivery location (left) · TOKAJO logo (center) · bell (right). */
 export function TokajoTopBar({
   deliveryTitle,
-  deliverySubtitle,
   isDetectingLocation,
   onLocationPress,
 }: Props) {
@@ -41,6 +40,27 @@ export function TokajoTopBar({
     <View style={styles.root}>
       <View style={styles.logoRow}>
         <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
+        <Text style={styles.foods}>FOODS</Text>
+      </View>
+
+      <View style={styles.bottomRow}>
+        <SmoothPressable
+          style={styles.location}
+          onPress={onLocationPress}
+          pressScale={0.98}
+          accessibilityLabel="Change delivery location"
+        >
+          <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
+          <View style={styles.locationText}>
+            <Text style={styles.deliverTo}>Deliver to</Text>
+            <View style={styles.deliverToRow}>
+              <Text style={styles.locationTitle} numberOfLines={1}>
+                {headline}
+              </Text>
+              <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
+            </View>
+          </View>
+        </SmoothPressable>
 
         <SmoothPressable
           style={styles.bell}
@@ -56,29 +76,6 @@ export function TokajoTopBar({
           {unreadCount > 0 ? <View style={styles.dot} /> : null}
         </SmoothPressable>
       </View>
-
-      <SmoothPressable
-        style={styles.location}
-        onPress={onLocationPress}
-        pressScale={0.98}
-        accessibilityLabel="Change delivery location"
-      >
-        <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
-        <View style={styles.locationText}>
-          <Text style={styles.deliverTo}>Deliver to</Text>
-          <View style={styles.deliverToRow}>
-            <Text style={styles.locationTitle} numberOfLines={1}>
-              {headline}
-            </Text>
-            <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
-          </View>
-          {deliverySubtitle ? (
-            <Text style={styles.locationSub} numberOfLines={1}>
-              {deliverySubtitle}
-            </Text>
-          ) : null}
-        </View>
-      </SmoothPressable>
     </View>
   );
 }
@@ -89,21 +86,34 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   logoRow: {
-    height: 52,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logo: {
-    width: 156,
-    height: 52,
+    width: 150,
+    height: 46,
+  },
+  foods: {
+    marginTop: -4,
+    fontFamily: fonts.uiBold,
+    fontSize: 10,
+    letterSpacing: 6,
+    color: '#5A5A5A',
+    textAlign: 'center',
+  },
+  bottomRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
   },
   location: {
-    marginTop: 4,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
-    alignSelf: 'flex-start',
-    maxWidth: '80%',
   },
   locationText: {
     flexShrink: 1,
@@ -121,19 +131,11 @@ const styles = StyleSheet.create({
   locationTitle: {
     fontFamily: fonts.displayBold,
     fontSize: 15,
-    color: '#1C1C1C',
+    color: '#0B0B0B',
     letterSpacing: -0.2,
     flexShrink: 1,
   },
-  locationSub: {
-    fontFamily: fonts.ui,
-    fontSize: 11.5,
-    color: '#8A8A8A',
-  },
   bell: {
-    position: 'absolute',
-    right: 0,
-    top: 5,
     width: 42,
     height: 42,
     borderRadius: 21,
