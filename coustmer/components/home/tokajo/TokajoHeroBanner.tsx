@@ -15,9 +15,11 @@ import { HERO_BANNER } from '@/components/home/tokajo/assets';
 import type { HomeBanner } from '@/lib/customer/types';
 
 const H_MARGIN = 16;
-const HEIGHT = 152;
+/** Matches `public/hero-banner.png` (763×254) so `cover` does not crop text. */
+const BANNER_ASPECT = 763 / 254;
 const AUTO_MS = 4200;
 const WIDTH = Dimensions.get('window').width - H_MARGIN * 2;
+const HEIGHT = Math.round(WIDTH / BANNER_ASPECT);
 
 type Slide = { key: string; source: number | { uri: string }; deepLink?: string };
 
@@ -101,7 +103,7 @@ export function TokajoHeroBanner({ banners }: Props) {
             <Image
               source={slide.source}
               style={styles.image}
-              contentFit="cover"
+              contentFit="contain"
               transition={200}
             />
           </Pressable>
@@ -128,11 +130,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 18,
     overflow: 'hidden',
+    backgroundColor: '#F6D2B0',
   },
   slide: {
     width: WIDTH,
     height: HEIGHT,
     justifyContent: 'flex-end',
+    backgroundColor: '#F6D2B0',
   },
   image: {
     ...StyleSheet.absoluteFillObject,
