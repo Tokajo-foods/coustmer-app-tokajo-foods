@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Heart, MapPin, Star } from 'lucide-react-native';
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
@@ -36,7 +37,7 @@ type Props = {
 };
 
 /** Full-width Zomato-style restaurant card for the vertical feed. */
-export function TokajoRestaurantListCard({
+export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
   restaurant: r,
   isFavorite,
   onToggleFavorite,
@@ -61,7 +62,9 @@ export function TokajoRestaurantListCard({
             source={{ uri: cover }}
             style={styles.image}
             contentFit="cover"
-            transition={160}
+            transition={120}
+            recyclingKey={r.id}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={[styles.image, styles.imageEmpty]} />
@@ -118,6 +121,8 @@ export function TokajoRestaurantListCard({
                 source={{ uri: r.logoUrl }}
                 style={styles.logo}
                 contentFit="cover"
+                recyclingKey={`${r.id}-logo`}
+                cachePolicy="memory-disk"
               />
             ) : (
               <View style={[styles.logo, styles.logoFallback]}>
@@ -197,7 +202,7 @@ export function TokajoRestaurantListCard({
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

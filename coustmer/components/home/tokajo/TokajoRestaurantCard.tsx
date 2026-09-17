@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Heart, Star } from 'lucide-react-native';
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
@@ -56,7 +57,7 @@ type Props = {
 };
 
 /** "Restaurants Near You" card: cover, ETA, rating, cuisines, offer tags. */
-export function TokajoRestaurantCard({
+export const TokajoRestaurantCard = memo(function TokajoRestaurantCard({
   restaurant: r,
   isFavorite,
   onToggleFavorite,
@@ -77,7 +78,9 @@ export function TokajoRestaurantCard({
             source={{ uri: cover }}
             style={styles.image}
             contentFit="cover"
-            transition={150}
+            transition={120}
+            recyclingKey={r.id}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={[styles.image, styles.imageEmpty]} />
@@ -153,7 +156,7 @@ export function TokajoRestaurantCard({
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

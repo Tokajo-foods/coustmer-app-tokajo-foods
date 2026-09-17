@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, Plus, Star } from 'lucide-react-native';
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
@@ -39,7 +40,7 @@ type Props = {
 };
 
 /** Premium dish card — image, rating, badge, veg mark, price and ADD. */
-export function TokajoDishCard({
+export const TokajoDishCard = memo(function TokajoDishCard({
   dish,
   isFavorite,
   onToggleFavorite,
@@ -57,7 +58,9 @@ export function TokajoDishCard({
             source={{ uri: dish.imageUrl }}
             style={styles.image}
             contentFit="cover"
-            transition={160}
+            transition={120}
+            recyclingKey={dish.id}
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={[styles.image, styles.imageEmpty]} />
@@ -130,7 +133,7 @@ export function TokajoDishCard({
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Platform, StyleSheet, View } from 'react-native';
 
 import { TokajoDishCard } from '@/components/home/tokajo/TokajoDishCard';
 import type { HomeTrendingDish } from '@/lib/home/types';
@@ -36,6 +36,10 @@ export function TokajoDishRail({
       keyExtractor={(d) => d.id}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
+      initialNumToRender={4}
+      maxToRenderPerBatch={4}
+      windowSize={5}
+      removeClippedSubviews={Platform.OS === 'android'}
       renderItem={({ item }) => (
         <TokajoDishCard
           dish={item}

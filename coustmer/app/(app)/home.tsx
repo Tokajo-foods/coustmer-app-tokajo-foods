@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -276,12 +277,52 @@ export default function HomeScreen() {
     });
   }, [restaurants]);
 
-  const openRestaurant = (id: string) => {
-    router.push({
-      pathname: '/restaurants/[restaurantId]',
-      params: { restaurantId: id },
-    });
-  };
+  const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  const openRestaurant = useCallback(
+    (id: string) => {
+      router.push({
+        pathname: '/restaurants/[restaurantId]',
+        params: { restaurantId: id },
+      });
+    },
+    [router]
+  );
+
+  const onToggleFavorite = useCallback(
+    (id: string) => {
+      const r = restaurants.find((x) => x.id === id);
+      toggleFavorite(id, r ? { restaurant: r } : undefined);
+    },
+    [restaurants, toggleFavorite]
+  );
+
+  const onEndReached = useCallback(() => {
+    if (nearbyParams) return;
+    if (feed.hasNextPage && !feed.isFetchingNextPage) {
+      feed.fetchNextPage();
+    }
+  }, [nearbyParams, feed.hasNextPage, feed.isFetchingNextPage, feed.fetchNextPage]);
+
+  const renderRestaurantItem = useCallback(
+    ({ item }: { item: Restaurant }) => (
+      <TokajoRestaurantListCard
+        restaurant={item}
+        isFavorite={favoriteIdSet.has(item.id)}
+        onToggleFavorite={onToggleFavorite}
+        onPress={openRestaurant}
+      />
+    ),
+    [favoriteIdSet, onToggleFavorite, openRestaurant]
+  );
+
+  const listContentStyle = useMemo(
+    () => ({
+      paddingBottom: insets.bottom + 28 + APP_BOTTOM_NAV_INSET,
+      flexGrow: 1 as const,
+    }),
+    [insets.bottom]
+  );
 
   const refreshing =
     feed.isRefetching ||
@@ -579,10 +620,7 @@ export default function HomeScreen() {
         userLoggedIn={Boolean(user)}
         favoriteIds={favoriteIds}
         surgeChipLabel={surgeChipLabel}
-        onToggleFavorite={(id) => {
-          const r = restaurants.find((x) => x.id === id);
-          toggleFavorite(id, r ? { restaurant: r } : undefined);
-        }}
+        onToggleFavorite={onToggleFavorite}
         onPressRestaurant={openRestaurant}
         feedError={
           feed.isError
@@ -633,18 +671,14 @@ export default function HomeScreen() {
         data={filtersActive ? [] : restaurants}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={false}
-        onEndReached={() => {
-          if (nearbyParams) return;
-          if (feed.hasNextPage && !feed.isFetchingNextPage) {
-            feed.fetchNextPage();
-          }
-        }}
-        onEndReachedThreshold={0.4}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 28 + APP_BOTTOM_NAV_INSET,
-          flexGrow: 1,
-        }}
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={5}
+        maxToRenderPerBatch={6}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+        contentContainerStyle={listContentStyle}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           !filtersActive &&
@@ -682,17 +716,7 @@ export default function HomeScreen() {
             progressViewOffset={insets.top}
           />
         }
-        renderItem={({ item }) => (
-          <TokajoRestaurantListCard
-            restaurant={item}
-            isFavorite={favoriteIds.includes(item.id)}
-            onToggleFavorite={(id) => {
-              const r = restaurants.find((x) => x.id === id);
-              toggleFavorite(id, r ? { restaurant: r } : undefined);
-            }}
-            onPress={openRestaurant}
-          />
-        )}
+        renderItem={renderRestaurantItem}
         ListFooterComponent={
           !nearbyParams && feed.isFetchingNextPage ? (
             <View style={styles.footerLoader}>
