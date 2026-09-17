@@ -6,6 +6,7 @@ import { FilteredHomeResults } from '@/components/home/FilteredHomeResults';
 import { ErrorView } from '@/components/common/StateViews';
 import { TokajoDishRail } from '@/components/home/tokajo/TokajoDishRail';
 import { TokajoRestaurantRail } from '@/components/home/tokajo/TokajoRestaurantRail';
+import { TokajoSectionBand } from '@/components/home/tokajo/TokajoSectionBand';
 import { TokajoSectionHeader } from '@/components/home/tokajo/TokajoSectionHeader';
 import { fonts } from '@/constants/typography';
 import type { HomeFeed } from '@/lib/customer/types';
@@ -50,7 +51,7 @@ type Props = {
   listLoading: boolean;
 };
 
-/** TOKAJO home body: Trending dishes · Restaurants near you · Order again. */
+/** TOKAJO home body — alternating section bands so rails feel distinct. */
 export function TokajoFeedSections(props: Props) {
   const router = useRouter();
   const {
@@ -107,10 +108,12 @@ export function TokajoFeedSections(props: Props) {
   return (
     <View style={styles.wrap}>
       {trending.length > 0 || railsBusy ? (
-        <View style={styles.section}>
+        <TokajoSectionBand tone="peach">
           <TokajoSectionHeader
             Icon={Flame}
             title="Trending Near You"
+            subtitle="What’s hot around you right now"
+            tone="peach"
             onSeeAll={() => router.push('/search')}
           />
           <TokajoDishRail
@@ -120,12 +123,17 @@ export function TokajoFeedSections(props: Props) {
             onToggleFavorite={onToggleFavorite}
             onPressDish={openDish}
           />
-        </View>
+        </TokajoSectionBand>
       ) : null}
 
       {suggested.length > 0 ? (
-        <View style={styles.section}>
-          <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
+        <TokajoSectionBand tone="cream">
+          <TokajoSectionHeader
+            Icon={Sparkles}
+            title="Suggested for You"
+            subtitle="Picked to match your taste"
+            tone="cream"
+          />
           <TokajoDishRail
             dishes={suggested}
             favoriteIds={favoriteIds}
@@ -133,14 +141,16 @@ export function TokajoFeedSections(props: Props) {
             onToggleFavorite={onToggleFavorite}
             onPressDish={openDish}
           />
-        </View>
+        </TokajoSectionBand>
       ) : null}
 
       {userLoggedIn && (orderAgain.length > 0 || railsBusy) ? (
-        <View style={styles.section}>
+        <TokajoSectionBand tone="ink">
           <TokajoSectionHeader
             Icon={Clock}
             title="Order Again"
+            subtitle="Your recent favourites, one tap away"
+            tone="ink"
             onSeeAll={() => router.push('/orders')}
           />
           <TokajoDishRail
@@ -150,14 +160,16 @@ export function TokajoFeedSections(props: Props) {
             onToggleFavorite={onToggleFavorite}
             onPressDish={openDish}
           />
-        </View>
+        </TokajoSectionBand>
       ) : null}
 
       {topRated.length > 0 ? (
-        <View style={styles.section}>
+        <TokajoSectionBand tone="mint">
           <TokajoSectionHeader
             Icon={Trophy}
             title="Top Rated Near You"
+            subtitle="Loved by people around you"
+            tone="mint"
             onSeeAll={() => router.push('/restaurants')}
           />
           <TokajoRestaurantRail
@@ -166,7 +178,7 @@ export function TokajoFeedSections(props: Props) {
             onToggleFavorite={onToggleFavorite}
             onPressRestaurant={onPressRestaurant}
           />
-        </View>
+        </TokajoSectionBand>
       ) : null}
 
       {feedError ? (
@@ -188,9 +200,14 @@ export function TokajoFeedSections(props: Props) {
       ) : null}
 
       {topRestaurants.length > 0 || listLoading ? (
-        <View style={styles.restaurantsHeader}>
-          <TokajoSectionHeader Icon={MapPin} title="Restaurants Near You" />
-        </View>
+        <TokajoSectionBand tone="peach" style={styles.restaurantsBand}>
+          <TokajoSectionHeader
+            Icon={MapPin}
+            title="Restaurants Near You"
+            subtitle="Scroll for every kitchen delivering to you"
+            tone="peach"
+          />
+        </TokajoSectionBand>
       ) : null}
     </View>
   );
@@ -198,14 +215,11 @@ export function TokajoFeedSections(props: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    paddingTop: 4,
+    paddingTop: 8,
   },
-  section: {
-    marginBottom: 22,
-  },
-  restaurantsHeader: {
-    marginTop: 4,
-    marginBottom: 6,
+  restaurantsBand: {
+    marginBottom: 0,
+    paddingBottom: 8,
   },
   errorWrap: {
     paddingHorizontal: 16,
