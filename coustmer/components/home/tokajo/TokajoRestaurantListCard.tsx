@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   imageWrap: {
-    height: 176,
+    height: 160,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: 'hidden',

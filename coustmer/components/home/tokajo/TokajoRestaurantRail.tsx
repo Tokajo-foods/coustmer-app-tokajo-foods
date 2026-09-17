@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   skeletonCard: {
     width: 264,
-    height: 250,
+    height: 236,
     borderRadius: 18,
     backgroundColor: '#F2F2F2',
   },
