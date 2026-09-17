@@ -38,9 +38,23 @@ export function TokajoTopBar({
     : deliveryTitle || 'Select location';
 
   return (
-    <View style={styles.row}>
-      <View style={styles.logoWrap} pointerEvents="none">
+    <View style={styles.root}>
+      <View style={styles.logoRow}>
         <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
+
+        <SmoothPressable
+          style={styles.bell}
+          onPress={() => router.push('/notifications')}
+          pressScale={0.94}
+          accessibilityLabel={
+            unreadCount > 0
+              ? `Notifications, ${unreadCount} unread`
+              : 'Notifications'
+          }
+        >
+          <Bell color="#1C1C1C" size={20} strokeWidth={2.2} />
+          {unreadCount > 0 ? <View style={styles.dot} /> : null}
+        </SmoothPressable>
       </View>
 
       <SmoothPressable
@@ -51,13 +65,13 @@ export function TokajoTopBar({
       >
         <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
         <View style={styles.locationText}>
+          <Text style={styles.deliverTo}>Deliver to</Text>
           <View style={styles.deliverToRow}>
-            <Text style={styles.deliverTo}>Deliver to</Text>
-            <ChevronDown color={ORANGE} size={13} strokeWidth={2.8} />
+            <Text style={styles.locationTitle} numberOfLines={1}>
+              {headline}
+            </Text>
+            <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
           </View>
-          <Text style={styles.locationTitle} numberOfLines={1}>
-            {headline}
-          </Text>
           {deliverySubtitle ? (
             <Text style={styles.locationSub} numberOfLines={1}>
               {deliverySubtitle}
@@ -65,37 +79,31 @@ export function TokajoTopBar({
           ) : null}
         </View>
       </SmoothPressable>
-
-      <SmoothPressable
-        style={styles.bell}
-        onPress={() => router.push('/notifications')}
-        pressScale={0.94}
-        accessibilityLabel={
-          unreadCount > 0
-            ? `Notifications, ${unreadCount} unread`
-            : 'Notifications'
-        }
-      >
-        <Bell color="#1C1C1C" size={20} strokeWidth={2.2} />
-        {unreadCount > 0 ? <View style={styles.dot} /> : null}
-      </SmoothPressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  root: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 8,
+  },
+  logoRow: {
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 156,
+    height: 52,
   },
   location: {
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 5,
-    maxWidth: '42%',
+    gap: 6,
+    alignSelf: 'flex-start',
+    maxWidth: '80%',
   },
   locationText: {
     flexShrink: 1,
@@ -103,7 +111,7 @@ const styles = StyleSheet.create({
   deliverToRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   deliverTo: {
     fontFamily: fonts.uiBold,
@@ -112,29 +120,20 @@ const styles = StyleSheet.create({
   },
   locationTitle: {
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    fontSize: 15,
     color: '#1C1C1C',
     letterSpacing: -0.2,
+    flexShrink: 1,
   },
   locationSub: {
     fontFamily: fonts.ui,
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#8A8A8A',
   },
-  logoWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 118,
-    height: 40,
-  },
   bell: {
+    position: 'absolute',
+    right: 0,
+    top: 5,
     width: 42,
     height: 42,
     borderRadius: 21,
