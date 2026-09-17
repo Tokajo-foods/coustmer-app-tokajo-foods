@@ -153,24 +153,27 @@ export function mapRestaurant(data: Record<string, unknown>): Restaurant {
   const coords = location?.coordinates;
   const fromImages = firstImageFromList(data.images);
 
-  const logoUrl =
-    onlyApiMediaUrl(
-      (data.logoUrl as string) ||
-        (data.logo as string) ||
-        (data.logoImage as string)
-    ) || undefined;
+  const rawLogo =
+    (data.logoUrl as string) ||
+    (data.logo as string) ||
+    (data.logoImage as string);
+  // Prefer real uploads; fall back to whatever logo the API gave (e.g. seeded).
+  const logoUrl = onlyApiMediaUrl(rawLogo) || resolveMediaUrl(rawLogo) || undefined;
 
+  const rawCover =
+    (data.coverUrl as string) ||
+    (data.coverImage as string) ||
+    (data.bannerUrl as string) ||
+    (data.banner as string);
+  // Prefer real partner media; if only a seeded/demo cover exists, still show it
+  // rather than leaving the card blank.
   const coverUrl =
-    onlyApiMediaUrl(
-      (data.coverUrl as string) ||
-        (data.coverImage as string) ||
-        (data.bannerUrl as string) ||
-        (data.banner as string)
-    ) ||
+    onlyApiMediaUrl(rawCover) ||
     onlyApiMediaUrl(fromImages) ||
+    resolveMediaUrl(rawCover) ||
+    resolveMediaUrl(fromImages) ||
     undefined;
 
-  // Only real partner media — never invent stock covers.
   const imageUrl =
     onlyApiMediaUrl(data.imageUrl as string) ||
     coverUrl ||
