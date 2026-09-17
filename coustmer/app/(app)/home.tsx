@@ -12,8 +12,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LoadingView } from '@/components/common/StateViews';
 import { SaveAddressLabelModal } from '@/components/address/SaveAddressLabelModal';
-import { HomeFeedSections } from '@/components/home/HomeFeedSections';
-import { SwiggyHomeChrome } from '@/components/home/SwiggyHomeChrome';
+import { TokajoFeedSections } from '@/components/home/tokajo/TokajoFeedSections';
+import { TokajoHomeChrome } from '@/components/home/tokajo/TokajoHomeChrome';
+import type { TokajoCategory } from '@/components/home/tokajo/TokajoCategoryStrip';
 import { VegModeModal } from '@/components/home/VegModeModal';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import { InitialLocationSheet } from '@/components/location/InitialLocationSheet';
@@ -170,9 +171,6 @@ export default function HomeScreen() {
   const profile = useCustomerProfile();
   const { favoriteIds, toggleFavorite } = useFavoriteToggle();
 
-  const greeting =
-    user?.firstName?.trim() || user?.email?.split('@')[0] || 'foodie';
-
   const feed = useInfiniteRestaurants(
     {
       city: city || undefined,
@@ -245,6 +243,21 @@ export default function HomeScreen() {
     // (not cuisine tags). Trust the server list as-is.
     return mindCategories.data?.categories ?? [];
   }, [mindCategories.data?.categories]);
+
+  /** Category rail chips — live API menu categories (no hardcoded list). */
+  const tokajoCategories = useMemo<TokajoCategory[]>(() => {
+    const fromMind = mindCategoriesForHome.map((c) => ({
+      id: c.id || c.slug || c.name,
+      label: c.name,
+      slug: c.slug || c.name,
+    }));
+    if (fromMind.length > 0) return fromMind;
+    return (homeCategories.data ?? []).map((c) => ({
+      id: c.id || c.slug || c.label,
+      label: c.label,
+      slug: c.slug || c.label,
+    }));
+  }, [mindCategoriesForHome, homeCategories.data]);
 
   /** Top rail: highest rated first (different order than feed / deals) */
   const topRestaurants = useMemo(() => {
@@ -522,19 +535,22 @@ export default function HomeScreen() {
     offerBanners.length > 0 ? offerBanners : feedBanners;
 
   const chrome = (
-    <SwiggyHomeChrome
+    <TokajoHomeChrome
       topInset={insets.top}
-      greeting={greeting}
       deliveryTitle={deliveryTitle}
       deliverySubtitle={deliverySubtitle}
       isDetectingLocation={isDetectingLocation}
       onLocationPress={() => setPickerOpen(true)}
       banners={chromeBanners}
+      filters={homeFilters}
+      onFiltersChange={onFiltersChange}
+      categories={tokajoCategories}
+      categoriesLoading={mindCategories.isLoading}
+      restaurants={baseRestaurants}
     />
   );
 
   const filtersActive = countActiveHomeFilters(homeFilters) > 0;
-  const activeDeals = offers.data?.deals ?? deals.data ?? [];
 
   /**
    * Title scrolls away with content above.
@@ -544,7 +560,7 @@ export default function HomeScreen() {
     <View>
       {chrome}
 
-      <HomeFeedSections
+      <TokajoFeedSections
         filtersActive={filtersActive}
         homeFilters={homeFilters}
         onFiltersChange={onFiltersChange}
@@ -553,15 +569,10 @@ export default function HomeScreen() {
         restaurants={restaurants}
         topRestaurants={topRestaurants}
         homeCategories={homeCategories.data ?? []}
-        mindCategories={mindCategoriesForHome}
-        mindCategoriesLoading={mindCategories.isLoading}
         liveCuisines={liveCuisines.data}
-        deals={activeDeals}
         feedRails={feedRails}
         homeLoading={home.isLoading}
         userLoggedIn={Boolean(user)}
-        hasCoords={Boolean(coords)}
-        isDetectingLocation={isDetectingLocation}
         favoriteIds={favoriteIds}
         surgeChipLabel={surgeChipLabel}
         onToggleFavorite={(id) => {
@@ -577,18 +588,11 @@ export default function HomeScreen() {
             : null
         }
         onRetryFeed={() => feed.refetch()}
-        loadingMore={nearbyParams ? false : feed.isFetchingNextPage}
         listLoading={
           nearbyParams
             ? nearby.isLoading && topRestaurants.length === 0
             : feed.isLoading && topRestaurants.length === 0
         }
-        totalCount={
-          nearbyParams
-            ? topRestaurants.length
-            : (feed.data?.pages?.[0]?.meta?.total ?? topRestaurants.length)
-        }
-        radiusKm={feedRails?.radiusKm}
       />
     </View>
   );
