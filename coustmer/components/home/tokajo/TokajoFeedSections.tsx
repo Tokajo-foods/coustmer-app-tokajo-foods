@@ -204,12 +204,12 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   bandOrange: {
-    marginHorizontal: 12,
-    paddingTop: 16,
-    paddingBottom: 10,
-    borderRadius: 22,
+    marginHorizontal: 0,
+    paddingTop: 18,
+    paddingBottom: 12,
     backgroundColor: '#FFF3E8',
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: '#FFE3CB',
   },
   restaurantsHeader: {
