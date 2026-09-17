@@ -38,17 +38,6 @@ export type HomeOrderAgainDish = HomeTrendingDish & {
   orderCount?: number;
 };
 
-/** @deprecated Prefer HomeOrderAgainDish (food items). */
-export type HomeOrderAgainCard = HomeOrderAgainDish;
-
-export type HomeRailVariant =
-  | 'trending'
-  | 'new'
-  | 'top-rated'
-  | 'pure-veg'
-  | 'order-again'
-  | 'for-you';
-
 /** Cuisine / dish chips on home “What's on your mind”. */
 export type HomeCategory = {
   id: string;

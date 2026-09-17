@@ -1,77 +1,54 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { HomeFiltersBar } from '@/components/home/HomeFiltersBar';
-import { PopularRestaurantsSection } from '@/components/home/PopularRestaurantsSection';
+import { TokajoRestaurantListCard } from '@/components/home/tokajo/TokajoRestaurantListCard';
 import { fonts } from '@/constants/typography';
-import type { HomeFilterState } from '@/lib/home/filters';
-import type { HomeCategory } from '@/lib/home/types';
-import type { CuisineChip, Restaurant } from '@/lib/restaurant/types';
+import type { Restaurant } from '@/lib/restaurant/types';
 
 type Props = {
-  homeFilters: HomeFilterState;
-  onFiltersChange: (next: HomeFilterState) => void;
-  onClearFilters: () => void;
-  baseRestaurants: Restaurant[];
   restaurants: Restaurant[];
-  homeCategories: HomeCategory[];
-  liveCuisines: CuisineChip[];
   favoriteIds: string[];
-  surgeChipLabel?: string | null;
+  onClearFilters: () => void;
   onToggleFavorite: (id: string) => void;
   onPressRestaurant: (id: string) => void;
 };
 
-/** Filtered home body — results list without discovery rails. */
+/** Filtered home body — Tokajo list cards, no discovery rails. */
 export function FilteredHomeResults({
-  homeFilters,
-  onFiltersChange,
-  onClearFilters,
-  baseRestaurants,
   restaurants,
-  homeCategories,
-  liveCuisines,
   favoriteIds,
-  surgeChipLabel,
+  onClearFilters,
   onToggleFavorite,
   onPressRestaurant,
 }: Props) {
   return (
     <View style={styles.wrap}>
-      <HomeFiltersBar
-        filters={homeFilters}
-        onChange={onFiltersChange}
-        onClear={onClearFilters}
-        allRestaurants={baseRestaurants}
-        categories={homeCategories}
-        liveCuisines={liveCuisines}
-        hideCuisineRow
-      />
-      <Text style={styles.title}>
-        {restaurants.length > 0
-          ? `${restaurants.length} restaurant${restaurants.length === 1 ? '' : 's'} found`
-          : 'No restaurants found'}
-      </Text>
+      <View style={styles.head}>
+        <Text style={styles.title}>
+          {restaurants.length > 0
+            ? `${restaurants.length} restaurant${restaurants.length === 1 ? '' : 's'} found`
+            : 'No restaurants found'}
+        </Text>
+        <Text style={styles.clear} onPress={onClearFilters}>
+          Clear filters
+        </Text>
+      </View>
+
       {restaurants.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>
             Nothing matches these filters. Clear filters to see all restaurants.
           </Text>
-          <Text style={styles.clear} onPress={onClearFilters}>
-            Clear filters
-          </Text>
         </View>
       ) : (
-        <PopularRestaurantsSection
-          title=""
-          restaurants={restaurants}
-          totalCount={restaurants.length}
-          favoriteIds={favoriteIds}
-          surgeChipLabel={surgeChipLabel}
-          onToggleFavorite={onToggleFavorite}
-          onPressRestaurant={onPressRestaurant}
-          loadingMore={false}
-          loading={false}
-        />
+        restaurants.map((r) => (
+          <TokajoRestaurantListCard
+            key={r.id}
+            restaurant={r}
+            isFavorite={favoriteIds.includes(r.id)}
+            onToggleFavorite={onToggleFavorite}
+            onPress={onPressRestaurant}
+          />
+        ))
       )}
     </View>
   );
@@ -79,18 +56,30 @@ export function FilteredHomeResults({
 
 const styles = StyleSheet.create({
   wrap: { paddingTop: 8, paddingBottom: 8 },
+  head: {
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   title: {
+    flex: 1,
     fontFamily: fonts.displayBold,
     fontSize: 18,
     color: '#0B1220',
-    paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
     letterSpacing: -0.3,
+  },
+  clear: {
+    fontFamily: fonts.uiBold,
+    fontSize: 13,
+    color: '#F97316',
   },
   empty: {
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 4,
     marginBottom: 24,
     padding: 20,
     borderRadius: 16,
@@ -105,11 +94,5 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
-  },
-  clear: {
-    marginTop: 12,
-    fontFamily: fonts.uiBold,
-    fontSize: 14,
-    color: '#F97316',
   },
 });

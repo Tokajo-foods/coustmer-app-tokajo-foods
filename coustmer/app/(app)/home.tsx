@@ -38,7 +38,6 @@ import {
   useOffersFeed,
 } from '@/lib/customer/hooks';
 import { useFavoriteToggle } from '@/lib/customer/useFavoriteToggle';
-import { useActiveZoneSurge } from '@/lib/delivery/use-active-zone-surge';
 import {
   applyHomeFilters,
   countActiveHomeFilters,
@@ -205,7 +204,6 @@ export default function HomeScreen() {
     radiusKm: CUSTOMER_DISCOVERY_RADIUS_KM,
     restaurantLimit: 40,
   });
-  const { chipLabel: surgeChipLabel } = useActiveZoneSurge();
 
   const feedRails = home.data;
 
@@ -607,19 +605,13 @@ export default function HomeScreen() {
 
       <TokajoFeedSections
         filtersActive={filtersActive}
-        homeFilters={homeFilters}
-        onFiltersChange={onFiltersChange}
         onClearFilters={onClearFilters}
-        baseRestaurants={baseRestaurants}
         restaurants={restaurants}
         topRestaurants={topRestaurants}
-        homeCategories={homeCategories.data ?? []}
-        liveCuisines={liveCuisines.data}
         feedRails={feedRails}
         homeLoading={home.isLoading}
         userLoggedIn={Boolean(user)}
         favoriteIds={favoriteIds}
-        surgeChipLabel={surgeChipLabel}
         onToggleFavorite={onToggleFavorite}
         onPressRestaurant={openRestaurant}
         feedError={

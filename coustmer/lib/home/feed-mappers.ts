@@ -5,6 +5,7 @@ import type {
   HomeTrendingDish,
 } from '@/lib/home/types';
 import { isPlaceholderListingEta } from '@/lib/restaurant/card-display';
+import type { Restaurant } from '@/lib/restaurant/types';
 
 function asRecord(v: unknown): Record<string, unknown> {
   return v && typeof v === 'object' && !Array.isArray(v)
@@ -24,6 +25,23 @@ function num(v: unknown): number | undefined {
 function str(v: unknown): string | undefined {
   if (typeof v === 'string' && v.trim()) return v.trim();
   return undefined;
+}
+
+/** Map a home-feed restaurant card to the Tokajo / nearby Restaurant shape. */
+export function mapHomeCardToRestaurant(card: HomeRestaurantCard): Restaurant {
+  return {
+    id: card.id,
+    name: card.name,
+    imageUrl: card.image ?? undefined,
+    coverUrl: card.image ?? undefined,
+    logoUrl: card.logoUrl ?? undefined,
+    rating: card.rating,
+    reviewCount: card.reviewCount,
+    deliveryTime: card.deliveryTime ?? undefined,
+    cuisines: card.cuisines,
+    isPureVeg: card.isPureVeg,
+    offer: card.hasOffers ? 'Offers' : undefined,
+  } as Restaurant;
 }
 
 export function mapFeedRestaurantCard(raw: unknown): HomeRestaurantCard | null {

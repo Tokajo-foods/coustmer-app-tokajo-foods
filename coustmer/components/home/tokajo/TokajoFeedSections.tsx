@@ -9,42 +9,18 @@ import { TokajoRestaurantRail } from '@/components/home/tokajo/TokajoRestaurantR
 import { TokajoSectionHeader } from '@/components/home/tokajo/TokajoSectionHeader';
 import { fonts } from '@/constants/typography';
 import type { HomeFeed } from '@/lib/customer/types';
-import type { HomeFilterState } from '@/lib/home/filters';
-import type { HomeCategory, HomeRestaurantCard } from '@/lib/home/types';
-import type { CuisineChip, Restaurant } from '@/lib/restaurant/types';
-
-/** Map a home-feed restaurant card to the shape the Tokajo card reads. */
-function toRestaurant(card: HomeRestaurantCard): Restaurant {
-  return {
-    id: card.id,
-    name: card.name,
-    imageUrl: card.image ?? undefined,
-    coverUrl: card.image ?? undefined,
-    logoUrl: card.logoUrl ?? undefined,
-    rating: card.rating,
-    reviewCount: card.reviewCount,
-    deliveryTime: card.deliveryTime ?? undefined,
-    cuisines: card.cuisines,
-    isPureVeg: card.isPureVeg,
-    offer: card.hasOffers ? 'Offers' : undefined,
-  } as Restaurant;
-}
+import { mapHomeCardToRestaurant } from '@/lib/home/feed-mappers';
+import type { Restaurant } from '@/lib/restaurant/types';
 
 type Props = {
   filtersActive: boolean;
-  homeFilters: HomeFilterState;
-  onFiltersChange: (next: HomeFilterState) => void;
   onClearFilters: () => void;
-  baseRestaurants: Restaurant[];
   restaurants: Restaurant[];
   topRestaurants: Restaurant[];
-  homeCategories: HomeCategory[];
-  liveCuisines?: CuisineChip[];
   feedRails?: HomeFeed | null;
   homeLoading: boolean;
   userLoggedIn: boolean;
   favoriteIds: string[];
-  surgeChipLabel?: string | null;
   onToggleFavorite: (id: string) => void;
   onPressRestaurant: (id: string) => void;
   feedError?: string | null;
@@ -57,19 +33,13 @@ export function TokajoFeedSections(props: Props) {
   const router = useRouter();
   const {
     filtersActive,
-    homeFilters,
-    onFiltersChange,
     onClearFilters,
-    baseRestaurants,
     restaurants,
     topRestaurants,
-    homeCategories,
-    liveCuisines = [],
     feedRails,
     homeLoading,
     userLoggedIn,
     favoriteIds,
-    surgeChipLabel,
     onToggleFavorite,
     onPressRestaurant,
     feedError,
@@ -80,15 +50,9 @@ export function TokajoFeedSections(props: Props) {
   if (filtersActive) {
     return (
       <FilteredHomeResults
-        homeFilters={homeFilters}
-        onFiltersChange={onFiltersChange}
-        onClearFilters={onClearFilters}
-        baseRestaurants={baseRestaurants}
         restaurants={restaurants}
-        homeCategories={homeCategories}
-        liveCuisines={liveCuisines}
         favoriteIds={favoriteIds}
-        surgeChipLabel={surgeChipLabel}
+        onClearFilters={onClearFilters}
         onToggleFavorite={onToggleFavorite}
         onPressRestaurant={onPressRestaurant}
       />
@@ -104,7 +68,7 @@ export function TokajoFeedSections(props: Props) {
       : feedRails?.dishesToTry) ?? [];
   const suggested = feedRails?.suggestedItems ?? [];
   const orderAgain = feedRails?.orderAgain ?? [];
-  const topRated = (feedRails?.topRated ?? []).map(toRestaurant);
+  const topRated = (feedRails?.topRated ?? []).map(mapHomeCardToRestaurant);
 
   return (
     <View style={styles.wrap}>
