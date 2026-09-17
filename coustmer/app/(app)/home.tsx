@@ -320,7 +320,6 @@ export default function HomeScreen() {
     () => ({
       paddingBottom: insets.bottom + 28 + APP_BOTTOM_NAV_INSET,
       flexGrow: 1 as const,
-      backgroundColor: '#FFFFFF',
     }),
     [insets.bottom]
   );
