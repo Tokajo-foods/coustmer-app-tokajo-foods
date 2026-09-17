@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
@@ -14,6 +15,7 @@ import { LoadingView } from '@/components/common/StateViews';
 import { SaveAddressLabelModal } from '@/components/address/SaveAddressLabelModal';
 import { TokajoFeedSections } from '@/components/home/tokajo/TokajoFeedSections';
 import { TokajoHomeChrome } from '@/components/home/tokajo/TokajoHomeChrome';
+import { TokajoRestaurantListCard } from '@/components/home/tokajo/TokajoRestaurantListCard';
 import type { TokajoCategory } from '@/components/home/tokajo/TokajoCategoryStrip';
 import { VegModeModal } from '@/components/home/VegModeModal';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
@@ -628,7 +630,7 @@ export default function HomeScreen() {
       <StatusBar style="dark" />
 
       <FlatList
-        data={restaurants}
+        data={filtersActive ? [] : restaurants}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={false}
@@ -680,7 +682,24 @@ export default function HomeScreen() {
             progressViewOffset={insets.top}
           />
         }
-        renderItem={() => null}
+        renderItem={({ item }) => (
+          <TokajoRestaurantListCard
+            restaurant={item}
+            isFavorite={favoriteIds.includes(item.id)}
+            onToggleFavorite={(id) => {
+              const r = restaurants.find((x) => x.id === id);
+              toggleFavorite(id, r ? { restaurant: r } : undefined);
+            }}
+            onPress={openRestaurant}
+          />
+        )}
+        ListFooterComponent={
+          !nearbyParams && feed.isFetchingNextPage ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator color={authTheme.brand} />
+            </View>
+          ) : null
+        }
       />
 
       {locationPicker}
@@ -701,6 +720,10 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  footerLoader: {
+    paddingVertical: 18,
+    alignItems: 'center',
   },
   emptyCard: {
     marginTop: 8,

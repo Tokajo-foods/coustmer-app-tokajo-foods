@@ -136,23 +136,6 @@ export function TokajoFeedSections(props: Props) {
         </View>
       ) : null}
 
-      {topRestaurants.length > 0 || listLoading ? (
-        <View style={styles.section}>
-          <TokajoSectionHeader
-            Icon={MapPin}
-            title="Restaurants Near You"
-            onSeeAll={() => router.push('/restaurants')}
-          />
-          <TokajoRestaurantRail
-            restaurants={topRestaurants}
-            favoriteIds={favoriteIds}
-            loading={listLoading && topRestaurants.length === 0}
-            onToggleFavorite={onToggleFavorite}
-            onPressRestaurant={onPressRestaurant}
-          />
-        </View>
-      ) : null}
-
       {userLoggedIn && (orderAgain.length > 0 || railsBusy) ? (
         <View style={styles.section}>
           <TokajoSectionHeader
@@ -203,6 +186,12 @@ export function TokajoFeedSections(props: Props) {
           </Text>
         </View>
       ) : null}
+
+      {topRestaurants.length > 0 || listLoading ? (
+        <View style={styles.restaurantsHeader}>
+          <TokajoSectionHeader Icon={MapPin} title="Restaurants Near You" />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -213,6 +202,10 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 22,
+  },
+  restaurantsHeader: {
+    marginTop: 4,
+    marginBottom: 6,
   },
   errorWrap: {
     paddingHorizontal: 16,
