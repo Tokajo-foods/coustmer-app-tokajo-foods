@@ -1,19 +1,25 @@
 import { FlatList, Platform, StyleSheet, View } from 'react-native';
 
-import { TokajoDishCard } from '@/components/home/tokajo/TokajoDishCard';
+import {
+  DISH_CARD_WIDTH,
+  TokajoDishCard,
+  type DishCardVariant,
+} from '@/components/home/tokajo/TokajoDishCard';
 import type { HomeTrendingDish } from '@/lib/home/types';
 
 type Props = {
   dishes: HomeTrendingDish[];
+  variant?: DishCardVariant;
   favoriteIds?: string[];
   loading?: boolean;
   onToggleFavorite?: (restaurantId: string) => void;
   onPressDish: (restaurantId: string) => void;
 };
 
-/** Horizontal rail of dish cards (Trending / Order again). */
+/** Horizontal rail of dish cards (Trending / Suggested / Order again). */
 export function TokajoDishRail({
   dishes,
+  variant = 'default',
   favoriteIds = [],
   loading,
   onToggleFavorite,
@@ -23,7 +29,10 @@ export function TokajoDishRail({
     return (
       <View style={styles.skeletonRow}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <View key={i} style={styles.skeletonCard} />
+          <View
+            key={i}
+            style={[styles.skeletonCard, { width: DISH_CARD_WIDTH[variant] }]}
+          />
         ))}
       </View>
     );
@@ -40,9 +49,11 @@ export function TokajoDishRail({
       maxToRenderPerBatch={4}
       windowSize={5}
       removeClippedSubviews={Platform.OS === 'android'}
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <TokajoDishCard
           dish={item}
+          variant={variant}
+          rank={variant === 'trending' ? index + 1 : undefined}
           isFavorite={favoriteIds.includes(item.restaurantId)}
           onToggleFavorite={onToggleFavorite}
           onPress={onPressDish}
@@ -65,7 +76,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   skeletonCard: {
-    width: 168,
     height: 200,
     borderRadius: 18,
     backgroundColor: '#F2F2F2',

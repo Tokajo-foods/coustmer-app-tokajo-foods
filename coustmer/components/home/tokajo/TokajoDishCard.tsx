@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Heart, Plus, Star } from 'lucide-react-native';
+import { Heart, Plus, RotateCcw, Star } from 'lucide-react-native';
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -11,14 +11,44 @@ import type { HomeTrendingDish } from '@/lib/home/types';
 
 const ORANGE = '#F97316';
 const GREEN = '#12833B';
+const INK = '#1C1917';
 
-function badgeStyle(
-  badge?: string | null
-): { text: string; green: boolean } | null {
-  if (!badge) return null;
-  const text = String(badge).trim();
-  if (!text) return null;
-  return { text, green: /off|%|deal|save/i.test(text) };
+export type DishCardVariant = 'trending' | 'suggested' | 'orderAgain' | 'default';
+
+/** Per-variant image height so rails don't all look identical. */
+export const DISH_CARD_WIDTH: Record<DishCardVariant, number> = {
+  trending: 168,
+  suggested: 182,
+  orderAgain: 158,
+  default: 168,
+};
+
+const IMAGE_HEIGHT: Record<DishCardVariant, number> = {
+  trending: 116,
+  suggested: 128,
+  orderAgain: 102,
+  default: 112,
+};
+
+type Tag = { label: string; tone: 'orange' | 'light' | 'dark' };
+
+function tagFor(
+  variant: DishCardVariant,
+  dish: HomeTrendingDish,
+  rank?: number
+): Tag | null {
+  if (variant === 'trending') {
+    return { label: rank ? `#${rank} HOT` : 'TRENDING', tone: 'orange' };
+  }
+  if (variant === 'suggested') {
+    return { label: 'RECOMMENDED', tone: 'light' };
+  }
+  if (variant === 'orderAgain') {
+    return { label: 'ORDERED', tone: 'dark' };
+  }
+  const raw = String(dish.badge ?? '').trim();
+  if (!raw) return null;
+  return { label: raw, tone: /off|%|deal|save/i.test(raw) ? 'dark' : 'orange' };
 }
 
 /** Veg / non-veg dot marker. */
@@ -34,25 +64,38 @@ function VegDot({ veg }: { veg?: boolean }) {
 
 type Props = {
   dish: HomeTrendingDish;
+  variant?: DishCardVariant;
+  rank?: number;
   isFavorite?: boolean;
   onToggleFavorite?: (restaurantId: string) => void;
   onPress: (restaurantId: string) => void;
 };
 
-/** Premium dish card — image, rating, badge, veg mark, price and ADD. */
+/** Premium dish card with per-section styling (trending / suggested / reorder). */
 export const TokajoDishCard = memo(function TokajoDishCard({
   dish,
+  variant = 'default',
+  rank,
   isFavorite,
   onToggleFavorite,
   onPress,
 }: Props) {
-  const badge = badgeStyle(dish.badge);
   const rating =
     typeof dish.rating === 'number' && dish.rating > 0 ? dish.rating : null;
+  const tag = tagFor(variant, dish, rank);
+  const isReorder = variant === 'orderAgain';
+  const isSuggested = variant === 'suggested';
 
   return (
-    <Pressable style={styles.card} onPress={() => onPress(dish.restaurantId)}>
-      <View style={styles.imageWrap}>
+    <Pressable
+      style={[
+        styles.card,
+        { width: DISH_CARD_WIDTH[variant] },
+        isSuggested && styles.cardSuggested,
+      ]}
+      onPress={() => onPress(dish.restaurantId)}
+    >
+      <View style={[styles.imageWrap, { height: IMAGE_HEIGHT[variant] }]}>
         {dish.imageUrl ? (
           <Image
             source={{ uri: dish.imageUrl }}
@@ -72,15 +115,23 @@ export const TokajoDishCard = memo(function TokajoDishCard({
           pointerEvents="none"
         />
 
-        {badge ? (
+        {tag ? (
           <View
             style={[
               styles.badge,
-              { backgroundColor: badge.green ? GREEN : ORANGE },
+              tag.tone === 'orange' && { backgroundColor: ORANGE },
+              tag.tone === 'dark' && { backgroundColor: INK },
+              tag.tone === 'light' && styles.badgeLight,
             ]}
           >
-            <Text style={styles.badgeText} numberOfLines={1}>
-              {badge.text}
+            <Text
+              style={[
+                styles.badgeText,
+                tag.tone === 'light' && styles.badgeTextLight,
+              ]}
+              numberOfLines={1}
+            >
+              {tag.label}
             </Text>
           </View>
         ) : null}
@@ -121,13 +172,17 @@ export const TokajoDishCard = memo(function TokajoDishCard({
         <View style={styles.priceRow}>
           <Text style={styles.price}>₹{Math.round(dish.price)}</Text>
           <SmoothPressable
-            style={styles.addBtn}
+            style={[styles.addBtn, isReorder && styles.reorderBtn]}
             pressScale={0.9}
             onPress={() => onPress(dish.restaurantId)}
-            accessibilityLabel={`Add ${dish.name}`}
+            accessibilityLabel={`${isReorder ? 'Reorder' : 'Add'} ${dish.name}`}
           >
-            <Plus color="#FFFFFF" size={14} strokeWidth={3} />
-            <Text style={styles.addText}>ADD</Text>
+            {isReorder ? (
+              <RotateCcw color="#FFFFFF" size={13} strokeWidth={2.6} />
+            ) : (
+              <Plus color="#FFFFFF" size={14} strokeWidth={3} />
+            )}
+            <Text style={styles.addText}>{isReorder ? 'REPEAT' : 'ADD'}</Text>
           </SmoothPressable>
         </View>
       </View>
@@ -137,7 +192,6 @@ export const TokajoDishCard = memo(function TokajoDishCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: 168,
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
     shadowColor: '#0B1220',
@@ -146,8 +200,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
+  cardSuggested: {
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
+  },
   imageWrap: {
-    height: 112,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     overflow: 'hidden',
@@ -174,12 +231,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 7,
+    backgroundColor: ORANGE,
+  },
+  badgeLight: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
   },
   badgeText: {
     color: '#FFFFFF',
     fontFamily: fonts.uiBold,
     fontSize: 10,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+  },
+  badgeTextLight: {
+    color: ORANGE,
   },
   heart: {
     position: 'absolute',
@@ -253,6 +317,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+  },
+  reorderBtn: {
+    backgroundColor: INK,
+    shadowColor: INK,
   },
   addText: {
     color: '#FFFFFF',

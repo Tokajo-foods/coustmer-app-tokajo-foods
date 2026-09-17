@@ -115,6 +115,7 @@ export function TokajoFeedSections(props: Props) {
           />
           <TokajoDishRail
             dishes={trending}
+            variant="trending"
             favoriteIds={favoriteIds}
             loading={railsBusy}
             onToggleFavorite={onToggleFavorite}
@@ -128,6 +129,7 @@ export function TokajoFeedSections(props: Props) {
           <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
           <TokajoDishRail
             dishes={suggested}
+            variant="suggested"
             favoriteIds={favoriteIds}
             loading={railsBusy}
             onToggleFavorite={onToggleFavorite}
@@ -145,6 +147,7 @@ export function TokajoFeedSections(props: Props) {
           />
           <TokajoDishRail
             dishes={orderAgain}
+            variant="orderAgain"
             favoriteIds={favoriteIds}
             loading={railsBusy}
             onToggleFavorite={onToggleFavorite}
