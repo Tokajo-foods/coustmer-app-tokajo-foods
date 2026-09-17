@@ -2,7 +2,10 @@
 export type HomeRestaurantCard = {
   id: string;
   name: string;
+  /** Banner / cover for the card hero. */
   image?: string | null;
+  /** Brand mark for the logo badge. */
+  logoUrl?: string | null;
   rating?: number;
   deliveryTime?: string | null;
   cuisines?: string[];

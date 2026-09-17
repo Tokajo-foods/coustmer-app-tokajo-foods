@@ -38,12 +38,14 @@ export function mapFeedRestaurantCard(raw: unknown): HomeRestaurantCard | null {
   return {
     id,
     name: str(r.name) ?? 'Restaurant',
+    // Banner/cover first — never use the logo as the hero image.
     image:
+      str(r.coverImage) ??
+      str(r.coverUrl) ??
       str(r.image) ??
       str(r.imageUrl) ??
-      str(r.logo) ??
-      str(r.logoUrl) ??
       null,
+    logoUrl: str(r.logo) ?? str(r.logoUrl) ?? null,
     rating: (() => {
       const nested = asRecord(r.ratings);
       const n = num(r.avgRating ?? r.rating ?? nested.average ?? nested.avgRating);

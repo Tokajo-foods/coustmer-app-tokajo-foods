@@ -19,6 +19,8 @@ function toRestaurant(card: HomeRestaurantCard): Restaurant {
     id: card.id,
     name: card.name,
     imageUrl: card.image ?? undefined,
+    coverUrl: card.image ?? undefined,
+    logoUrl: card.logoUrl ?? undefined,
     rating: card.rating,
     reviewCount: card.reviewCount,
     deliveryTime: card.deliveryTime ?? undefined,
