@@ -8,7 +8,7 @@ import {
 } from '@/lib/restaurant/categories';
 import { enrichMenuItems } from '@/lib/restaurant/mappers';
 import { buildHomeCategories } from '@/lib/restaurant/home-categories';
-import { buildSeedMenu, findSeedMenuItem } from '@/lib/restaurant/seed-menu';
+import { findSeedMenuItem } from '@/lib/restaurant/seed-menu';
 import type {
   CuisineChip,
   MenuItem,
