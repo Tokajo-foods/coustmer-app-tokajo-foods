@@ -10,6 +10,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Pressable } from '@/components/common/Pressable';
 import { fonts } from '@/constants/typography';
 import type { HomeFilterState } from '@/lib/home/filters';
+import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
+import { hapticSelection } from '@/lib/utils/haptics';
 
 const ORANGE = '#F97316';
 
@@ -66,14 +68,17 @@ export function TokajoQuickFilters({ filters, onChange, onMore }: Props) {
   return (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
     >
       {chips.map(({ key, label, Icon, active, onPress }) => (
         <Pressable
           key={key}
           style={[styles.chip, active && styles.chipActive]}
-          onPress={onPress}
+          onPress={() => {
+            hapticSelection();
+            onPress();
+          }}
         >
           <Icon
             color={active ? '#FFFFFF' : ORANGE}

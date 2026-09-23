@@ -5,6 +5,10 @@ import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
 import { ReplaceCartModal } from '@/components/order/ReplaceCartModal';
 import { authTheme } from '@/constants/auth-theme';
+import {
+  PREMIUM_FADE_OPTIONS,
+  PREMIUM_STACK_OPTIONS,
+} from '@/lib/motion/premium';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function AppLayout() {
@@ -24,17 +28,15 @@ export default function AppLayout() {
     <View style={{ flex: 1, backgroundColor: authTheme.bg }}>
       <Stack
         screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
+          ...PREMIUM_STACK_OPTIONS,
           contentStyle: { backgroundColor: authTheme.bg },
         }}
       >
         <Stack.Screen
           name="search"
           options={{
-            animation: 'fade',
+            ...PREMIUM_FADE_OPTIONS,
             presentation: 'transparentModal',
-            contentStyle: { backgroundColor: 'transparent' },
           }}
         />
       </Stack>

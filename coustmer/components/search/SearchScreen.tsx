@@ -21,7 +21,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
+import { navigateBack } from '@/lib/motion/navigate-back';
+import { PREMIUM_LIST } from '@/lib/motion/premium';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import {
   useDebouncedValue,
@@ -129,9 +132,14 @@ export function SearchScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Search bar */}
       <View style={styles.searchBar}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <SmoothPressable
+          onPress={() => navigateBack(router, '/home')}
+          style={styles.backBtn}
+          pressScale={0.9}
+          accessibilityLabel="Go back"
+        >
           <ArrowLeft color={INK} size={22} strokeWidth={2.2} />
-        </Pressable>
+        </SmoothPressable>
         <View style={styles.inputWrap}>
           <Search color={MUTED} size={16} strokeWidth={2.5} />
           <TextInput
@@ -194,6 +202,7 @@ export function SearchScreen() {
         <FlatList
           data={suggestions.data!.suggestions}
           keyExtractor={(item) => item.id}
+          {...PREMIUM_LIST}
           keyboardShouldPersistTaps="handled"
           style={styles.suggestionsList}
           renderItem={({ item }) => (
@@ -227,6 +236,7 @@ export function SearchScreen() {
               keyExtractor={(item, i) =>
                 item.type === 'header' ? `h-${item.label}` : `${item.type}-${(item as { data: { id: string } }).data.id}-${i}`
               }
+              {...PREMIUM_LIST}
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.resultsList}
               ListEmptyComponent={

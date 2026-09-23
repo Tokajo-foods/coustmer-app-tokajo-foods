@@ -17,6 +17,7 @@ import { useAppFonts } from '@/lib/fonts';
 import { queryClient, asyncStoragePersister, shouldPersistQuery } from '@/lib/query-client';
 import { useAuthStore } from '@/store/auth-store';
 import { CrashBoundary } from '@/components/common/CrashBoundary';
+import { PREMIUM_STACK_OPTIONS } from '@/lib/motion/premium';
 import { SocketProvider } from '@/lib/socket/SocketProvider';
 
 // Keep the native splash visible while we initialise.
@@ -108,8 +109,9 @@ export default function RootLayout() {
                 <StatusBar style="dark" />
                 <Stack
                   screenOptions={{
-                    headerShown: false,
+                    ...PREMIUM_STACK_OPTIONS,
                     animation: 'fade',
+                    animationDuration: 220,
                     contentStyle: { backgroundColor: authTheme.bg },
                   }}
                 />

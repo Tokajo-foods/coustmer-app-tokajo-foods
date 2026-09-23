@@ -1,30 +1,43 @@
-import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { authTheme } from '@/constants/auth-theme';
+import { navigateBack } from '@/lib/motion/navigate-back';
 
 type ScreenHeaderProps = {
   title: string;
   subtitle?: string;
   left?: React.ReactNode;
   right?: React.ReactNode;
+  /** Fallback route when there is no history (default `/home`). */
+  backFallback?: string;
 };
 
-export function ScreenHeader({ title, subtitle, left, right }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  left,
+  right,
+  backFallback = '/home',
+}: ScreenHeaderProps) {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
-      {left !== undefined ? left : (
-        <Pressable
-          onPress={() => { if (router.canGoBack()) { if (router.canGoBack()) { router.back(); } else { router.replace('/'); } } else { router.replace('/'); } }}
+      {left !== undefined ? (
+        left
+      ) : (
+        <SmoothPressable
+          onPress={() => navigateBack(router, backFallback)}
           style={styles.backButton}
-          hitSlop={8}
+          hitSlop={10}
+          pressScale={0.9}
+          accessibilityLabel="Go back"
         >
           <ChevronLeft color={authTheme.text} size={22} />
-        </Pressable>
+        </SmoothPressable>
       )}
       <View style={styles.titleWrap}>
         <Text style={styles.title} numberOfLines={1}>

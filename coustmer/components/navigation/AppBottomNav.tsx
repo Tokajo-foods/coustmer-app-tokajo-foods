@@ -1,4 +1,3 @@
-import { Pressable } from '@/components/common/Pressable';
 import type { Href } from 'expo-router';
 import { usePathname, useRouter } from 'expo-router';
 import {
@@ -9,8 +8,15 @@ import {
   Wallet,
 } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
 
 /** Space to leave above the floating tab bar on root tab screens. */
@@ -90,6 +96,58 @@ export function isAppTabRoot(pathname: string): boolean {
   );
 }
 
+function TabButton({
+  tab,
+  active,
+  onPress,
+}: {
+  tab: Tab;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(active ? 1 : 0.96);
+  const Icon = tab.Icon;
+
+  useEffect(() => {
+    scale.value = withSpring(active ? 1 : 0.96, {
+      damping: 16,
+      stiffness: 280,
+      mass: 0.5,
+    });
+  }, [active, scale]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: active ? 1 : 0.88,
+  }));
+
+  return (
+    <SmoothPressable
+      accessibilityRole="tab"
+      accessibilityLabel={tab.label}
+      onPress={onPress}
+      style={styles.tab}
+      pressScale={0.92}
+      haptic="selection"
+    >
+      <Animated.View style={[styles.tabInner, animStyle]}>
+        <Icon
+          color={active ? ORANGE : IDLE_COLOR}
+          size={23}
+          strokeWidth={active ? 2.5 : 1.9}
+          fill={active && tab.fillWhenActive ? ORANGE : 'transparent'}
+        />
+        <Text
+          style={[styles.tabLabel, active && styles.tabLabelActive]}
+          numberOfLines={1}
+        >
+          {tab.label}
+        </Text>
+      </Animated.View>
+    </SmoothPressable>
+  );
+}
+
 export function AppBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
@@ -108,33 +166,14 @@ export function AppBottomNav() {
       style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 6) }]}
     >
       <View style={styles.bar}>
-        {TABS.map((tab) => {
-          const active = tab.match(path);
-          const Icon = tab.Icon;
-          return (
-            <Pressable
-              key={tab.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={tab.label}
-              onPress={() => go(tab.href)}
-              style={styles.tab}
-            >
-              <Icon
-                color={active ? ORANGE : IDLE_COLOR}
-                size={23}
-                strokeWidth={active ? 2.5 : 1.9}
-                fill={active && tab.fillWhenActive ? ORANGE : 'transparent'}
-              />
-              <Text
-                style={[styles.tabLabel, active && styles.tabLabelActive]}
-                numberOfLines={1}
-              >
-                {tab.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {TABS.map((tab) => (
+          <TabButton
+            key={tab.key}
+            tab={tab}
+            active={tab.match(path)}
+            onPress={() => go(tab.href)}
+          />
+        ))}
       </View>
     </View>
   );
@@ -169,9 +208,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 60,
+  },
+  tabInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
     paddingVertical: 2,
-    minWidth: 60,
   },
   tabLabel: {
     fontSize: 11,

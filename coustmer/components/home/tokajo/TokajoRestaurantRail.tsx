@@ -1,6 +1,7 @@
-import { FlatList, Platform, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 import { TokajoRestaurantCard } from '@/components/home/tokajo/TokajoRestaurantCard';
+import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 import type { Restaurant } from '@/lib/restaurant/types';
 
 type Props = {
@@ -34,12 +35,8 @@ export function TokajoRestaurantRail({
       horizontal
       data={restaurants}
       keyExtractor={(r) => r.id}
-      showsHorizontalScrollIndicator={false}
+      {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
-      initialNumToRender={3}
-      maxToRenderPerBatch={3}
-      windowSize={5}
-      removeClippedSubviews={Platform.OS === 'android'}
       renderItem={({ item }) => (
         <TokajoRestaurantCard
           restaurant={item}

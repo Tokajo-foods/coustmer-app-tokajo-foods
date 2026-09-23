@@ -9,6 +9,7 @@ import {
   localCategoryIcon,
 } from '@/components/home/tokajo/assets';
 import { fonts } from '@/constants/typography';
+import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 
 const ORANGE = '#F97316';
 
@@ -51,7 +52,7 @@ export function TokajoCategoryStrip({
   return (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
     >
       <Pressable style={styles.item} onPress={onSelectAll}>

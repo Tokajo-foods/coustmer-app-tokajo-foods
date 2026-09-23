@@ -14,6 +14,9 @@ import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { OrderCard } from '@/components/order/OrderCard';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
+import { navigateBack } from '@/lib/motion/navigate-back';
+import { PREMIUM_LIST } from '@/lib/motion/premium';
+import { hapticSelection } from '@/lib/utils/haptics';
 import {
   useActiveOrders,
   useOrders,
@@ -71,10 +74,7 @@ export function OrdersHubScreen() {
     void scheduled.refetch();
   };
 
-  const goBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/home');
-  };
+  const goBack = () => navigateBack(router, '/home');
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -84,6 +84,7 @@ export function OrdersHubScreen() {
           style={styles.backBtn}
           pressScale={0.9}
           hitSlop={8}
+          accessibilityLabel="Go back"
         >
           <ChevronLeft color={TEXT_DARK} size={24} strokeWidth={2.5} />
         </SmoothPressable>
@@ -104,7 +105,10 @@ export function OrdersHubScreen() {
             <Pressable
               key={item.key}
               style={[styles.tab, on && styles.tabOn]}
-              onPress={() => setTab(item.key)}
+              onPress={() => {
+                hapticSelection();
+                setTab(item.key);
+              }}
             >
               <Text style={[styles.tabText, on && styles.tabTextOn]}>
                 {item.label}
@@ -127,8 +131,8 @@ export function OrdersHubScreen() {
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
+          {...PREMIUM_LIST}
           contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

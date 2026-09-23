@@ -1,10 +1,11 @@
-import { FlatList, Platform, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 import {
   DISH_CARD_WIDTH,
   TokajoDishCard,
   type DishCardVariant,
 } from '@/components/home/tokajo/TokajoDishCard';
+import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 import type { HomeTrendingDish } from '@/lib/home/types';
 
 type Props = {
@@ -43,12 +44,8 @@ export function TokajoDishRail({
       horizontal
       data={dishes}
       keyExtractor={(d) => d.id}
-      showsHorizontalScrollIndicator={false}
+      {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
-      initialNumToRender={4}
-      maxToRenderPerBatch={4}
-      windowSize={5}
-      removeClippedSubviews={Platform.OS === 'android'}
       renderItem={({ item, index }) => (
         <TokajoDishCard
           dish={item}

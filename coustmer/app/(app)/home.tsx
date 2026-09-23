@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -25,6 +24,7 @@ import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
+import { PREMIUM_LIST } from '@/lib/motion/premium';
 import { useQueryClient } from '@tanstack/react-query';
 import { addressApi } from '@/lib/address/api';
 import { formatAddressLabel } from '@/lib/address/types';
@@ -662,14 +662,8 @@ export default function HomeScreen() {
       <FlatList
         data={filtersActive ? [] : restaurants}
         keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        removeClippedSubviews={Platform.OS === 'android'}
-        initialNumToRender={5}
-        maxToRenderPerBatch={6}
-        windowSize={7}
-        updateCellsBatchingPeriod={50}
+        {...PREMIUM_LIST}
         onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
         contentContainerStyle={listContentStyle}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={

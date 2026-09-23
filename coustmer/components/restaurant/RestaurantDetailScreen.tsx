@@ -40,6 +40,8 @@ import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { MenuItemDetailSheet } from '@/components/restaurant/MenuItemDetailSheet';
 import { RestaurantReviewsPanel } from '@/components/review/RestaurantReviewsPanel';
 import { fonts } from '@/constants/typography';
+import { navigateBack } from '@/lib/motion/navigate-back';
+import { PREMIUM_HORIZONTAL_LIST, PREMIUM_SCROLL } from '@/lib/motion/premium';
 import {
   formatDistanceKm,
   formatNextOpenAt,
@@ -176,10 +178,7 @@ export function RestaurantDetailScreen() {
     { enabled: Boolean(id) && isSearching }
   );
 
-  const goBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
-  };
+  const goBack = () => navigateBack(router, '/home');
 
   const addItem = (item: MenuItem) => {
     // Always open detail sheet so restaurant-configured sizes / add-ons can be chosen.
@@ -608,7 +607,7 @@ export function RestaurantDetailScreen() {
   const catRail = (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.catRailContent}
     >
       <Pressable
@@ -655,11 +654,10 @@ export function RestaurantDetailScreen() {
     <View style={styles.root}>
       <ScrollView
         ref={scrollRef}
-        showsVerticalScrollIndicator={false}
+        {...PREMIUM_SCROLL}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="on-drag"
         onScroll={onScroll}
-        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingBottom: 120 + insets.bottom,
         }}

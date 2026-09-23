@@ -13,6 +13,7 @@ import {
 
 import { HERO_BANNER } from '@/components/home/tokajo/assets';
 import type { HomeBanner } from '@/lib/customer/types';
+import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 
 const H_MARGIN = 16;
 /** Matches `public/hero-banner.png` (763×254) so `cover` does not crop text. */
@@ -90,9 +91,8 @@ export function TokajoHeroBanner({ banners }: Props) {
         ref={scrollRef}
         horizontal
         pagingEnabled
-        showsHorizontalScrollIndicator={false}
+        {...PREMIUM_HORIZONTAL_LIST}
         onMomentumScrollEnd={onEnd}
-        scrollEventThrottle={16}
       >
         {slides.map((slide) => (
           <Pressable

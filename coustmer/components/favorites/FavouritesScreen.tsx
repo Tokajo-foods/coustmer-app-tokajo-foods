@@ -41,6 +41,8 @@ import {
   useRemoveFavouriteDish,
 } from '@/lib/customer/hooks';
 import { useFavoriteToggle } from '@/lib/customer/useFavoriteToggle';
+import { navigateBack } from '@/lib/motion/navigate-back';
+import { PREMIUM_LIST } from '@/lib/motion/premium';
 import type { Restaurant } from '@/lib/restaurant/types';
 import { useFavoritesStore } from '@/store/favorites-store';
 
@@ -267,10 +269,7 @@ export function FavouritesScreen() {
     return list;
   }, [data, activeFilter, favoriteIds, localById]);
 
-  const goBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/home');
-  };
+  const goBack = () => navigateBack(router, '/home');
 
   const openRestaurant = (id: string) => {
     router.push(`/restaurants/${id}` as import('expo-router').Href);
@@ -399,6 +398,7 @@ export function FavouritesScreen() {
         <FlatList
           data={dishes ?? []}
           keyExtractor={(item) => item.id}
+          {...PREMIUM_LIST}
           ListHeaderComponent={listHeader}
           ListFooterComponent={(dishes?.length ?? 0) > 0 ? listFooter : null}
           ListEmptyComponent={
@@ -415,7 +415,6 @@ export function FavouritesScreen() {
             )
           }
           contentContainerStyle={[styles.list, { paddingBottom: 28 + Math.max(insets.bottom, 12) }]}
-          showsVerticalScrollIndicator={false}
           onRefresh={dishesRefetch}
           refreshing={dishesRefetching}
           renderItem={({ item }) => (
@@ -435,6 +434,7 @@ export function FavouritesScreen() {
       <FlatList
         data={restaurants}
         keyExtractor={(item) => item.id}
+        {...PREMIUM_LIST}
         ListHeaderComponent={listHeader}
         ListFooterComponent={restaurants.length ? listFooter : null}
         ListEmptyComponent={
@@ -448,7 +448,6 @@ export function FavouritesScreen() {
           styles.list,
           { paddingBottom: 28 + Math.max(insets.bottom, 12) },
         ]}
-        showsVerticalScrollIndicator={false}
         onRefresh={refetch}
         refreshing={isRefetching}
         renderItem={({ item }) => (
