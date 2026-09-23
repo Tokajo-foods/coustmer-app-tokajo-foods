@@ -1,7 +1,9 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AppState,
+  type AppStateStatus,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -14,11 +16,12 @@ import {
 import { HERO_BANNER } from '@/components/home/tokajo/assets';
 import type { HomeBanner } from '@/lib/customer/types';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
+import { subscribeFeedScrolling } from '@/lib/motion/scroll-activity';
 
 const H_MARGIN = 16;
 /** Matches `public/hero-banner.png` (763×254) so `cover` does not crop text. */
 const BANNER_ASPECT = 763 / 254;
-const AUTO_MS = 4200;
+const AUTO_MS = 5500;
 const WIDTH = Dimensions.get('window').width - H_MARGIN * 2;
 const HEIGHT = Math.round(WIDTH / BANNER_ASPECT);
 
@@ -28,29 +31,44 @@ type Props = {
   banners?: HomeBanner[] | null;
 };
 
-/** Brand hero art + live API offer slides, with Order Now + page dots. */
-export function TokajoHeroBanner({ banners }: Props) {
+/** Brand hero art + live API offer slides — pauses while feed scrolls / app backgrounds. */
+export const TokajoHeroBanner = memo(function TokajoHeroBanner({
+  banners,
+}: Props) {
   const router = useRouter();
 
-  const slides: Slide[] = [
-    { key: 'brand', source: HERO_BANNER },
-    ...(banners ?? [])
-      .filter((b) => b?.imageUrl)
-      .map((b) => ({
-        key: b.id || b.imageUrl!,
-        source: { uri: b.imageUrl! },
-        deepLink: b.deepLink,
-      })),
-  ];
+  const slides: Slide[] = useMemo(
+    () => [
+      { key: 'brand', source: HERO_BANNER },
+      ...(banners ?? [])
+        .filter((b) => b?.imageUrl)
+        .map((b) => ({
+          key: b.id || b.imageUrl!,
+          source: { uri: b.imageUrl! },
+          deepLink: b.deepLink,
+        })),
+    ],
+    [banners]
+  );
 
   const scrollRef = useRef<ScrollView>(null);
   const [active, setActive] = useState(0);
   const activeRef = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pausedRef = useRef(false);
+  const appActiveRef = useRef(AppState.currentState === 'active');
+
+  const clearTimer = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }, []);
 
   const schedule = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
+    clearTimer();
     if (slides.length <= 1) return;
+    if (pausedRef.current || !appActiveRef.current) return;
     timer.current = setTimeout(() => {
       const next = (activeRef.current + 1) % slides.length;
       activeRef.current = next;
@@ -58,19 +76,37 @@ export function TokajoHeroBanner({ banners }: Props) {
       scrollRef.current?.scrollTo({ x: next * WIDTH, animated: true });
       schedule();
     }, AUTO_MS);
-  }, [slides.length]);
+  }, [clearTimer, slides.length]);
 
   useEffect(() => {
     schedule();
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
+    return clearTimer;
+  }, [schedule, clearTimer]);
+
+  useEffect(() => {
+    const unsub = subscribeFeedScrolling((scrolling) => {
+      pausedRef.current = scrolling;
+      if (scrolling) clearTimer();
+      else schedule();
+    });
+    return unsub;
+  }, [clearTimer, schedule]);
+
+  useEffect(() => {
+    const onAppState = (state: AppStateStatus) => {
+      appActiveRef.current = state === 'active';
+      if (state === 'active') schedule();
+      else clearTimer();
     };
-  }, [schedule]);
+    const sub = AppState.addEventListener('change', onAppState);
+    return () => sub.remove();
+  }, [clearTimer, schedule]);
 
   const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / WIDTH);
     activeRef.current = idx;
     setActive(idx);
+    schedule();
   };
 
   const onPress = (slide: Slide) => {
@@ -93,6 +129,7 @@ export function TokajoHeroBanner({ banners }: Props) {
         pagingEnabled
         {...PREMIUM_HORIZONTAL_LIST}
         onMomentumScrollEnd={onEnd}
+        onScrollBeginDrag={clearTimer}
       >
         {slides.map((slide) => (
           <Pressable
@@ -104,7 +141,8 @@ export function TokajoHeroBanner({ banners }: Props) {
               source={slide.source}
               style={styles.image}
               contentFit="contain"
-              transition={200}
+              transition={0}
+              cachePolicy="memory-disk"
             />
           </Pressable>
         ))}
@@ -122,7 +160,7 @@ export function TokajoHeroBanner({ banners }: Props) {
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {

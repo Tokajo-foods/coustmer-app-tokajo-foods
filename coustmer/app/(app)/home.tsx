@@ -24,11 +24,11 @@ import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
-import { PREMIUM_LIST } from '@/lib/motion/premium';
+import { HOME_FEED_LIST } from '@/lib/motion/premium';
+import { setFeedScrolling } from '@/lib/motion/scroll-activity';
 import { useQueryClient } from '@tanstack/react-query';
 import { addressApi } from '@/lib/address/api';
 import { formatAddressLabel } from '@/lib/address/types';
-import type { HomeBanner } from '@/lib/customer/types';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import {
   useAppConfig,
@@ -342,27 +342,53 @@ export default function HomeScreen() {
     mindCategories.refetch();
   };
 
-  const onVegApply = (mode: VegMode) => {
+  const onVegApply = useCallback((mode: VegMode) => {
     setVegMode(mode);
     setHomeFilters((prev) => ({
       ...prev,
       pureVeg: mode === 'pure_veg',
     }));
-  };
+  }, [setVegMode]);
 
-  const onFiltersChange = (next: HomeFilterState) => {
+  const onFiltersChange = useCallback((next: HomeFilterState) => {
     setHomeFilters(next);
     if (next.pureVeg && vegMode !== 'pure_veg') {
       setVegMode('pure_veg');
     } else if (!next.pureVeg && vegMode === 'pure_veg') {
       setVegMode('all');
     }
-  };
+  }, [vegMode, setVegMode]);
 
-  const onClearFilters = () => {
+  const onClearFilters = useCallback(() => {
     setHomeFilters(DEFAULT_HOME_FILTERS);
     if (vegMode === 'pure_veg') setVegMode('all');
-  };
+  }, [vegMode, setVegMode]);
+
+  const onOpenLocationPicker = useCallback(() => setPickerOpen(true), []);
+
+  const onRetryFeed = useCallback(() => {
+    void feed.refetch();
+  }, [feed.refetch]);
+
+  const feedErrorMessage = useMemo(() => {
+    if (!feed.isError) return null;
+    return feed.error instanceof Error
+      ? feed.error.message
+      : 'Could not load restaurants';
+  }, [feed.isError, feed.error]);
+
+  const listLoading = useMemo(
+    () =>
+      nearbyParams
+        ? nearby.isLoading && topRestaurants.length === 0
+        : feed.isLoading && topRestaurants.length === 0,
+    [
+      nearbyParams,
+      nearby.isLoading,
+      feed.isLoading,
+      topRestaurants.length,
+    ]
+  );
 
   const onConfirmLocation = async (result: {
     lat: number;
@@ -568,14 +594,81 @@ export default function HomeScreen() {
     />
   );
 
-  const offerBanners: HomeBanner[] = Array.isArray(offers.data?.banners)
-    ? offers.data.banners
-    : [];
-  const feedBanners: HomeBanner[] = Array.isArray(home.data?.banners)
-    ? home.data.banners
-    : [];
-  const chromeBanners =
-    offerBanners.length > 0 ? offerBanners : feedBanners;
+  const chromeBanners = useMemo(() => {
+    const fromOffers = Array.isArray(offers.data?.banners)
+      ? offers.data.banners
+      : [];
+    const fromFeed = Array.isArray(home.data?.banners) ? home.data.banners : [];
+    return fromOffers.length > 0 ? fromOffers : fromFeed;
+  }, [offers.data?.banners, home.data?.banners]);
+
+  const filtersActive = countActiveHomeFilters(homeFilters) > 0;
+
+  /**
+   * Memoize the header so FlatList does not remount chrome + rails on every
+   * parent re-render (that remount is the main home scroll jitter source).
+   */
+  const listHeader = useMemo(
+    () => (
+      <View>
+        <TokajoHomeChrome
+          topInset={insets.top}
+          deliveryTitle={deliveryTitle}
+          deliverySubtitle={deliverySubtitle}
+          isDetectingLocation={isDetectingLocation}
+          onLocationPress={onOpenLocationPicker}
+          banners={chromeBanners}
+          filters={homeFilters}
+          onFiltersChange={onFiltersChange}
+          categories={tokajoCategories}
+          categoriesLoading={mindCategories.isLoading}
+          restaurants={baseRestaurants}
+        />
+
+        <TokajoFeedSections
+          filtersActive={filtersActive}
+          onClearFilters={onClearFilters}
+          restaurants={restaurants}
+          topRestaurants={topRestaurants}
+          feedRails={feedRails}
+          homeLoading={home.isLoading}
+          userLoggedIn={Boolean(user)}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={onToggleFavorite}
+          onPressRestaurant={openRestaurant}
+          feedError={feedErrorMessage}
+          onRetryFeed={onRetryFeed}
+          listLoading={listLoading}
+        />
+      </View>
+    ),
+    [
+      insets.top,
+      deliveryTitle,
+      deliverySubtitle,
+      isDetectingLocation,
+      onOpenLocationPicker,
+      chromeBanners,
+      homeFilters,
+      onFiltersChange,
+      tokajoCategories,
+      mindCategories.isLoading,
+      baseRestaurants,
+      filtersActive,
+      onClearFilters,
+      restaurants,
+      topRestaurants,
+      feedRails,
+      home.isLoading,
+      user,
+      favoriteIds,
+      onToggleFavorite,
+      openRestaurant,
+      feedErrorMessage,
+      onRetryFeed,
+      listLoading,
+    ]
+  );
 
   const chrome = (
     <TokajoHomeChrome
@@ -583,7 +676,7 @@ export default function HomeScreen() {
       deliveryTitle={deliveryTitle}
       deliverySubtitle={deliverySubtitle}
       isDetectingLocation={isDetectingLocation}
-      onLocationPress={() => setPickerOpen(true)}
+      onLocationPress={onOpenLocationPicker}
       banners={chromeBanners}
       filters={homeFilters}
       onFiltersChange={onFiltersChange}
@@ -591,44 +684,6 @@ export default function HomeScreen() {
       categoriesLoading={mindCategories.isLoading}
       restaurants={baseRestaurants}
     />
-  );
-
-  const filtersActive = countActiveHomeFilters(homeFilters) > 0;
-
-  /**
-   * Title scrolls away with content above.
-   * Only the mind *items* pin when they reach the top (shrunk overlay).
-   */
-  const listHeader = (
-    <View>
-      {chrome}
-
-      <TokajoFeedSections
-        filtersActive={filtersActive}
-        onClearFilters={onClearFilters}
-        restaurants={restaurants}
-        topRestaurants={topRestaurants}
-        feedRails={feedRails}
-        homeLoading={home.isLoading}
-        userLoggedIn={Boolean(user)}
-        favoriteIds={favoriteIds}
-        onToggleFavorite={onToggleFavorite}
-        onPressRestaurant={openRestaurant}
-        feedError={
-          feed.isError
-            ? feed.error instanceof Error
-              ? feed.error.message
-              : 'Could not load restaurants'
-            : null
-        }
-        onRetryFeed={() => feed.refetch()}
-        listLoading={
-          nearbyParams
-            ? nearby.isLoading && topRestaurants.length === 0
-            : feed.isLoading && topRestaurants.length === 0
-        }
-      />
-    </View>
   );
 
   const discoveryLoading =
@@ -662,7 +717,14 @@ export default function HomeScreen() {
       <FlatList
         data={filtersActive ? [] : restaurants}
         keyExtractor={(item) => item.id}
-        {...PREMIUM_LIST}
+        {...HOME_FEED_LIST}
+        onScrollBeginDrag={() => setFeedScrolling(true)}
+        onMomentumScrollBegin={() => setFeedScrolling(true)}
+        onScrollEndDrag={(e) => {
+          const vy = e.nativeEvent.velocity?.y ?? 0;
+          if (Math.abs(vy) < 0.08) setFeedScrolling(false);
+        }}
+        onMomentumScrollEnd={() => setFeedScrolling(false)}
         onEndReached={onEndReached}
         contentContainerStyle={listContentStyle}
         ListHeaderComponent={listHeader}

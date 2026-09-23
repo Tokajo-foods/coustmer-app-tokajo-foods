@@ -2,9 +2,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, Plus, RotateCcw, Star } from 'lucide-react-native';
 import { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Pressable } from '@/components/common/Pressable';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
 import type { HomeTrendingDish } from '@/lib/home/types';
@@ -88,10 +87,11 @@ export const TokajoDishCard = memo(function TokajoDishCard({
 
   return (
     <Pressable
-      style={[
+      style={({ pressed }) => [
         styles.card,
         { width: DISH_CARD_WIDTH[variant] },
         isSuggested && styles.cardSuggested,
+        pressed && styles.cardPressed,
       ]}
       onPress={() => onPress(dish.restaurantId)}
     >
@@ -101,9 +101,10 @@ export const TokajoDishCard = memo(function TokajoDishCard({
             source={{ uri: dish.imageUrl }}
             style={styles.image}
             contentFit="cover"
-            transition={120}
+            transition={0}
             recyclingKey={dish.id}
             cachePolicy="memory-disk"
+            priority="low"
           />
         ) : (
           <View style={[styles.image, styles.imageEmpty]} />
@@ -199,6 +200,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
+  },
+  cardPressed: {
+    opacity: 0.94,
   },
   cardSuggested: {
     borderWidth: 1,

@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Clock, Flame, MapPin, Sparkles, Trophy } from 'lucide-react-native';
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FilteredHomeResults } from '@/components/home/FilteredHomeResults';
@@ -29,7 +30,7 @@ type Props = {
 };
 
 /** TOKAJO home body: Trending dishes · Restaurants near you · Order again. */
-export function TokajoFeedSections(props: Props) {
+export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props) {
   const router = useRouter();
   const {
     filtersActive,
@@ -163,7 +164,7 @@ export function TokajoFeedSections(props: Props) {
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {

@@ -1,4 +1,5 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { memo } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { TokajoRestaurantCard } from '@/components/home/tokajo/TokajoRestaurantCard';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
@@ -12,8 +13,8 @@ type Props = {
   onPressRestaurant: (id: string) => void;
 };
 
-/** Horizontal rail of restaurant cards ("Top Rated" etc.). */
-export function TokajoRestaurantRail({
+/** Horizontal rail of restaurant cards — ScrollView avoids nested FlatList jank. */
+export const TokajoRestaurantRail = memo(function TokajoRestaurantRail({
   restaurants,
   favoriteIds = [],
   loading,
@@ -31,23 +32,23 @@ export function TokajoRestaurantRail({
   }
 
   return (
-    <FlatList
+    <ScrollView
       horizontal
-      data={restaurants}
-      keyExtractor={(r) => r.id}
       {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
-      renderItem={({ item }) => (
+    >
+      {restaurants.map((item) => (
         <TokajoRestaurantCard
+          key={item.id}
           restaurant={item}
           isFavorite={favoriteIds.includes(item.id)}
           onToggleFavorite={onToggleFavorite}
           onPress={onPressRestaurant}
         />
-      )}
-    />
+      ))}
+    </ScrollView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

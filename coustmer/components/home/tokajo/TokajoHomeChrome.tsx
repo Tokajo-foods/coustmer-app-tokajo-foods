@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { HomeFilterSheet } from '@/components/home/HomeFilterSheet';
@@ -28,7 +28,7 @@ type Props = {
 };
 
 /** TOKAJO home header: location · logo · bell · search · categories · hero · chips. */
-export function TokajoHomeChrome({
+export const TokajoHomeChrome = memo(function TokajoHomeChrome({
   topInset = 0,
   deliveryTitle,
   deliverySubtitle,
@@ -92,7 +92,7 @@ export function TokajoHomeChrome({
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   root: {

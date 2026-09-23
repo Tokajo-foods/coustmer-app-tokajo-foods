@@ -2,9 +2,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Heart, MapPin, Star } from 'lucide-react-native';
 import { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Pressable } from '@/components/common/Pressable';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
 import type { Restaurant } from '@/lib/restaurant/types';
@@ -55,16 +54,20 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
     r.offer || (Array.isArray(r.offerBadges) ? r.offerBadges[0] : undefined);
 
   return (
-    <Pressable style={styles.card} onPress={() => onPress(r.id)}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={() => onPress(r.id)}
+    >
       <View style={styles.imageWrap}>
         {cover ? (
           <Image
             source={{ uri: cover }}
             style={styles.image}
             contentFit="cover"
-            transition={120}
+            transition={0}
             recyclingKey={r.id}
             cachePolicy="memory-disk"
+            priority="low"
           />
         ) : (
           <View style={[styles.image, styles.imageEmpty]} />
@@ -215,6 +218,9 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 4,
+  },
+  cardPressed: {
+    opacity: 0.94,
   },
   imageWrap: {
     height: 160,
