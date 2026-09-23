@@ -34,7 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
-import { ExpoPinMap } from '@/components/location/ExpoPinMap';
+import { GoogleMapsErrorView } from '@/components/location/GoogleMapsErrorView';
 import { buildGoogleMapHtml } from '@/components/location/google-map-html';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
@@ -50,7 +50,12 @@ import {
   searchAddresses,
 } from '@/lib/address/search';
 import { getApiErrorMessage } from '@/lib/errors';
-import { GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
+import {
+  GOOGLE_MAPS_API_KEY,
+  GOOGLE_MAPS_LOAD_FAILED_MESSAGE,
+  GOOGLE_MAPS_MISSING_KEY_MESSAGE,
+  isGoogleMapsConfigured,
+} from '@/lib/google-maps';
 import {
   normalizeLat,
   normalizeLng,
@@ -221,8 +226,10 @@ export function DeliveryLocationPicker({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [gpsReady, setGpsReady] = useState(false);
-  /** When Google Maps JS fails (bad key / billing), use Expo native map. */
-  const [googleMapFailed, setGoogleMapFailed] = useState(false);
+  /** Google Maps load / key failure — never fall back to another map. */
+  const [mapsError, setMapsError] = useState<string | null>(
+    isGoogleMapsConfigured() ? null : GOOGLE_MAPS_MISSING_KEY_MESSAGE
+  );
 
   const savedAddresses = useSavedAddresses({ enabled: visible });
   const activeSavedId = useDeliveryLocationStore(
@@ -254,8 +261,14 @@ export function DeliveryLocationPicker({
   const reverseLookup = useCallback((lat: number, lng: number) => {
     if (reverseTimer.current) clearTimeout(reverseTimer.current);
     reverseTimer.current = setTimeout(async () => {
-      const addr = await reverseGeocodeAddress({ lat, lng });
-      if (addr) setDetectedAddress(addr);
+      try {
+        const addr = await reverseGeocodeAddress({ lat, lng });
+        if (addr) setDetectedAddress(addr);
+      } catch (err) {
+        setSearchError(
+          err instanceof Error ? err.message : GOOGLE_MAPS_LOAD_FAILED_MESSAGE
+        );
+      }
     }, 450);
   }, []);
 
@@ -280,28 +293,19 @@ export function DeliveryLocationPicker({
         return { lat: safeLat, lng: safeLng, formattedAddress: address, source };
       }
 
-      address = (await reverseGeocodeAddress({ lat: safeLat, lng: safeLng })) ?? undefined;
+      try {
+        address = (await reverseGeocodeAddress({ lat: safeLat, lng: safeLng })) ?? undefined;
+      } catch (err) {
+        setSearchError(
+          err instanceof Error ? err.message : GOOGLE_MAPS_LOAD_FAILED_MESSAGE
+        );
+        address = undefined;
+      }
       if (address) {
         setDetectedAddress(address);
         return { lat: safeLat, lng: safeLng, formattedAddress: address, source };
       }
 
-      try {
-        const [place] = await Location.reverseGeocodeAsync({
-          latitude: safeLat,
-          longitude: safeLng,
-        });
-        if (place) {
-          const parts = [place.name, place.street, place.city, place.region]
-            .filter(Boolean)
-            .filter((v, i, arr) => arr.indexOf(v) === i);
-          address = parts.join(', ') || 'Selected location';
-          setDetectedAddress(address);
-          return { lat: safeLat, lng: safeLng, formattedAddress: address, source };
-        }
-      } catch {
-        // ignore
-      }
       address = 'Selected location';
       setDetectedAddress(address);
       return { lat: safeLat, lng: safeLng, formattedAddress: address, source };
@@ -426,7 +430,7 @@ export function DeliveryLocationPicker({
     setPin(startPoint);
     setDetectedAddress(undefined);
     setGpsReady(false);
-    setGoogleMapFailed(false);
+    setMapsError(isGoogleMapsConfigured() ? null : GOOGLE_MAPS_MISSING_KEY_MESSAGE);
     setMapReady(false);
     setViewMode(pinOnly ? 'map' : 'browse');
     setCurrentPreview(null);
@@ -516,9 +520,9 @@ export function DeliveryLocationPicker({
       setSuggestions(res);
       if (res.length === 0) {
         setSearchError(
-          GOOGLE_MAPS_API_KEY
+          isGoogleMapsConfigured()
             ? 'No places found. Try a landmark, area, or full address.'
-            : 'Add EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to .env for Google place search, then restart Expo.'
+            : GOOGLE_MAPS_MISSING_KEY_MESSAGE
         );
       }
     } catch (err) {
@@ -584,15 +588,16 @@ export function DeliveryLocationPicker({
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg.type === 'ready') {
         setMapReady(true);
-        setGoogleMapFailed(false);
+        setMapsError(null);
         return;
       }
 
       if (msg.type === 'error') {
-        setGoogleMapFailed(true);
         setMapReady(false);
-        setSearchError(
-          'Google Maps could not load — using offline map. Search still works via Google Places when available.'
+        setMapsError(
+          typeof msg.message === 'string' && msg.message.trim()
+            ? String(msg.message)
+            : GOOGLE_MAPS_LOAD_FAILED_MESSAGE
         );
         return;
       }
@@ -872,10 +877,10 @@ export function DeliveryLocationPicker({
   };
 
   // Rebuild map HTML only when the sheet opens — remounting on GPS/pin updates caused Confirm flicker.
-  const useGoogleMap = Boolean(GOOGLE_MAPS_API_KEY) && !googleMapFailed;
+  const canShowGoogleMap = isGoogleMapsConfigured() && !mapsError;
   const mapHtml = useMemo(
     () =>
-      !visible || !useGoogleMap
+      !visible || !canShowGoogleMap
         ? ''
         : buildGoogleMapHtml(
             startPoint.lat,
@@ -884,10 +889,10 @@ export function DeliveryLocationPicker({
             MAP_PIN_COLOR
           ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot startPoint when visible flips
-    [visible, useGoogleMap]
+    [visible, canShowGoogleMap]
   );
 
-  const mapWebViewKey = `${MAP_THEME_VERSION}-${visible ? '1' : '0'}-${googleMapFailed ? 'expo' : 'gmaps'}`;
+  const mapWebViewKey = `${MAP_THEME_VERSION}-${visible ? '1' : '0'}-gmaps`;
 
   const showSuggestions = search.trim().length >= 2;
 
@@ -1186,7 +1191,7 @@ export function DeliveryLocationPicker({
       ) : (
         <Animated.View entering={FadeIn.duration(240)} exiting={FadeOut.duration(160)} style={styles.root}>
           <View style={styles.mapPane}>
-            {visible && useGoogleMap ? (
+            {visible && canShowGoogleMap && mapHtml ? (
               <WebView
                 key={mapWebViewKey}
                 ref={webRef}
@@ -1198,7 +1203,10 @@ export function DeliveryLocationPicker({
                 domStorageEnabled
                 geolocationEnabled
                 startInLoadingState
-                onHttpError={() => setGoogleMapFailed(true)}
+                onHttpError={() =>
+                  setMapsError(GOOGLE_MAPS_LOAD_FAILED_MESSAGE)
+                }
+                onError={() => setMapsError(GOOGLE_MAPS_LOAD_FAILED_MESSAGE)}
                 renderLoading={() => (
                   <View style={styles.mapLoading}>
                     <ActivityIndicator color={authTheme.brand} size="large" />
@@ -1206,27 +1214,8 @@ export function DeliveryLocationPicker({
                   </View>
                 )}
               />
-            ) : visible ? (
-              <ExpoPinMap
-                lat={pin.lat}
-                lng={pin.lng}
-                onMoveEnd={(lat, lng) => {
-                  const safeLat = normalizeLat(lat);
-                  const safeLng = normalizeLng(lng);
-                  setPin({ lat: safeLat, lng: safeLng });
-                  setGpsReady(false);
-                  sourceRef.current = 'search';
-                  reverseLookup(safeLat, safeLng);
-                }}
-              />
             ) : (
-              <View style={styles.mapFallback}>
-                <MapPin color={authTheme.brand} size={40} />
-                <Text style={styles.mapFallbackTitle}>Preparing map…</Text>
-                <Text style={styles.mapFallbackText}>
-                  Use current location or search for an address below.
-                </Text>
-              </View>
+              <GoogleMapsErrorView detail={mapsError} />
             )}
 
             <View

@@ -7,9 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
+import { GoogleMapsErrorView } from '@/components/location/GoogleMapsErrorView';
 import { fonts } from '@/constants/typography';
 import { usePublicShareTracking } from '@/lib/delivery/hooks';
-import { GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
+import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
 
 const ORANGE = '#FF6A00';
 const INK = '#111827';
@@ -90,7 +91,7 @@ export function PublicShareTrackingScreen() {
 
   const data = tracking.data;
   const mapHtml = useMemo(() => {
-    if (!GOOGLE_MAPS_API_KEY || !data?.dropLat || !data?.dropLng) return '';
+    if (!isGoogleMapsConfigured() || !data?.dropLat || !data?.dropLng) return '';
     return shareMapHtml({
       dropLat: data.dropLat,
       dropLng: data.dropLng,
@@ -160,18 +161,22 @@ export function PublicShareTrackingScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       >
         <View style={styles.mapWrap}>
-          {mapHtml ? (
+          {isGoogleMapsConfigured() && mapHtml ? (
             <WebView
               style={styles.map}
-              source={{ html: mapHtml }}
+              source={{ html: mapHtml, baseUrl: 'https://maps.googleapis.com' }}
               scrollEnabled={false}
               javaScriptEnabled
+              domStorageEnabled
             />
           ) : (
-            <View style={styles.mapFallback}>
-              <MapPin color={ORANGE} size={28} />
-              <Text style={styles.mapFallbackText}>Map unavailable</Text>
-            </View>
+            <GoogleMapsErrorView
+              detail={
+                !data?.dropLat || !data?.dropLng
+                  ? 'Drop location is missing for this shared track.'
+                  : undefined
+              }
+            />
           )}
         </View>
 

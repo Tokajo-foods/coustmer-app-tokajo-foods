@@ -46,7 +46,11 @@ export function buildGoogleMapHtml(
     }
   }
   window.gm_authFailure = function() {
-    post({ type: 'error', code: 'GM_AUTH_FAILURE', message: 'Google Maps authentication failed' });
+    post({
+      type: 'error',
+      code: 'GM_AUTH_FAILURE',
+      message: 'Google Maps authentication failed. Check EXPO_PUBLIC_GOOGLE_MAPS_API_KEY, billing, and that Maps JavaScript API is enabled for this key.'
+    });
   };
   function emitCenter() {
     if (!map) return;
@@ -164,7 +168,7 @@ export function buildGoogleMapHtml(
 </script>
 <script async defer
   src="https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap&libraries=places&v=weekly"
-  onerror="post({ type: 'error', code: 'SCRIPT_LOAD_FAILED', message: 'Failed to load Google Maps JS' })">
+  onerror="post({ type: 'error', code: 'SCRIPT_LOAD_FAILED', message: 'Failed to load Google Maps JavaScript. Check network, API key, and that Maps JavaScript API is enabled.' })">
 </script>
 </body>
 </html>`;

@@ -43,6 +43,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
+import { GoogleMapsErrorView } from '@/components/location/GoogleMapsErrorView';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { fonts } from '@/constants/typography';
 import { deliveryApi } from '@/lib/delivery/api';
@@ -67,7 +68,7 @@ import {
   useTrackingEta,
   useTrackingRoute,
 } from '@/lib/delivery/hooks';
-import { GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
+import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
 import { useOrder, useReorder } from '@/lib/order/hooks';
 import { toE164IndianMobile } from '@/lib/order/phone';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
@@ -560,7 +561,7 @@ export function OrderTrackingScreen() {
   const custLng = t?.customerLng ?? 78.1772;
 
   const mapHtml = useMemo(() => {
-    if (!GOOGLE_MAPS_API_KEY) return '';
+    if (!isGoogleMapsConfigured()) return '';
     return generateMapHtml({
       restLat,
       restLng,
@@ -988,10 +989,10 @@ export function OrderTrackingScreen() {
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.mapWrap, mapStyle]}>
-        {GOOGLE_MAPS_API_KEY && mapHtml ? (
+        {isGoogleMapsConfigured() && mapHtml ? (
           <WebView
             style={styles.map}
-            source={{ html: mapHtml }}
+            source={{ html: mapHtml, baseUrl: 'https://maps.googleapis.com' }}
             originWhitelist={['*']}
             onMessage={(event) => {
               try {
@@ -1009,13 +1010,7 @@ export function OrderTrackingScreen() {
             domStorageEnabled
           />
         ) : (
-          <LinearGradient
-            colors={['#FFE8D6', '#F3F4F6']}
-            style={styles.mapFallback}
-          >
-            <MapPin color={ORANGE} size={28} />
-            <Text style={styles.mapFallbackText}>Live map unavailable</Text>
-          </LinearGradient>
+          <GoogleMapsErrorView />
         )}
 
         <LinearGradient

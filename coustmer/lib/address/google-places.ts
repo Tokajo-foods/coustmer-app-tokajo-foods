@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 import type { AddressSuggestion, GeocodeResult } from '@/lib/address/api';
-import { GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
+import {
+  assertGoogleMapsApiKey,
+  GOOGLE_MAPS_API_KEY,
+  googleMapsErrorMessage,
+} from '@/lib/google-maps';
 
 const GOOGLE_BASE = 'https://maps.googleapis.com/maps/api';
 const PLACES_NEW = 'https://places.googleapis.com/v1';
@@ -173,9 +177,7 @@ async function autocompleteNew(
 }
 
 async function placeDetailsNew(placeId: string): Promise<GeocodeResult> {
-  if (!GOOGLE_MAPS_API_KEY) {
-    throw new Error('Google Maps API key is not configured');
-  }
+  assertGoogleMapsApiKey();
 
   const id = placeId.startsWith('places/') ? placeId.slice('places/'.length) : placeId;
   const { data } = await axios.get<{
@@ -210,30 +212,35 @@ export const googlePlacesApi = {
     query: string,
     bias?: PlacesSearchBias
   ): Promise<AddressSuggestion[]> => {
-    if (!GOOGLE_MAPS_API_KEY) return [];
+    assertGoogleMapsApiKey();
 
     const trimmed = query.trim();
     if (trimmed.length < 2) return [];
 
     // Prefer Places API (New) — confirmed working for India road queries
+    let lastError: unknown;
     try {
       const neu = await autocompleteNew(trimmed, bias);
       if (neu.length) return neu;
-    } catch {
-      // fall through to legacy
+    } catch (err) {
+      lastError = err;
     }
 
     try {
       return await autocompleteLegacy(trimmed, bias);
-    } catch {
-      return [];
+    } catch (err) {
+      lastError = err;
+      throw new Error(
+        googleMapsErrorMessage(
+          lastError,
+          'Google Places autocomplete failed. Enable Places API and Places API (New) for this key.'
+        )
+      );
     }
   },
 
   placeDetails: async (placeId: string): Promise<GeocodeResult> => {
-    if (!GOOGLE_MAPS_API_KEY) {
-      throw new Error('Google Maps API key is not configured');
-    }
+    assertGoogleMapsApiKey();
 
     try {
       return await placeDetailsNew(placeId);
@@ -277,9 +284,7 @@ export const googlePlacesApi = {
   },
 
   geocode: async (input: { placeId?: string; address?: string }): Promise<GeocodeResult> => {
-    if (!GOOGLE_MAPS_API_KEY) {
-      throw new Error('Google Maps API key is not configured');
-    }
+    assertGoogleMapsApiKey();
 
     if (input.placeId) {
       try {
@@ -362,7 +367,7 @@ export const googlePlacesApi = {
   },
 
   reverseGeocode: async (input: { lat: number; lng: number }): Promise<string | null> => {
-    if (!GOOGLE_MAPS_API_KEY) return null;
+    assertGoogleMapsApiKey();
 
     try {
       const { data } = await axios.get<GoogleGeocodeResponse>(
@@ -377,10 +382,21 @@ export const googlePlacesApi = {
         }
       );
 
-      if (data.status !== 'OK' || !data.results?.[0]) return null;
+      if (data.status === 'ZERO_RESULTS') return null;
+      if (data.status !== 'OK' || !data.results?.[0]) {
+        throw new Error(
+          data.error_message ||
+            `Google reverse geocode failed (${data.status}). Enable Geocoding API for this key.`
+        );
+      }
       return data.results[0].formatted_address;
-    } catch {
-      return null;
+    } catch (err) {
+      throw new Error(
+        googleMapsErrorMessage(
+          err,
+          'Google reverse geocoding failed. Enable Geocoding API for this key.'
+        )
+      );
     }
   },
 };

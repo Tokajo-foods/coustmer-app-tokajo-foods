@@ -1,5 +1,3 @@
-import * as Location from 'expo-location';
-
 import { reverseGeocodeAddress } from '@/lib/address/search';
 import {
   extractCityFromAddress,
@@ -19,7 +17,7 @@ export type ResolvedPlace = {
   lng: number;
 };
 
-/** Turn lat/lng into a human address + city name (never "Lat … / Lng …"). */
+/** Turn lat/lng into a human address + city (Google reverse geocode only). */
 export async function resolvePlaceFromCoords(input: {
   lat: number;
   lng: number;
@@ -39,48 +37,11 @@ export async function resolvePlaceFromCoords(input: {
     formatted = await reverseGeocodeAddress({ lat, lng });
   }
 
-  let city: string | undefined;
-  let areaName: string | undefined;
-
-  try {
-    const [place] = await Location.reverseGeocodeAsync({
-      latitude: lat,
-      longitude: lng,
-    });
-    if (place) {
-      city = place.city || place.subregion || place.district || undefined;
-      areaName =
-        place.name ||
-        place.street ||
-        place.district ||
-        place.subregion ||
-        undefined;
-
-      if (!formatted) {
-        const parts = [
-          place.name,
-          place.street,
-          place.district,
-          place.city,
-          place.region,
-        ]
-          .filter(Boolean)
-          .filter((v, i, arr) => arr.indexOf(v) === i);
-        formatted = parts.join(', ') || null;
-      }
-    }
-  } catch {
-    // ignore — Google reverse may still have worked
-  }
-
   if (!formatted) {
     formatted = 'Selected location';
   }
 
-  const fromAddress = normalizeCityName(extractCityFromAddress(formatted));
-  const fromDevice = normalizeCityName(city);
-  city = fromAddress || fromDevice;
-
+  let city = normalizeCityName(extractCityFromAddress(formatted));
   if (city && isCoordinateFallbackAddress(city)) {
     city = undefined;
   }
@@ -88,7 +49,7 @@ export async function resolvePlaceFromCoords(input: {
   const labelSource = input.source === 'gps' ? 'gps' : 'search';
   let label = shortAddressLabel(formatted, labelSource);
   if (label === 'Current location' || label === 'Selected location') {
-    label = areaName || city || label;
+    label = city || label;
   }
 
   return {
