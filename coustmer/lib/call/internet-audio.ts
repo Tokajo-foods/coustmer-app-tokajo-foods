@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 type VoiceRoom = {
   connect: (url: string, token: string) => Promise<void>;
@@ -12,9 +12,25 @@ let active: VoiceRoom | null = null;
 let registered = false;
 
 const AUDIO_FAILED = 'In-app audio could not start. Use the phone number, or end this call.';
+const MIC_DENIED = 'Allow microphone access to use an in-app call, or use the phone number.';
+
+/** Android shows the system dialog. iOS prompts when the call opens the microphone. */
+export async function ensureMicrophone(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const granted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+  if (granted) return;
+  const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
+    title: 'Microphone for in-app calls',
+    message: 'TOKAJO uses the microphone only during an in-app order call. Your mobile number stays hidden.',
+    buttonPositive: 'Allow',
+    buttonNegative: 'Not now',
+  });
+  if (result !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(MIC_DENIED);
+}
 
 export async function connectVoice(url: string, token: string): Promise<void> {
   if (!url || !token) throw new Error(AUDIO_FAILED);
+  await ensureMicrophone();
   await disconnectVoice();
   try {
     const Room = await loadRoom();
@@ -26,7 +42,7 @@ export async function connectVoice(url: string, token: string): Promise<void> {
     await disconnectVoice();
     const message = err instanceof Error ? err.message : '';
     if (/microphone|permission|denied/i.test(message)) {
-      throw new Error('Allow microphone access to use an in-app call, or use the phone number.');
+      throw new Error(MIC_DENIED);
     }
     throw new Error(AUDIO_FAILED);
   }

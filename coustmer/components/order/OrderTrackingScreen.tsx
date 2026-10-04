@@ -1270,7 +1270,18 @@ export function OrderTrackingScreen() {
             </View>
           )}
 
-          {id ? <OrderCallPanel orderId={id} viewer="customer" /> : null}
+          {id ? (
+            <OrderCallPanel
+              orderId={id}
+              viewer="customer"
+              names={{
+                restaurant: o?.restaurantName || 'Restaurant',
+                rider: partnerAssigned && partnerName && partnerName !== 'Finding a partner'
+                  ? partnerName
+                  : 'Delivery partner',
+              }}
+            />
+          ) : null}
 
           {!active ? (
             <View style={styles.completedActions}>

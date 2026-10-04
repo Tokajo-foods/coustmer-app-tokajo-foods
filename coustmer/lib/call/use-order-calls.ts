@@ -11,7 +11,7 @@ import {
   getOrderMasks,
   recordAttempt,
 } from '@/lib/call/api';
-import { connectVoice, disconnectVoice } from '@/lib/call/internet-audio';
+import { connectVoice, disconnectVoice, ensureMicrophone } from '@/lib/call/internet-audio';
 import { listenOrderCallEvents } from '@/lib/call/listen';
 import { buildCallRows } from '@/lib/call/rows';
 import {
@@ -114,6 +114,7 @@ export function useOrderCalls(orderId: string, viewer: ViewerKind) {
     setBusy(`net:${role}`);
     setNotice(null);
     try {
+      await ensureMicrophone();
       const session = await createInternetCall(orderId, role);
       setLive({
         callId: session.callId,
@@ -142,6 +143,7 @@ export function useOrderCalls(orderId: string, viewer: ViewerKind) {
     setBusy('accept');
     setNotice(null);
     try {
+      await ensureMicrophone();
       const session = await acceptInternetCall(live.callId);
       setLive({ ...live, state: 'accepted' });
       if (session.token && session.livekitUrl) await connectVoice(session.livekitUrl, session.token);
