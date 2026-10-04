@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 210,
+    height: 260,
   },
   heroSpacer: {
     height: 20,
