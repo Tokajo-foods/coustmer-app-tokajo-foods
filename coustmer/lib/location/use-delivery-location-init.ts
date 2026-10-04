@@ -7,6 +7,7 @@ import {
   extractCityFromAddress,
   normalizeCityName,
 } from '@/lib/location/format';
+import { alignDeliveryPin } from '@/lib/location/align-delivery-pin';
 import {
   isBadStoredLocation,
   resolvePlaceFromCoords,
@@ -79,8 +80,8 @@ export function useDeliveryLocationInit() {
           label: formatAddressLabel(preferred.label) || 'Home',
           formattedAddress: preferred.formattedAddress,
           city: normalizeCityName(
-            preferred.city ||
-              extractCityFromAddress(preferred.formattedAddress)
+            extractCityFromAddress(preferred.formattedAddress) ||
+              preferred.city
           ),
           lat: preferred.lat,
           lng: preferred.lng,
@@ -108,6 +109,49 @@ export function useDeliveryLocationInit() {
     setLocation,
   ]);
 
+  // Snap a saved/searched pin onto the address text when they are different cities.
+  // Home and nearby stay idle until this finishes so the previous city cannot flash.
+  useEffect(() => {
+    if (!hasHydrated || !location) return;
+    if (location.source === 'gps' || location.pinTrusted) return;
+
+    let cancelled = false;
+    const snapshot = location.updatedAt;
+    setDetecting(true);
+
+    void alignDeliveryPin(location)
+      .then((next) => {
+        if (cancelled) return;
+        const current = useDeliveryLocationStore.getState().location;
+        if (!current || current.updatedAt !== snapshot) return;
+        setLocation({
+          ...current,
+          lat: next.lat,
+          lng: next.lng,
+          city: next.city ?? current.city,
+          pinTrusted: true,
+          updatedAt: Date.now(),
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setDetecting(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hasHydrated,
+    location?.updatedAt,
+    location?.pinTrusted,
+    location?.source,
+    location?.formattedAddress,
+    location?.lat,
+    location?.lng,
+    setDetecting,
+    setLocation,
+  ]);
+
   // Repair junk "Lat / Lng …" labels without changing the pin.
   useEffect(() => {
     if (!hasHydrated || !authHydrated || !location || repaired.current || isDetecting) {
@@ -128,6 +172,7 @@ export function useDeliveryLocationInit() {
           ...resolved,
           source: location.source,
           savedAddressId: location.savedAddressId,
+          pinTrusted: location.pinTrusted,
           updatedAt: Date.now(),
         });
       } catch {

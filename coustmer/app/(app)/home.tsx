@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -26,7 +26,6 @@ import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
 import { HOME_FEED_LIST } from '@/lib/motion/premium';
 import { setFeedScrolling } from '@/lib/motion/scroll-activity';
-import { useQueryClient } from '@tanstack/react-query';
 import { addressApi } from '@/lib/address/api';
 import { formatAddressLabel } from '@/lib/address/types';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
@@ -52,7 +51,6 @@ import {
   normalizeCityName,
   restaurantMatchesCity,
 } from '@/lib/location/format';
-import { resolvePlaceFromCoords } from '@/lib/location/resolve-place';
 import { useDeliveryLocationInit } from '@/lib/location/use-delivery-location-init';
 import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import {
@@ -114,18 +112,11 @@ export default function HomeScreen() {
 
   const deliveryLocation = useDeliveryLocationStore((s) => s.location);
   const isDetectingLocation = useDeliveryLocationStore((s) => s.isDetecting);
+  const pinReady = useDeliveryLocationStore((s) => s.pinReady);
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
   const coords = useDeliveryCoords();
-  const qc = useQueryClient();
-
-  // When delivery location changes, wipe stale discovery caches immediately
-  // so the user never sees restaurants from the previous pin.
-  useEffect(() => {
-    qc.removeQueries({ queryKey: ['restaurant'] });
-    qc.removeQueries({ queryKey: ['customer', 'home'] });
-    qc.removeQueries({ queryKey: ['customer', 'deals'] });
-    qc.removeQueries({ queryKey: ['customer', 'offers'] });
-  }, [coords?.lat, coords?.lng, qc]);
+  const hasPin = Boolean(deliveryLocation?.lat && deliveryLocation?.lng);
+  const expectSavePrompt = useRef(false);
 
   const city = useMemo(() => {
     const raw =
@@ -184,7 +175,7 @@ export default function HomeScreen() {
       offers: homeFilters.offersOnly || undefined,
       veg: homeFilters.pureVeg || undefined,
     },
-    { enabled: Boolean(city) }
+    { enabled: Boolean(city) && !hasPin }
   );
 
   const nearbyParams = useMemo(
@@ -210,9 +201,9 @@ export default function HomeScreen() {
   const baseRestaurants = useMemo(() => {
     const nearbyRows = nearby.data?.restaurants ?? [];
 
-    // Coordinates are authoritative. An empty nearby response means there are no
-    // deliverable restaurants; never fall back to a city-wide/global listing.
-    if (nearbyParams) {
+    // A delivery pin is authoritative. Never fall back to a city-wide list
+    // while it is set — that is what showed Greater Noida for another town.
+    if (hasPin) {
       return dedupeRestaurants(nearbyRows);
     }
 
@@ -225,7 +216,7 @@ export default function HomeScreen() {
     // caused Greater Noida restaurants to appear when a different city is chosen.
     const matched = rows.filter((r) => restaurantMatchesCity(r, city));
     return matched;
-  }, [feed.data?.pages, nearby.data?.restaurants, nearbyParams, city]);
+  }, [feed.data?.pages, nearby.data?.restaurants, hasPin, city]);
 
   const restaurants = useMemo(
     () =>
@@ -378,20 +369,20 @@ export default function HomeScreen() {
       : 'Could not load restaurants';
   }, [feed.isError, feed.error]);
 
-  const listLoading = useMemo(
-    () =>
-      nearbyParams
-        ? nearby.isLoading && topRestaurants.length === 0
-        : feed.isLoading && topRestaurants.length === 0,
-    [
-      nearbyParams,
-      nearby.isLoading,
-      feed.isLoading,
-      topRestaurants.length,
-    ]
-  );
+  const listLoading = useMemo(() => {
+    if (hasPin && !pinReady) return true;
+    if (nearbyParams) return nearby.isLoading && topRestaurants.length === 0;
+    return feed.isLoading && topRestaurants.length === 0;
+  }, [
+    hasPin,
+    pinReady,
+    nearbyParams,
+    nearby.isLoading,
+    feed.isLoading,
+    topRestaurants.length,
+  ]);
 
-  const onConfirmLocation = async (result: {
+  const onConfirmLocation = (result: {
     lat: number;
     lng: number;
     formattedAddress: string;
@@ -401,99 +392,37 @@ export default function HomeScreen() {
   }) => {
     setPickerOpen(false);
     setHasPromptedLocation(true);
-
-    if (result.source === 'saved') {
-      setDeliveryLocation({
-        label: result.label,
-        formattedAddress: result.formattedAddress,
-        city: normalizeCityName(
-          extractCityFromAddress(result.formattedAddress)
-        ),
-        lat: result.lat,
-        lng: result.lng,
-        source: 'saved',
-        savedAddressId: result.savedAddressId,
-        updatedAt: Date.now(),
-      });
-      return;
-    }
-
-    const applyLocal = (loc: {
-      label: string;
-      formattedAddress: string;
-      city?: string;
-      lat: number;
-      lng: number;
-      source: 'gps' | 'search';
-    }) => {
-      const next: {
-        label: string;
-        formattedAddress: string;
-        city?: string;
-        lat: number;
-        lng: number;
-        source: 'gps' | 'search';
-      } = {
-        label: loc.label,
-        formattedAddress: loc.formattedAddress,
-        lat: loc.lat,
-        lng: loc.lng,
-        source: loc.source,
-      };
-      const cityName = normalizeCityName(loc.city);
-      if (cityName) next.city = cityName;
-      setDeliveryLocation({
-        ...next,
-        savedAddressId: undefined,
-        updatedAt: Date.now(),
-      });
-      return next;
-    };
-
-    let applied: {
-      label: string;
-      formattedAddress: string;
-      city?: string;
-      lat: number;
-      lng: number;
-      source: 'gps' | 'search';
-    } = {
+    expectSavePrompt.current = result.source !== 'saved' && Boolean(user);
+    const cityName = normalizeCityName(
+      extractCityFromAddress(result.formattedAddress)
+    );
+    setDeliveryLocation({
       label: result.label,
       formattedAddress: result.formattedAddress,
+      city: cityName,
       lat: result.lat,
       lng: result.lng,
       source: result.source,
-    };
-    const initialCity = normalizeCityName(
-      extractCityFromAddress(result.formattedAddress)
-    );
-    if (initialCity) applied.city = initialCity;
-
-    // Apply immediately so UI updates instantly without waiting for reverse geocoding
-    applyLocal(applied);
-
-    try {
-      const resolved = await resolvePlaceFromCoords({
-        lat: result.lat,
-        lng: result.lng,
-        source: result.source,
-        preferredAddress: result.formattedAddress,
-      });
-      applied = applyLocal({
-        label: resolved.label || result.label,
-        formattedAddress: resolved.formattedAddress,
-        city: normalizeCityName(resolved.city),
-        lat: resolved.lat,
-        lng: resolved.lng,
-        source: result.source,
-      });
-    } catch {
-      applied = applyLocal(applied);
-    }
-
-    if (!user) return;
-    setSavePrompt(applied);
+      savedAddressId:
+        result.source === 'saved' ? result.savedAddressId : undefined,
+      pinTrusted: result.source !== 'saved',
+      updatedAt: Date.now(),
+    });
   };
+
+  useEffect(() => {
+    if (!expectSavePrompt.current || !user || !deliveryLocation?.pinTrusted) return;
+    if (deliveryLocation.source === 'saved') return;
+    expectSavePrompt.current = false;
+    setSavePrompt({
+      label: deliveryLocation.label,
+      formattedAddress: deliveryLocation.formattedAddress,
+      city: deliveryLocation.city,
+      lat: deliveryLocation.lat,
+      lng: deliveryLocation.lng,
+      source: deliveryLocation.source === 'gps' ? 'gps' : 'search',
+    });
+  }, [deliveryLocation, user]);
 
   const closeSavePrompt = () => {
     if (savingAddress) return;
@@ -564,7 +493,11 @@ export default function HomeScreen() {
   const locationPicker = (
     <DeliveryLocationPicker
       visible={pickerOpen}
-      initial={coords}
+      initial={
+        deliveryLocation
+          ? { lat: deliveryLocation.lat, lng: deliveryLocation.lng }
+          : null
+      }
       autoDetectOnOpen
       onClose={() => setPickerOpen(false)}
       onConfirm={onConfirmLocation}

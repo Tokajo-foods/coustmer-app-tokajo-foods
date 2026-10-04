@@ -126,8 +126,8 @@ export function useNearbyRestaurants(params: NearbyParams | null) {
         radius: params?.radius ?? CUSTOMER_DISCOVERY_RADIUS_KM,
       }),
     enabled: Boolean(params?.lat && params?.lng),
-    retry: 2,
-    staleTime: 60_000,
+    retry: 1,
+    staleTime: 0,
   });
 }
 

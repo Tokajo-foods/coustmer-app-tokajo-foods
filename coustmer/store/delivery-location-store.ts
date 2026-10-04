@@ -11,6 +11,12 @@ export type DeliveryLocation = {
   source: 'gps' | 'search' | 'saved';
   /** When set, checkout can send addressId to order-service. */
   savedAddressId?: string;
+  /**
+   * True after the pin has been checked against the address text.
+   * GPS pins are trusted immediately. Search/saved pins stay false until
+   * the address string and coordinates agree.
+   */
+  pinTrusted?: boolean;
   updatedAt: number;
 };
 
@@ -21,7 +27,10 @@ type DeliveryLocationState = {
   boundUserId: string | null;
   isDetecting: boolean;
   hasHydrated: boolean;
+  /** Nearby/home queries wait until the pin matches the selected address. */
+  pinReady: boolean;
   setLocation: (location: DeliveryLocation) => void;
+  setPinReady: (ready: boolean) => void;
   setDetecting: (detecting: boolean) => void;
   setHasHydrated: (value: boolean) => void;
   clearLocation: () => void;
@@ -39,23 +48,27 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
       boundUserId: null,
       isDetecting: false,
       hasHydrated: false,
+      pinReady: false,
       setLocation: (location) =>
         set((state) => {
+          const pinReady = location.source === 'gps' || location.pinTrusted === true;
           if (!state.boundUserId) {
-            return { location, isDetecting: false };
+            return { location, isDetecting: false, pinReady };
           }
           return {
             location,
             isDetecting: false,
+            pinReady,
             locationsByUserId: {
               ...state.locationsByUserId,
               [state.boundUserId]: location,
             },
           };
         }),
+      setPinReady: (pinReady) => set({ pinReady }),
       setDetecting: (isDetecting) => set({ isDetecting }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
-      clearLocation: () => set({ location: null, isDetecting: false }),
+      clearLocation: () => set({ location: null, isDetecting: false, pinReady: true }),
       bindUser: (userId) =>
         set((state) => {
           const saved = state.locationsByUserId[userId];
@@ -64,6 +77,7 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
               boundUserId: userId,
               location: saved,
               isDetecting: false,
+              pinReady: saved.source === 'gps' || saved.pinTrusted === true,
             };
           }
 
@@ -93,6 +107,7 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
             locationsByUserId,
             location: null,
             isDetecting: false,
+            pinReady: true,
           };
         }),
     }),
@@ -106,6 +121,10 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
+        const loc = state?.location;
+        if (!loc || loc.source === 'gps' || loc.pinTrusted) {
+          state?.setPinReady(true);
+        }
       },
     }
   )
@@ -113,6 +132,7 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
 
 export function useDeliveryCoords(): { lat: number; lng: number } | null {
   const location = useDeliveryLocationStore((s) => s.location);
-  if (!location) return null;
+  const pinReady = useDeliveryLocationStore((s) => s.pinReady);
+  if (!pinReady || !location) return null;
   return { lat: location.lat, lng: location.lng };
 }

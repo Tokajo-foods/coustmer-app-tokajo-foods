@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import { api } from '@/lib/api';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
+import { restaurantWithinDiscovery } from '@/lib/restaurant/within-radius';
 import { normalizeRestaurantSort } from '@/lib/restaurant/nearby-params';
 import {
   mapCategory,
@@ -203,10 +204,18 @@ export const restaurantApi = {
         cuisines: params.cuisines || undefined,
       })}`
     );
+    const radiusKm = params.radius ?? CUSTOMER_DISCOVERY_RADIUS_KM;
     return {
       restaurants: extractRestaurantList(res.data)
         .map(mapRestaurant)
-        .filter((r) => r.status !== 'deleted' && r.id),
+        .filter((r) => r.status !== 'deleted' && r.id)
+        .filter((r) =>
+          restaurantWithinDiscovery(
+            r,
+            { lat: params.lat, lng: params.lng },
+            radiusKm
+          )
+        ),
       meta: res.meta,
     };
   },

@@ -206,6 +206,8 @@ export function DeliveryLocationPicker({
   const suppressMoveUntil = useRef(0);
   /** Auto-detect GPS at most once per map open. */
   const didAutoDetectMapRef = useRef(false);
+  /** User already chose a search result — do not snap the pin back to GPS. */
+  const userPlacedPinRef = useRef(false);
   const locationEnabledRef = useRef(false);
 
   const startPoint = useMemo(() => initial ?? DEFAULT, [initial?.lat, initial?.lng]);
@@ -436,6 +438,7 @@ export function DeliveryLocationPicker({
     setCurrentPreview(null);
     sourceRef.current = 'search';
     didAutoDetectMapRef.current = false;
+    userPlacedPinRef.current = false;
 
     void syncLocationToggle({ detectIfOn: autoDetectOnOpen });
     // Intentionally only re-init when the sheet opens — not when startPoint identity changes.
@@ -472,7 +475,7 @@ export function DeliveryLocationPicker({
 
   useEffect(() => {
     if (!visible || viewMode !== 'map' || !mapReady) return;
-    if (autoDetectOnOpen && locationEnabled) {
+    if (autoDetectOnOpen && locationEnabled && !userPlacedPinRef.current) {
       if (didAutoDetectMapRef.current) return;
       didAutoDetectMapRef.current = true;
       void detectCurrentLocation();
@@ -747,6 +750,7 @@ export function DeliveryLocationPicker({
         Number.isFinite(lat) &&
         Number.isFinite(lng)
       ) {
+        userPlacedPinRef.current = true;
         await applyCoords(lat, lng, 'search', item.description);
         setViewMode('map');
         return;
@@ -757,6 +761,7 @@ export function DeliveryLocationPicker({
         placeId: item.placeId,
         address: item.description,
       });
+      userPlacedPinRef.current = true;
       await applyCoords(
         geo.lat,
         geo.lng,
@@ -785,6 +790,7 @@ export function DeliveryLocationPicker({
       try {
         // If a suggestion is already selected text, geocode it via Places New / fallbacks
         const geo = await geocodeAddress({ address: query });
+        userPlacedPinRef.current = true;
         await applyCoords(
           geo.lat,
           geo.lng,
