@@ -21,7 +21,7 @@ import type {
 type EventName = keyof ServerToClientEvents;
 type EventCallback<E extends EventName> = ServerToClientEvents[E];
 
-function useSocketEvent<E extends EventName>(
+export function useSocketEvent<E extends EventName>(
   event: E,
   handler: EventCallback<E>,
   deps: unknown[] = []
@@ -84,45 +84,16 @@ export function useOrderStatusSocket(
   return { status, cancelled };
 }
 
-// ─── Partner location ─────────────────────────────────────────────────────────
-
-export type PartnerLocationState = {
-  lat: number;
-  lng: number;
-  heading?: number;
-  accuracy?: number;
-  updatedAt?: string;
-} | null;
-
-/**
- * Subscribe to `partner:location` (and its alias `tracking:location`) for an order.
- * Returns the latest rider GPS position.
- */
-export function usePartnerLocationSocket(orderId: string): PartnerLocationState {
-  const [location, setLocation] = useState<PartnerLocationState>(null);
-
-  const handler = useCallback(
-    (data: { orderId: string; lat: number; lng: number; heading?: number; accuracy?: number; updatedAt?: string }) => {
-      if (data.orderId !== orderId) return;
-      setLocation({ lat: data.lat, lng: data.lng, heading: data.heading, accuracy: data.accuracy, updatedAt: data.updatedAt });
-    },
-    [orderId]
-  );
-
-  useSocketEvent('partner:location', handler);
-  useSocketEvent('tracking:location', handler);
-
-  return location;
-}
-
 // ─── ETA ─────────────────────────────────────────────────────────────────────
 
-export function useEtaSocket(orderId: string): { etaMinutes?: number; etaText?: string } | null {
-  const [eta, setEta] = useState<{ etaMinutes?: number; etaText?: string } | null>(null);
+export function useEtaSocket(orderId: string): { etaMinutes?: number; etaSeconds?: number; etaText?: string } | null {
+  const [eta, setEta] = useState<{ etaMinutes?: number; etaSeconds?: number; etaText?: string } | null>(null);
 
   useSocketEvent('tracking:eta', (data) => {
     if (data.orderId !== orderId) return;
-    setEta({ etaMinutes: data.etaMinutes, etaText: data.etaText });
+    const etaMinutes = data.etaMinutes
+      ?? (typeof data.etaSeconds === 'number' ? Math.max(1, Math.round(data.etaSeconds / 60)) : undefined);
+    setEta({ etaMinutes, etaSeconds: data.etaSeconds, etaText: data.etaText });
   });
 
   return eta;

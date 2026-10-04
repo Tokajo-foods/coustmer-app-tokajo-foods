@@ -15,7 +15,7 @@ import {
   Star,
   Store,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
@@ -38,11 +38,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
-import { GoogleMapsErrorView } from '@/components/location/GoogleMapsErrorView';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
+import { TrackingMap } from '@/components/order/TrackingMap';
 import { fonts } from '@/constants/typography';
 import { deliveryApi } from '@/lib/delivery/api';
 import {
@@ -65,7 +64,7 @@ import {
   useTrackingEta,
   useTrackingRoute,
 } from '@/lib/delivery/hooks';
-import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
+import { isFixStale, riderLocationVisible } from '@/lib/delivery/rider-fix';
 import { OrderCallPanel } from '@/components/call/OrderCallPanel';
 import { useOrder, useReorder } from '@/lib/order/hooks';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
@@ -78,8 +77,8 @@ import {
   useDeliveryStatusSocket,
   useEtaSocket,
   useOrderStatusSocket,
-  usePartnerLocationSocket,
 } from '@/lib/socket/hooks';
+import { usePartnerLocationSocket } from '@/lib/socket/partner-location';
 import { useCartStore } from '@/store/cart-store';
 
 const ORANGE = '#FF6A00';
@@ -245,169 +244,6 @@ function statusEtaFallback(
   return `${Math.max(3, extended)} mins`;
 }
 
-function generateMapHtml(opts: {
-  restLat: number;
-  restLng: number;
-  custLat: number;
-  custLng: number;
-  partnerLat?: number;
-  partnerLng?: number;
-  restName: string;
-  apiKey: string;
-}) {
-  const {
-    restLat,
-    restLng,
-    custLat,
-    custLng,
-    partnerLat,
-    partnerLng,
-    restName,
-    apiKey,
-  } = opts;
-  const safeName = restName.replace(/'/g, "\\'");
-  const hasPartner =
-    typeof partnerLat === 'number' &&
-    typeof partnerLng === 'number' &&
-    Number.isFinite(partnerLat) &&
-    Number.isFinite(partnerLng);
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <style>
-    html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
-    body { background: #e8eaed; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    function initMap() {
-      const rest = { lat: ${restLat}, lng: ${restLng} };
-      const cust = { lat: ${custLat}, lng: ${custLng} };
-      const partner = ${hasPartner ? `{ lat: ${partnerLat}, lng: ${partnerLng} }` : 'null'};
-
-      const map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 14,
-        center: {
-          lat: (rest.lat + cust.lat) / 2,
-          lng: (rest.lng + cust.lng) / 2
-        },
-        disableDefaultUI: true,
-        gestureHandling: 'none',
-        styles: [
-          { elementType: 'geometry', stylers: [{ color: '#f1f3f4' }] },
-          { elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
-          { elementType: 'labels.text.stroke', stylers: [{ color: '#f1f3f4' }] },
-          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-          { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-          { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e5e7eb' }] },
-          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e5e7eb' }] },
-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#dbeafe' }] },
-          { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#eef0f2' }] }
-        ]
-      });
-
-      const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer({
-        map,
-        suppressMarkers: true,
-        polylineOptions: {
-          strokeColor: '#FF6A00',
-          strokeOpacity: 0.95,
-          strokeWeight: 5
-        }
-      });
-
-      function pin(color, label) {
-        return {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">' +
-            '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.75 18 30 18 30s18-17.25 18-30C36 8.06 27.94 0 18 0z" fill="' + color + '"/>' +
-            '<circle cx="18" cy="18" r="7.5" fill="#fff"/>' +
-            '</svg>'
-          ),
-          scaledSize: new google.maps.Size(36, 48),
-          anchor: new google.maps.Point(18, 46),
-          labelOrigin: new google.maps.Point(18, 58)
-        };
-      }
-
-      new google.maps.Marker({
-        position: rest,
-        map,
-        icon: pin('#111827', '${safeName}'),
-        label: { text: 'Restaurant', color: '#111827', fontWeight: '700', fontSize: '11px' }
-      });
-
-      new google.maps.Marker({
-        position: cust,
-        map,
-        icon: pin('#FF6A00', 'You'),
-        label: { text: 'You', color: '#111827', fontWeight: '700', fontSize: '11px' }
-      });
-
-      if (partner) {
-        new google.maps.Marker({
-          position: partner,
-          map,
-          zIndex: 999,
-          icon: {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">' +
-              '<circle cx="26" cy="26" r="24" fill="#FF6A00" fill-opacity="0.18"/>' +
-              '<circle cx="26" cy="26" r="16" fill="#FF6A00"/>' +
-              '<circle cx="26" cy="26" r="12" fill="#fff"/>' +
-              '<text x="26" y="31" font-size="14" text-anchor="middle">🛵</text>' +
-              '</svg>'
-            ),
-            scaledSize: new google.maps.Size(52, 52),
-            anchor: new google.maps.Point(26, 26)
-          }
-        });
-      }
-
-      directionsService.route({
-        origin: rest,
-        destination: cust,
-        travelMode: google.maps.TravelMode.DRIVING
-      }, (result, status) => {
-        if (status === google.maps.DirectionsStatus.OK) {
-          directionsRenderer.setDirections(result);
-          const leg = result.routes[0].legs[0];
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'ROUTE_INFO',
-              distance: leg.distance.text,
-              duration: leg.duration.text
-            }));
-          }
-          const bounds = new google.maps.LatLngBounds();
-          bounds.extend(rest);
-          bounds.extend(cust);
-          if (partner) bounds.extend(partner);
-          map.fitBounds(bounds, { top: 100, bottom: 48, left: 48, right: 48 });
-        } else {
-          new google.maps.Polyline({
-            path: [rest, cust],
-            geodesic: true,
-            strokeColor: '#FF6A00',
-            strokeOpacity: 0.85,
-            strokeWeight: 4,
-            map
-          });
-        }
-      });
-    }
-  </script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap"></script>
-</body>
-</html>`;
-}
-
 const STEPS: { key: StepKey; label: string }[] = [
   { key: 'placed', label: 'Placed' },
   { key: 'preparing', label: 'Preparing' },
@@ -473,14 +309,15 @@ export function OrderTrackingScreen() {
   const trackingActive =
     !combinedStatusEarly || isActiveOrderStatus(combinedStatusEarly);
 
+  const riderOnTrip = riderLocationVisible(combinedStatusEarly);
   const partnerQuery = useOrderDeliveryPartner(id, {
     enabled: Boolean(id) && trackingActive,
     refetchInterval: trackingActive ? 12_000 : false,
   });
   const partner = partnerQuery.data;
 
-  // GET /tracking/order/:orderId/location — live GPS fallback (5s poll)
-  const liveLocQuery = useLiveLocation(id, trackingActive);
+  // Poll only after pickup. The socket is the live path; this is the first paint and the fallback.
+  const liveLocQuery = useLiveLocation(id, riderOnTrip);
   // GET /tracking/order/:orderId/eta — polled ETA fallback (30s poll)
   const etaQuery = useTrackingEta(id, trackingActive);
 
@@ -537,44 +374,22 @@ export function OrderTrackingScreen() {
         .filter(Boolean)
         .join(' · ')
     : '';
-  // Prefer socket live GPS → /location poll → partner query → full tracker
-  const partnerLat =
-    socketLocation?.lat ??
-    liveLocQuery.data?.lat ??
-    partner?.currentLocation?.lat ??
-    trackerPartner?.currentLocation?.lat;
-  const partnerLng =
-    socketLocation?.lng ??
-    liveLocQuery.data?.lng ??
-    partner?.currentLocation?.lng ??
-    trackerPartner?.currentLocation?.lng;
+  const polledFix = liveLocQuery.data
+    ? {
+        lat: liveLocQuery.data.lat,
+        lng: liveLocQuery.data.lng,
+        heading: liveLocQuery.data.heading,
+        accuracy: liveLocQuery.data.accuracy,
+        updatedAt: liveLocQuery.data.updatedAt,
+      }
+    : null;
+  const riderFix = riderOnTrip ? (socketLocation.fix ?? polledFix) : null;
+  const riderStale = Boolean(riderFix) && (socketLocation.stale || isFixStale(riderFix?.updatedAt));
 
   const restLat = t?.restaurantLat ?? 26.2183;
   const restLng = t?.restaurantLng ?? 78.1828;
   const custLat = t?.customerLat ?? 26.2124;
   const custLng = t?.customerLng ?? 78.1772;
-
-  const mapHtml = useMemo(() => {
-    if (!isGoogleMapsConfigured()) return '';
-    return generateMapHtml({
-      restLat,
-      restLng,
-      custLat,
-      custLng,
-      partnerLat,
-      partnerLng,
-      restName: o?.restaurantName || 'Restaurant',
-      apiKey: GOOGLE_MAPS_API_KEY,
-    });
-  }, [
-    restLat,
-    restLng,
-    custLat,
-    custLng,
-    partnerLat,
-    partnerLng,
-    o?.restaurantName,
-  ]);
 
   const step = currentStep(combinedStatus);
   const activeIdx = stepIndex(step);
@@ -962,29 +777,16 @@ export function OrderTrackingScreen() {
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.mapWrap, mapStyle]}>
-        {isGoogleMapsConfigured() && mapHtml ? (
-          <WebView
-            style={styles.map}
-            source={{ html: mapHtml, baseUrl: 'https://maps.googleapis.com' }}
-            originWhitelist={['*']}
-            onMessage={(event) => {
-              try {
-                const data = JSON.parse(event.nativeEvent.data);
-                if (data.type === 'ROUTE_INFO') {
-                  setDistanceInfo({ dist: data.distance, time: data.duration });
-                }
-              } catch {
-                // ignore
-              }
-            }}
-            scrollEnabled={false}
-            bounces={false}
-            javaScriptEnabled
-            domStorageEnabled
-          />
-        ) : (
-          <GoogleMapsErrorView />
-        )}
+        <TrackingMap
+          restLat={restLat}
+          restLng={restLng}
+          custLat={custLat}
+          custLng={custLng}
+          restName={o?.restaurantName || 'Restaurant'}
+          rider={riderFix}
+          stale={riderStale}
+          onRoute={setDistanceInfo}
+        />
 
         <LinearGradient
           colors={['rgba(17,24,39,0.28)', 'transparent']}

@@ -8,6 +8,7 @@
 import axios from 'axios';
 
 import { api } from '@/lib/api';
+import { readLatLng } from '@/lib/delivery/rider-fix';
 import type {
   AddressChangePayload,
   ChatMessage,
@@ -125,6 +126,9 @@ export function mapDeliveryPartner(raw: unknown): DeliveryPartner | null {
 
   const loc = asRecord(nested.currentLocation ?? nested.location ?? {});
   const coords = Array.isArray(loc.coordinates) ? (loc.coordinates as number[]) : undefined;
+  const point = readLatLng(loc) ?? (
+    coords && coords.length >= 2 ? { lat: Number(coords[1]), lng: Number(coords[0]) } : null
+  );
   return {
     id: id || phone || name,
     name: name || 'Delivery partner',
@@ -144,16 +148,15 @@ export function mapDeliveryPartner(raw: unknown): DeliveryPartner | null {
     imageUrl:
       (nested.imageUrl as string) || (nested.photoUrl as string) || (nested.avatar as string) || undefined,
     isOnline: nested.isOnline !== undefined ? Boolean(nested.isOnline) : true,
-    currentLocation:
-      typeof loc.lat === 'number' || (Array.isArray(coords) && coords.length >= 2)
-        ? {
-            lat: typeof loc.lat === 'number' ? loc.lat : Number(coords![1]),
-            lng: typeof loc.lng === 'number' ? loc.lng : Number(coords![0]),
-            accuracy: typeof loc.accuracy === 'number' ? loc.accuracy : undefined,
-            heading: typeof loc.heading === 'number' ? loc.heading : undefined,
-            lastUpdate: String(loc.lastUpdate ?? loc.updatedAt ?? new Date().toISOString()),
-          }
-        : undefined,
+    currentLocation: point
+      ? {
+          lat: point.lat,
+          lng: point.lng,
+          accuracy: typeof loc.accuracy === 'number' ? loc.accuracy : undefined,
+          heading: typeof loc.heading === 'number' ? loc.heading : undefined,
+          lastUpdate: String(loc.lastUpdate ?? loc.updatedAt ?? new Date().toISOString()),
+        }
+      : undefined,
   };
 }
 
@@ -404,16 +407,17 @@ export const deliveryApi = {
       const r = asRecord(raw);
       const loc = asRecord(r.location ?? r.currentLocation ?? r);
       const coords = Array.isArray(loc.coordinates) ? (loc.coordinates as number[]) : undefined;
-      const lat = typeof loc.lat === 'number' ? loc.lat : coords ? Number(coords[1]) : undefined;
-      const lng = typeof loc.lng === 'number' ? loc.lng : coords ? Number(coords[0]) : undefined;
-      if (!lat || !lng) return null;
+      const point = readLatLng(loc) ?? (
+        coords && coords.length >= 2 ? { lat: Number(coords[1]), lng: Number(coords[0]) } : null
+      );
+      if (!point) return null;
       return {
-        lat,
-        lng,
+        lat: point.lat,
+        lng: point.lng,
         heading: typeof loc.heading === 'number' ? loc.heading : undefined,
         accuracy: typeof loc.accuracy === 'number' ? loc.accuracy : undefined,
         speed: typeof loc.speed === 'number' ? loc.speed : undefined,
-        updatedAt: (loc.updatedAt as string) || (loc.lastUpdate as string) || undefined,
+        updatedAt: (loc.updatedAt as string) || (loc.fixTimestamp as string) || (loc.lastUpdate as string) || undefined,
       };
     } catch {
       return null;

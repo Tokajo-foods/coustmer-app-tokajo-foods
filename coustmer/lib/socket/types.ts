@@ -9,12 +9,36 @@ export type ServerToClientEvents = {
   'order:status': (data: { orderId: string; status: string; updatedAt?: string }) => void;
   /** Order was cancelled */
   'order:cancelled': (data: { orderId: string; reason?: string; refundAmount?: number }) => void;
-  /** Rider GPS (primary) */
-  'partner:location': (data: { orderId: string; lat: number; lng: number; heading?: number; accuracy?: number; updatedAt?: string }) => void;
+  /** Rider GPS (primary). Gateway sends latitude/longitude. */
+  'partner:location': (data: {
+    orderId: string;
+    lat?: number;
+    lng?: number;
+    latitude?: number;
+    longitude?: number;
+    heading?: number;
+    accuracy?: number;
+    updatedAt?: string;
+    timestamp?: string;
+    receivedAt?: string;
+  }) => void;
   /** Rider GPS alias */
-  'tracking:location': (data: { orderId: string; lat: number; lng: number; heading?: number; accuracy?: number; updatedAt?: string }) => void;
+  'tracking:location': (data: {
+    orderId: string;
+    lat?: number;
+    lng?: number;
+    latitude?: number;
+    longitude?: number;
+    heading?: number;
+    accuracy?: number;
+    updatedAt?: string;
+    timestamp?: string;
+    receivedAt?: string;
+  }) => void;
+  /** Last fix is too old to slide the marker. */
+  'tracking:stale': (data: { orderId: string }) => void;
   /** ETA update chip */
-  'tracking:eta': (data: { orderId: string; etaMinutes?: number; etaText?: string }) => void;
+  'tracking:eta': (data: { orderId: string; etaMinutes?: number; etaSeconds?: number; etaText?: string }) => void;
   /** Rider trip status (assigned → arrived_at_customer → delivered / RTO) */
   'delivery:status': (data: {
     orderId: string;
