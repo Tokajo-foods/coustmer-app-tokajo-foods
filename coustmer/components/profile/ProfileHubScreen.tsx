@@ -1,4 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
+import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -151,7 +152,7 @@ export function ProfileHubScreen() {
   return (
     <View style={styles.root}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        {...PREMIUM_SCROLL}
         contentContainerStyle={{
           paddingBottom: insets.bottom + APP_BOTTOM_NAV_INSET + 24,
         }}

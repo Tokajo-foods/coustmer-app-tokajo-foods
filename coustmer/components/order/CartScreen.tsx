@@ -34,6 +34,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
+import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { fonts } from '@/constants/typography';
 import {
   useApplyCoupon,
@@ -1090,7 +1091,7 @@ export function CartScreen() {
 
         {/* ── Scroll Content ─────────────────────────────────────── */}
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          {...PREMIUM_SCROLL}
           contentContainerStyle={[
             styles.scrollContent,
             { paddingBottom: 110 + footerPad },

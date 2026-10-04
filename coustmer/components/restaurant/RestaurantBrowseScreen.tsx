@@ -16,6 +16,7 @@ import { ActivityIndicator,
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { PREMIUM_HORIZONTAL_LIST, PREMIUM_LIST } from '@/lib/motion/premium';
 import { EmptyView, ErrorView } from '@/components/common/StateViews';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { RestaurantListCard } from '@/components/restaurant/RestaurantListCard';
@@ -309,7 +310,7 @@ export function RestaurantBrowseScreen() {
       <View style={styles.categoryRail}>
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          {...PREMIUM_HORIZONTAL_LIST}
           style={styles.categoryScroll}
           contentContainerStyle={styles.categoryRow}
         >
@@ -475,7 +476,7 @@ export function RestaurantBrowseScreen() {
           <FlatList
             data={filteredList}
             keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
+            {...PREMIUM_LIST}
             contentContainerStyle={styles.list}
             ListHeaderComponent={listHeader}
             refreshControl={

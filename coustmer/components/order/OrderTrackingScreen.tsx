@@ -1,4 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
+import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,7 +30,6 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
-  FadeInDown,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -1041,13 +1041,13 @@ export function OrderTrackingScreen() {
       <View style={styles.sheet}>
         <View style={styles.handle} />
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          {...PREMIUM_SCROLL}
           contentContainerStyle={{
             paddingBottom: insets.bottom + 28,
             paddingHorizontal: 18,
           }}
         >
-          <Animated.View entering={FadeInDown.duration(420).springify()}>
+          <Animated.View>
             <Text style={styles.kicker}>
               {o?.restaurantName || 'Your order'}
               {o?.orderNumber
@@ -1088,7 +1088,6 @@ export function OrderTrackingScreen() {
 
           {/* Timeline */}
           <Animated.View
-            entering={FadeInDown.delay(80).duration(420).springify()}
             style={styles.timeline}
           >
             <View style={styles.timelineRail} onLayout={onRailLayout}>
@@ -1146,7 +1145,6 @@ export function OrderTrackingScreen() {
           {/* Partner */}
           {active ? (
             <Animated.View
-              entering={FadeInDown.delay(140).duration(420).springify()}
               style={styles.partnerCard}
             >
               <LinearGradient
@@ -1479,7 +1477,6 @@ export function OrderTrackingScreen() {
 
           {/* Summary */}
           <Animated.View
-            entering={FadeInDown.delay(200).duration(420).springify()}
             style={styles.section}
           >
             <View style={styles.sectionHead}>

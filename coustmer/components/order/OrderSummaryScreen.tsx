@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import {
   ArrowLeft,
   Bike,
@@ -373,8 +374,8 @@ export function OrderSummaryScreen() {
       </View>
 
       <ScrollView
+        {...PREMIUM_SCROLL}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
-        showsVerticalScrollIndicator={false}
       >
         <View style={styles.section}>
           <View style={styles.restaurantRow}>

@@ -404,9 +404,13 @@ export function RestaurantDetailScreen() {
     setQuery('');
   };
 
+  const stickyRef = useRef(false);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
-    setStickyCats(y > 280 && tab === 'Menu' && !isSearching);
+    const next = y > 280 && tab === 'Menu' && !isSearching;
+    if (next === stickyRef.current) return;
+    stickyRef.current = next;
+    setStickyCats(next);
   };
 
   const jumpToCategory = (catId: string) => {

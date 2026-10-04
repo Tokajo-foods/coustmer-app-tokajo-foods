@@ -239,10 +239,9 @@ const styles = StyleSheet.create({
     // iOS Shadow
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    // Android Shadow
-    elevation: 14,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   clipContainer: {
     borderRadius: 24,

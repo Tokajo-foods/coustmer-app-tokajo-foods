@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Heart, MapPin, Star } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -67,18 +66,13 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
             transition={0}
             recyclingKey={r.id}
             cachePolicy="memory-disk"
-            priority="low"
+            priority="normal"
           />
         ) : (
           <View style={[styles.image, styles.imageEmpty]} />
         )}
 
-        <LinearGradient
-          colors={['rgba(0,0,0,0.28)', 'transparent', 'rgba(0,0,0,0.6)']}
-          locations={[0, 0.4, 1]}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
+        <View style={styles.imageShade} pointerEvents="none" />
 
         {r.isPromoted ? (
           <View style={styles.promoted}>
@@ -214,13 +208,21 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     shadowColor: '#0B1220',
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   cardPressed: {
     opacity: 0.94,
+  },
+  imageShade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 72,
+    backgroundColor: 'rgba(0,0,0,0.28)',
   },
   imageWrap: {
     height: 160,
