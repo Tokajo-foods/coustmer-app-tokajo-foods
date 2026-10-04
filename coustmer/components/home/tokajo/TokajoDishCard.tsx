@@ -16,7 +16,7 @@ export type DishCardVariant = 'trending' | 'suggested' | 'orderAgain' | 'default
 
 /** Per-variant image height so rails don't all look identical. */
 export const DISH_CARD_WIDTH: Record<DishCardVariant, number> = {
-  trending: 178,
+  trending: 187,
   suggested: 182,
   orderAgain: 178,
   default: 168,
