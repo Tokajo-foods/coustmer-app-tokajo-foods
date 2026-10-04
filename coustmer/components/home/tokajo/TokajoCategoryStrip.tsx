@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
-    transform: [{ scale: 2.35 }, { translateY: -10 }],
+    transform: [{ scale: 2.35 }, { translateY: 6 }],
   },
   label: {
     fontFamily: fonts.uiSemi,
