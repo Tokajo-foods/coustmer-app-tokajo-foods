@@ -124,7 +124,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
       ) : null}
 
       {topRated.length > 0 ? (
-        <View style={[styles.section, styles.bandOrange]}>
+        <View style={[styles.section, styles.bandFull]}>
           <TokajoSectionHeader
             Icon={Trophy}
             title="Top Rated Near You"
@@ -182,20 +182,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#FFE3CB',
-  },
-  bandOrange: {
-    marginHorizontal: 12,
-    paddingTop: 18,
-    paddingBottom: 14,
-    borderRadius: 24,
-    backgroundColor: '#FFF4EA',
-    borderWidth: 1,
-    borderColor: '#FFE3CB',
-    shadowColor: '#B4541A',
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 2,
   },
   restaurantsHeader: {
     marginTop: 4,
