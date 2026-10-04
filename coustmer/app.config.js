@@ -40,7 +40,7 @@ const config = {
     ],
     '@react-native-community/datetimepicker',
     './withMinSdkVersion.js',
-    '@livekit/react-native-expo-plugin',
+    ['@livekit/react-native-expo-plugin', { android: { audioType: 'communication' } }],
     '@config-plugins/react-native-webrtc',
   ],
   ios: {
@@ -76,6 +76,8 @@ const config = {
       'android.permission.ACCESS_FINE_LOCATION',
       'android.permission.RECORD_AUDIO',
       'android.permission.MODIFY_AUDIO_SETTINGS',
+      'android.permission.BLUETOOTH_CONNECT',
+      'android.permission.WAKE_LOCK',
     ],
     config: {
       googleMaps: {

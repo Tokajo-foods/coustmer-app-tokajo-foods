@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Bike, Phone, Store, Video } from 'lucide-react-native';
+import { Bike, Mic, MicOff, Phone, Store, Video } from 'lucide-react-native';
 
 import { useOrderCalls } from '@/lib/call/use-order-calls';
 import type { CallRole, CallRow, ViewerKind } from '@/lib/call/types';
@@ -36,12 +36,8 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
 
       {calls.live ? (
         <View style={[styles.live, incoming && styles.liveIn]}>
-          <Text style={styles.liveKicker}>{incoming ? 'Incoming call' : 'On a call'}</Text>
-          <Text style={styles.liveText}>
-            {incoming
-              ? `${titleFor(calls.live.role)} is calling you`
-              : `${titleFor(calls.live.role)} · ${calls.live.state.replace('_', ' ')}`}
-          </Text>
+          <Text style={styles.liveKicker}>{incoming ? 'Incoming call' : liveKicker(calls.live.state)}</Text>
+          <Text style={styles.liveText}>{liveLine(incoming, calls.live.state, titleFor(calls.live.role))}</Text>
           {incoming ? (
             <View style={styles.actions}>
               <Pressable disabled={Boolean(calls.busy)} onPress={() => void calls.accept()} style={styles.primary}>
@@ -52,9 +48,17 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
               </Pressable>
             </View>
           ) : (
-            <Pressable disabled={Boolean(calls.busy)} onPress={() => void calls.hangup()} style={styles.end}>
-              <Text style={styles.primaryText}>{calls.busy === 'end' ? 'Ending…' : 'End call'}</Text>
-            </Pressable>
+            <View style={styles.actions}>
+              {calls.live.state === 'accepted' ? (
+                <Pressable disabled={Boolean(calls.busy)} onPress={() => void calls.toggleMute()} style={styles.ghost}>
+                  {calls.muted ? <MicOff color="#111827" size={14} /> : <Mic color="#111827" size={14} />}
+                  <Text style={styles.ghostText}>{calls.muted ? 'Unmute' : 'Mute'}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable disabled={Boolean(calls.busy)} onPress={() => void calls.hangup()} style={styles.end}>
+                <Text style={styles.primaryText}>{calls.busy === 'end' ? 'Ending…' : 'End call'}</Text>
+              </Pressable>
+            </View>
           )}
         </View>
       ) : null}
@@ -77,6 +81,19 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
       ))}
     </View>
   );
+}
+
+function liveKicker(state: string): string {
+  if (state === 'ringing') return 'Ringing';
+  if (state === 'accepted') return 'Connected';
+  return 'On a call';
+}
+
+function liveLine(incoming: boolean, state: string, title: string): string {
+  if (incoming) return `${title} is calling you`;
+  if (state === 'ringing') return `Ringing ${title}`;
+  if (state === 'accepted') return `Talking with ${title}`;
+  return title;
 }
 
 function PersonRow({
@@ -199,14 +216,17 @@ const styles = StyleSheet.create({
   secondaryText: { color: '#111827', fontSize: 14, fontWeight: '700' },
   ghost: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     borderRadius: 12,
     paddingVertical: 11,
     backgroundColor: '#FFFFFF',
   },
   ghostText: { color: '#111827', fontSize: 14, fontWeight: '700' },
   end: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
