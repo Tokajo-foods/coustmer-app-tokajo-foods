@@ -18,7 +18,7 @@ type Props = {
   onLocationPress?: () => void;
 };
 
-/** Logo left and bell right, delivery address on the row below. */
+/** Centered logo, then delivery address and bell on the same row. */
 export function TokajoTopBar({
   deliveryTitle,
   deliverySubtitle,
@@ -39,8 +39,34 @@ export function TokajoTopBar({
 
   return (
     <View style={styles.root}>
-      <View style={styles.brandRow}>
+      <View style={styles.logoRow}>
         <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
+      </View>
+
+      <View style={styles.bottomRow}>
+        <SmoothPressable
+          style={styles.location}
+          onPress={onLocationPress}
+          pressScale={0.98}
+          accessibilityLabel="Change delivery location"
+        >
+          <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
+          <View style={styles.locationText}>
+            <Text style={styles.deliverTo}>Deliver to</Text>
+            <View style={styles.deliverToRow}>
+              <Text style={styles.locationTitle} numberOfLines={1}>
+                {headline}
+              </Text>
+              <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
+            </View>
+            {deliverySubtitle ? (
+              <Text style={styles.locationSub} numberOfLines={1}>
+                {deliverySubtitle}
+              </Text>
+            ) : null}
+          </View>
+        </SmoothPressable>
+
         <SmoothPressable
           style={styles.bell}
           onPress={() => router.push('/notifications')}
@@ -55,29 +81,6 @@ export function TokajoTopBar({
           {unreadCount > 0 ? <View style={styles.dot} /> : null}
         </SmoothPressable>
       </View>
-
-      <SmoothPressable
-        style={styles.location}
-        onPress={onLocationPress}
-        pressScale={0.98}
-        accessibilityLabel="Change delivery location"
-      >
-        <MapPin color={ORANGE} size={20} strokeWidth={2.6} fill={ORANGE} />
-        <View style={styles.locationText}>
-          <Text style={styles.deliverTo}>Deliver to</Text>
-          <View style={styles.deliverToRow}>
-            <Text style={styles.locationTitle} numberOfLines={1}>
-              {headline}
-            </Text>
-            <ChevronDown color="#1C1C1C" size={16} strokeWidth={2.6} />
-          </View>
-          {deliverySubtitle ? (
-            <Text style={styles.locationSub} numberOfLines={1}>
-              {deliverySubtitle}
-            </Text>
-          ) : null}
-        </View>
-      </SmoothPressable>
     </View>
   );
 }
@@ -85,23 +88,29 @@ export function TokajoTopBar({
 const styles = StyleSheet.create({
   root: {
     paddingHorizontal: 16,
-    paddingBottom: 6,
+    paddingBottom: 8,
   },
-  brandRow: {
+  logoRow: {
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 184,
+    height: 50,
+  },
+  bottomRow: {
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  logo: {
-    width: 168,
-    height: 46,
+    gap: 10,
   },
   location: {
-    marginTop: 8,
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingRight: 8,
+    alignItems: 'flex-start',
+    gap: 6,
   },
   locationText: {
     flexShrink: 1,
@@ -118,9 +127,9 @@ const styles = StyleSheet.create({
   },
   locationTitle: {
     fontFamily: fonts.displayBold,
-    fontSize: 16,
-    color: '#171717',
-    letterSpacing: -0.3,
+    fontSize: 15,
+    color: '#0B0B0B',
+    letterSpacing: -0.2,
     flexShrink: 1,
   },
   locationSub: {
@@ -130,17 +139,14 @@ const styles = StyleSheet.create({
     color: '#6B6B6B',
   },
   bell: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFF1E6',
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C45C22',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
   },
   dot: {
     position: 'absolute',
