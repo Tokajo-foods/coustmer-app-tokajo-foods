@@ -40,6 +40,8 @@ const config = {
     ],
     '@react-native-community/datetimepicker',
     './withMinSdkVersion.js',
+    '@livekit/react-native-expo-plugin',
+    '@config-plugins/react-native-webrtc',
   ],
   ios: {
     supportsTablet: true,
@@ -50,6 +52,8 @@ const config = {
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         'Allow Food Delivery to access your location to set your delivery address and find restaurants near you.',
+      NSMicrophoneUsageDescription:
+        'Allow TOKAJO FOODS to use the microphone for in-app calls on an order. Your mobile number stays hidden.',
       NSAppTransportSecurity: {
         NSAllowsArbitraryLoads: true,
       },
@@ -70,6 +74,8 @@ const config = {
       'android.permission.ACCESS_NETWORK_STATE',
       'android.permission.ACCESS_COARSE_LOCATION',
       'android.permission.ACCESS_FINE_LOCATION',
+      'android.permission.RECORD_AUDIO',
+      'android.permission.MODIFY_AUDIO_SETTINGS',
     ],
     config: {
       googleMaps: {

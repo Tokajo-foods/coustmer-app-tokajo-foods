@@ -558,7 +558,7 @@ export const deliveryApi = {
     const r = asRecord(raw);
     return {
       callId: (r.callId as string) || undefined,
-      maskedPhone: (r.maskedPhone as string) || (r.phone as string) || undefined,
+      maskedPhone: (r.virtualNumber as string) || (r.maskedPhone as string) || undefined,
     };
   },
 

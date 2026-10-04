@@ -11,7 +11,6 @@ import {
   Clock3,
   Headset,
   MapPin,
-  Phone,
   Star,
   Store,
 } from 'lucide-react-native';
@@ -21,7 +20,6 @@ import {
   ActivityIndicator,
   Alert,
   LayoutChangeEvent,
-  Linking,
   Share,
   ScrollView,
   StyleSheet,
@@ -51,7 +49,6 @@ import {
   deliveryKeys,
   useChatHistory,
   useChangeAddress,
-  useContactPartner,
   useContactSupport,
   useCreateShareLink,
   useDropOtp,
@@ -69,8 +66,8 @@ import {
   useTrackingRoute,
 } from '@/lib/delivery/hooks';
 import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
+import { OrderCallPanel } from '@/components/call/OrderCallPanel';
 import { useOrder, useReorder } from '@/lib/order/hooks';
-import { toE164IndianMobile } from '@/lib/order/phone';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
 import {
   canRateOrder,
@@ -526,14 +523,11 @@ export function OrderTrackingScreen() {
   const cancelled = isTerminalCancelled(combinedStatus);
   // t?.partner from delivery-service full tracker; partner query from /tracking/order/:id/partner
   const trackerPartner = t?.partner;
-  const partnerAssigned = Boolean(
-    partner?.name || partner?.phone || trackerPartner?.name
-  );
+  const partnerAssigned = Boolean(partner || trackerPartner);
   const partnerName =
     partner?.name ||
     trackerPartner?.name ||
     (active ? 'Finding a partner' : undefined);
-  const partnerPhone = partner?.phone || trackerPartner?.phone;
   const partnerRating =
     (partner ?? trackerPartner) && ((partner ?? trackerPartner)!.rating ?? 0) > 0
       ? ((partner ?? trackerPartner)!.rating).toFixed(1)
@@ -663,12 +657,6 @@ export function OrderTrackingScreen() {
     railWidth.value = e.nativeEvent.layout.width;
   };
 
-  const callPartner = () => {
-    if (!partnerPhone) return;
-    const e164 = toE164IndianMobile(partnerPhone) || partnerPhone;
-    void Linking.openURL(`tel:${e164}`);
-  };
-
   const routeQuery = useTrackingRoute(id);
   const otpQuery = useDropOtp(id, trackingActive);
   const chatQuery = useChatHistory(id, {
@@ -679,7 +667,6 @@ export function OrderTrackingScreen() {
   const createShare = useCreateShareLink(id);
   const revokeShare = useRevokeShareLink(id);
   const nudgePartner = useNudgePartner(id);
-  const contactPartner = useContactPartner(id);
   const contactSupport = useContactSupport(id);
   const setDeliveryInstructions = useSetDeliveryInstructions(id);
   const setContactlessMutation = useSetContactless(id);
@@ -735,20 +722,6 @@ export function OrderTrackingScreen() {
       Alert.alert('Sent', 'We nudged your delivery partner.');
     } catch (e) {
       Alert.alert('Could not nudge', e instanceof Error ? e.message : 'Please try again');
-    }
-  };
-
-  const handleMaskedCall = async () => {
-    try {
-      const res = await contactPartner.mutateAsync();
-      if (res.maskedPhone) {
-        const e164 = toE164IndianMobile(res.maskedPhone) || res.maskedPhone;
-        await Linking.openURL(`tel:${e164}`);
-        return;
-      }
-      Alert.alert('Connected', 'Partner call request was sent.');
-    } catch (e) {
-      Alert.alert('Call failed', e instanceof Error ? e.message : 'Please try again');
     }
   };
 
@@ -1222,28 +1195,12 @@ export function OrderTrackingScreen() {
                         ) : null}
                       </View>
                     ) : null}
-                    <Text style={styles.partnerPhone} numberOfLines={1}>
-                      {partnerPhone
-                        ? partnerPhone
-                        : 'Number appears once assigned'}
-                    </Text>
                   </View>
                 </View>
 
                 {partnerAssigned ? (
                   <>
                     <View style={styles.partnerActions}>
-                      <Pressable
-                        style={[
-                          styles.callBtn,
-                          !partnerPhone && styles.btnDisabled,
-                        ]}
-                        disabled={!partnerPhone}
-                        onPress={callPartner}
-                      >
-                        <Phone color={WHITE} size={16} strokeWidth={2.5} />
-                        <Text style={styles.callBtnText}>Call partner</Text>
-                      </Pressable>
                       <Pressable
                         style={styles.helpBtn}
                         onPress={() =>
@@ -1312,6 +1269,8 @@ export function OrderTrackingScreen() {
               </View>
             </View>
           )}
+
+          {id ? <OrderCallPanel orderId={id} viewer="customer" /> : null}
 
           {!active ? (
             <View style={styles.completedActions}>
@@ -1432,11 +1391,6 @@ export function OrderTrackingScreen() {
               <Text style={styles.sectionTitle}>Delivery controls</Text>
               <View style={styles.chatCard}>
                 <View style={styles.partnerActions}>
-                  <Pressable style={styles.softBtn} onPress={handleMaskedCall}>
-                    <Text style={styles.softBtnText}>
-                      {contactPartner.isPending ? 'Connecting…' : 'Masked call'}
-                    </Text>
-                  </Pressable>
                   <Pressable style={styles.softBtn} onPress={handleSupport}>
                     <Text style={styles.softBtnText}>
                       {contactSupport.isPending ? 'Sending…' : 'Contact support'}

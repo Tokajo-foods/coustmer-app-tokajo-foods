@@ -51,6 +51,17 @@ export type ServerToClientEvents = {
     reason?: string | null;
     action?: string | null;
   }) => void;
+  /** GreenVN masks changed. Payload has no phone number. */
+  'call:masks': (data: { orderId: string; reason?: string }) => void;
+  /** In-app call state. Payload has no phone number. */
+  'call:internet': (data: {
+    orderId: string;
+    callId: string;
+    state: string;
+    pairKey: string;
+    callerRole: string;
+    calleeRole: string;
+  }) => void;
 };
 
 /** Client → Server events */
