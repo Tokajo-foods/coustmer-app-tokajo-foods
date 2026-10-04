@@ -48,20 +48,8 @@ function iconForType(type: string) {
   return Bell;
 }
 
-function colorForType(type: string) {
-  const t = type.toLowerCase();
-  if (t.includes('order') || t.includes('food')) return '#EA580C';
-  if (t.includes('deliver')) return '#0891B2';
-  if (t.includes('pay') || t.includes('wallet') || t.includes('refund'))
-    return '#16A34A';
-  if (t.includes('promo') || t.includes('offer') || t.includes('deal'))
-    return '#DB2777';
-  return authTheme.brand;
-}
-
 export function NotificationRow({ notification, onPress, onDelete }: Props) {
   const Icon = iconForType(notification.type);
-  const color = colorForType(notification.type);
   const unread = !notification.isRead;
 
   return (
@@ -70,8 +58,8 @@ export function NotificationRow({ notification, onPress, onDelete }: Props) {
       onLongPress={onDelete}
       style={[styles.card, unread && styles.cardUnread]}
     >
-      <View style={[styles.iconWrap, { backgroundColor: `${color}18` }]}>
-        <Icon color={color} size={20} strokeWidth={2.1} />
+      <View style={styles.iconWrap}>
+        <Icon color={authTheme.brand} size={20} strokeWidth={2.1} />
       </View>
 
       <View style={styles.body}>
@@ -127,6 +115,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: authTheme.brandSoft,
   },
   body: {
     flex: 1,

@@ -456,15 +456,15 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#FFE0C2',
+    backgroundColor: '#FFF1E6',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#EDF1F5',
+    backgroundColor: '#FFF1E6',
     padding: 4,
     borderRadius: 12,
     marginTop: 16,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   segmentTextActive: {
-    color: '#202020',
+    color: authTheme.brand,
     fontWeight: '700',
   },
   metaCard: {
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   prefValueOn: {
-    color: '#16A34A',
+    color: authTheme.brand,
   },
   deviceActions: {
     flexDirection: 'row',
@@ -565,9 +565,9 @@ const styles = StyleSheet.create({
   deviceBtn: {
     flex: 1,
     borderRadius: 10,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: authTheme.brandSoft,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: '#FFE0C2',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   deviceBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#3730A3',
+    color: authTheme.brand,
   },
   deviceBtnDanger: {
     backgroundColor: '#FEF2F2',
@@ -605,6 +605,12 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFF1E6',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   emptyTitle: {

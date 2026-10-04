@@ -77,7 +77,7 @@ export function TokajoTopBar({
               : 'Notifications'
           }
         >
-          <Bell color="#1C1C1C" size={20} strokeWidth={2.2} />
+          <Bell color={ORANGE} size={20} strokeWidth={2.4} />
           {unreadCount > 0 ? <View style={styles.dot} /> : null}
         </SmoothPressable>
       </View>
@@ -142,7 +142,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F6F6F7',
+    backgroundColor: '#FFF1E6',
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
     alignItems: 'center',
     justifyContent: 'center',
   },
