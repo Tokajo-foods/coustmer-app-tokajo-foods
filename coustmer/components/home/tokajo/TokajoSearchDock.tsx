@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import { Search } from 'lucide-react-native';
+import { Search, SlidersHorizontal } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
+
+const ORANGE = '#F97316';
 
 const HINTS = [
   'Search for restaurants, dishes, cuisines...',
@@ -29,10 +31,14 @@ export function TokajoSearchDock() {
         onPress={() => router.push('/search')}
         accessibilityRole="search"
       >
-        <Search color="#9A9A9A" size={20} strokeWidth={2.3} />
+        <View style={styles.searchIcon}>
+          <Search color={ORANGE} size={18} strokeWidth={2.6} />
+        </View>
         <Text style={styles.placeholder} numberOfLines={1}>
           {HINTS[i]}
         </Text>
+        <View style={styles.divider} />
+        <SlidersHorizontal color={ORANGE} size={18} strokeWidth={2.4} />
       </Pressable>
     </View>
   );
@@ -46,18 +52,36 @@ const styles = StyleSheet.create({
   search: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    height: 54,
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    gap: 11,
+    height: 56,
+    borderRadius: 18,
+    paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EDEDED',
+    borderColor: '#F1E7DE',
+    shadowColor: '#B4541A',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  searchIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#FFF1E6',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholder: {
     flex: 1,
     fontFamily: fonts.ui,
     fontSize: 14.5,
-    color: '#9A9A9A',
+    color: '#8A8A8A',
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#EFEAE4',
   },
 });

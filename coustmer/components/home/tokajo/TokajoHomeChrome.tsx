@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -54,6 +55,12 @@ export const TokajoHomeChrome = memo(function TokajoHomeChrome({
 
   return (
     <View style={[styles.root, { paddingTop: topInset + 8 }]}>
+      <LinearGradient
+        colors={['#FFE9D6', '#FFF4EB', '#FFFFFF']}
+        locations={[0, 0.6, 1]}
+        style={styles.topWash}
+        pointerEvents="none"
+      />
       <TokajoTopBar
         deliveryTitle={deliveryTitle}
         deliverySubtitle={deliverySubtitle}
@@ -97,6 +104,13 @@ export const TokajoHomeChrome = memo(function TokajoHomeChrome({
 const styles = StyleSheet.create({
   root: {
     backgroundColor: '#FFFFFF',
+  },
+  topWash: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 260,
   },
   heroSpacer: {
     height: 20,

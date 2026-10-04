@@ -141,9 +141,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#FFE4D1',
+    shadowColor: '#B4541A',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   circleActive: {
     backgroundColor: ORANGE,
+    borderColor: '#FFD2B0',
   },
   circleSkeleton: {
     backgroundColor: '#F0F0F0',
