@@ -136,17 +136,12 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8A8A8A',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F2EEEA',
-    marginTop: 9,
-    marginBottom: 9,
-  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 7,
+    marginTop: 4,
   },
   metaItem: {
     flexDirection: 'row',

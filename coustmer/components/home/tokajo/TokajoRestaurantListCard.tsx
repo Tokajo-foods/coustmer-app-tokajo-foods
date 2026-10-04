@@ -134,8 +134,6 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           </Text>
         ) : null}
 
-        <View style={styles.divider} />
-
         <View style={styles.metaRow}>
           {eta ? (
             <View style={styles.metaItem}>
