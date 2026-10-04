@@ -7,6 +7,8 @@ import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { styles } from '@/components/home/tokajo/TokajoRestaurantListCard.styles';
 import type { Restaurant } from '@/lib/restaurant/types';
 
+const ORANGE = '#F97316';
+
 function formatCount(n?: number): string {
   if (!n || n <= 0) return '';
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`;
@@ -109,9 +111,19 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
             {r.name}
           </Text>
           {typeof rating === 'number' && rating > 0 ? (
-            <View style={styles.ratingPill}>
-              <Star color="#FFFFFF" fill="#FFFFFF" size={11} strokeWidth={2} />
-              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+            <View style={styles.ratingWrap}>
+              <View style={styles.ratingPill}>
+                <Star
+                  color="#FFFFFF"
+                  fill="#FFFFFF"
+                  size={11}
+                  strokeWidth={2}
+                />
+                <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+              </View>
+              {count ? (
+                <Text style={styles.ratingCount}>({count})</Text>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -122,17 +134,19 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           </Text>
         ) : null}
 
+        <View style={styles.divider} />
+
         <View style={styles.metaRow}>
           {eta ? (
             <View style={styles.metaItem}>
-              <Clock color="#6B6B6B" size={13} strokeWidth={2.5} />
+              <Clock color={ORANGE} size={13} strokeWidth={2.6} />
               <Text style={styles.metaText}>{eta}</Text>
             </View>
           ) : null}
           {distance ? (
             <View style={styles.metaItem}>
               {eta ? <View style={styles.dot} /> : null}
-              <MapPin color="#6B6B6B" size={13} strokeWidth={2.5} />
+              <MapPin color={ORANGE} size={13} strokeWidth={2.6} />
               <Text style={styles.metaText}>{distance}</Text>
             </View>
           ) : null}
@@ -142,23 +156,16 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
               <Text style={styles.metaText}>₹{cost} for two</Text>
             </View>
           ) : null}
-        </View>
 
-        {r.isPureVeg || count ? (
-          <View style={styles.chipRow}>
-            {r.isPureVeg ? (
-              <View style={styles.vegChip}>
-                <View style={styles.vegSquare}>
-                  <View style={styles.vegDot} />
-                </View>
-                <Text style={styles.vegChipText}>Pure Veg</Text>
+          {r.isPureVeg ? (
+            <View style={styles.vegChip}>
+              <View style={styles.vegSquare}>
+                <View style={styles.vegDot} />
               </View>
-            ) : null}
-            {count ? (
-              <Text style={styles.subMeta}>{count} ratings</Text>
-            ) : null}
-          </View>
-        ) : null}
+              <Text style={styles.vegChipText}>Veg</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
