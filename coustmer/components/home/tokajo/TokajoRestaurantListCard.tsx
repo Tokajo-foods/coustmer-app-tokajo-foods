@@ -96,14 +96,14 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
 
         {eta ? (
           <View style={styles.etaBadge}>
-            <Clock color="#FFFFFF" size={12} strokeWidth={2.6} />
+            <Clock color={ORANGE} size={13} strokeWidth={2.8} />
             <Text style={styles.etaText}>{eta}</Text>
           </View>
         ) : null}
 
         {offer ? (
-          <View style={styles.offerStrip}>
-            <Text style={styles.offerText} numberOfLines={1}>
+          <View style={styles.offerWrap} pointerEvents="none">
+            <Text style={styles.offerBig} numberOfLines={1}>
               {String(offer)}
             </Text>
           </View>
@@ -205,29 +205,30 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 18,
-    borderRadius: 20,
+    borderRadius: 22,
     backgroundColor: '#FFFFFF',
     shadowColor: '#0B1220',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   cardPressed: {
-    opacity: 0.94,
+    opacity: 0.96,
+    transform: [{ scale: 0.995 }],
   },
   imageShade: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 72,
-    backgroundColor: 'rgba(0,0,0,0.28)',
+    height: 104,
+    backgroundColor: 'rgba(0,0,0,0.34)',
   },
   imageWrap: {
-    height: 160,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    height: 184,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
   },
@@ -270,31 +271,36 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(17,17,17,0.8)',
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    shadowColor: '#0B1220',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   etaText: {
-    color: '#FFFFFF',
+    color: '#1C1C1C',
     fontFamily: fonts.uiBold,
-    fontSize: 12,
+    fontSize: 12.5,
   },
-  offerStrip: {
+  offerWrap: {
     position: 'absolute',
-    left: 12,
+    left: 14,
     bottom: 12,
-    backgroundColor: ORANGE,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    maxWidth: '60%',
+    right: 96,
   },
-  offerText: {
+  offerBig: {
     color: '#FFFFFF',
-    fontFamily: fonts.uiBold,
-    fontSize: 12,
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    letterSpacing: -0.3,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   body: {
     padding: 14,
