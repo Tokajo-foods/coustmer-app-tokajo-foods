@@ -72,7 +72,10 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           <View style={[styles.image, styles.imageEmpty]} />
         )}
 
-        <View style={styles.imageShade} pointerEvents="none" />
+        <View
+          style={[styles.imageShade, !offer && styles.imageShadeLight]}
+          pointerEvents="none"
+        />
 
         {r.isPromoted ? (
           <View style={styles.promoted}>
@@ -160,24 +163,22 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
         <View style={styles.metaRow}>
           {eta ? (
             <View style={styles.metaItem}>
-              <Clock color="#6B6B6B" size={13} strokeWidth={2.4} />
+              <Clock color="#4B4B4B" size={13} strokeWidth={2.6} />
               <Text style={styles.metaText}>{eta}</Text>
             </View>
           ) : null}
           {distance ? (
-            <>
-              <View style={styles.dot} />
-              <View style={styles.metaItem}>
-                <MapPin color="#6B6B6B" size={13} strokeWidth={2.4} />
-                <Text style={styles.metaText}>{distance}</Text>
-              </View>
-            </>
+            <View style={styles.metaItem}>
+              {eta ? <View style={styles.dot} /> : null}
+              <MapPin color="#4B4B4B" size={13} strokeWidth={2.6} />
+              <Text style={styles.metaText}>{distance}</Text>
+            </View>
           ) : null}
           {cost > 0 ? (
-            <>
-              <View style={styles.dot} />
+            <View style={styles.metaItem}>
+              {eta || distance ? <View style={styles.dot} /> : null}
               <Text style={styles.metaText}>₹{cost} for two</Text>
-            </>
+            </View>
           ) : null}
         </View>
 
@@ -224,6 +225,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: 104,
     backgroundColor: 'rgba(0,0,0,0.34)',
+  },
+  imageShadeLight: {
+    height: 56,
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
   imageWrap: {
     height: 184,
