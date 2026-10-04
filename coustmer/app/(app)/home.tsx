@@ -303,9 +303,10 @@ export default function HomeScreen() {
   }, [nearbyParams, feed.hasNextPage, feed.isFetchingNextPage, feed.fetchNextPage]);
 
   const renderRestaurantItem = useCallback(
-    ({ item }: { item: Restaurant }) => (
+    ({ item, index }: { item: Restaurant; index: number }) => (
       <TokajoRestaurantListCard
         restaurant={item}
+        divided={index > 0}
         isFavorite={favoriteIdSet.has(item.id)}
         onToggleFavorite={onToggleFavorite}
         onPress={openRestaurant}

@@ -40,10 +40,11 @@ export function FilteredHomeResults({
           </Text>
         </View>
       ) : (
-        restaurants.map((r) => (
+        restaurants.map((r, index) => (
           <TokajoRestaurantListCard
             key={r.id}
             restaurant={r}
+            divided={index > 0}
             isFavorite={favoriteIds.includes(r.id)}
             onToggleFavorite={onToggleFavorite}
             onPress={onPressRestaurant}

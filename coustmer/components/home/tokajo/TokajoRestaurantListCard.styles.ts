@@ -6,6 +6,13 @@ const ORANGE = '#F97316';
 const GREEN = '#12833B';
 
 export const styles = StyleSheet.create({
+  separator: {
+    height: 1,
+    backgroundColor: '#E8E2DC',
+    marginHorizontal: 28,
+    marginTop: 2,
+    marginBottom: 16,
+  },
   card: {
     marginHorizontal: 16,
     marginBottom: 18,

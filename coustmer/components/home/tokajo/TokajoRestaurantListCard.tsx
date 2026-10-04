@@ -29,6 +29,8 @@ function formatDistance(r: Restaurant): string {
 type Props = {
   restaurant: Restaurant;
   isFavorite?: boolean;
+  /** Hairline above this card, so it reads as the next card after the one above. */
+  divided?: boolean;
   onToggleFavorite?: (id: string) => void;
   onPress: (id: string) => void;
 };
@@ -37,6 +39,7 @@ type Props = {
 export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
   restaurant: r,
   isFavorite,
+  divided,
   onToggleFavorite,
   onPress,
 }: Props) {
@@ -52,7 +55,9 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
     r.offer || (Array.isArray(r.offerBadges) ? r.offerBadges[0] : undefined);
 
   return (
-    <Pressable
+    <View>
+      {divided ? <View style={styles.separator} /> : null}
+      <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={() => onPress(r.id)}
     >
@@ -165,6 +170,7 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           ) : null}
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 });
