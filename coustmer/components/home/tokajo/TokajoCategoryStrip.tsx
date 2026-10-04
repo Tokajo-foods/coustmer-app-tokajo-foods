@@ -13,7 +13,7 @@ import { fonts } from '@/constants/typography';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 
 const ORANGE = '#F97316';
-const CIRCLE = 58;
+const CIRCLE = 64;
 
 export type TokajoCategory = {
   id: string;
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     rowGap: 14,
   },
   item: {
-    width: 70,
+    width: 76,
     alignItems: 'center',
     gap: 6,
   },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
-    transform: [{ scale: 2.15 }, { translateY: 6 }],
+    transform: [{ scale: 2.35 }, { translateY: -10 }],
   },
   label: {
     fontFamily: fonts.uiSemi,
