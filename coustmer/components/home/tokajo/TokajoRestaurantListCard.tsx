@@ -101,6 +101,24 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           />
         </SmoothPressable>
 
+        <View style={styles.logoBadge} pointerEvents="none">
+          {r.logoUrl ? (
+            <Image
+              source={{ uri: r.logoUrl }}
+              style={styles.logo}
+              contentFit="cover"
+              recyclingKey={`${r.id}-logo`}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={[styles.logo, styles.logoFallback]}>
+              <Text style={styles.logoInitial}>
+                {(r.name || '?').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </View>
+
         {offer ? (
           <View style={styles.offerChip} pointerEvents="none">
             <Text style={styles.offerChipText} numberOfLines={1}>
