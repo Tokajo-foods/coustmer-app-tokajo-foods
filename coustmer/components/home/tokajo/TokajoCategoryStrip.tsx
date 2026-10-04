@@ -1,10 +1,8 @@
 import { Image } from 'expo-image';
-import { LayoutGrid } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
 import {
-  CATEGORY_ALL_ICON,
   CATEGORY_MORE_ICON,
   localCategoryIcon,
 } from '@/components/home/tokajo/assets';
@@ -20,11 +18,14 @@ export type TokajoCategory = {
   imageUrl?: string;
 };
 
-/** Prefer a local design icon; else the API image; else the fallback icon. */
+/**
+ * Prefer the API's per-category photo (matches the name like Swiggy/Zomato);
+ * fall back to shipped artwork, then the generic icon.
+ */
 function iconFor(cat: TokajoCategory) {
+  if (cat.imageUrl) return { uri: cat.imageUrl };
   const local = localCategoryIcon(cat.slug || cat.label);
   if (local) return local;
-  if (cat.imageUrl) return { uri: cat.imageUrl };
   return CATEGORY_MORE_ICON;
 }
 
@@ -37,7 +38,7 @@ type Props = {
   loading?: boolean;
 };
 
-/** Circular category rail: All · <API categories> · More. */
+/** Circular category rail: <API categories with per-name photos> · More. */
 export function TokajoCategoryStrip({
   categories,
   activeSlug,
@@ -46,8 +47,7 @@ export function TokajoCategoryStrip({
   onMore,
   loading,
 }: Props) {
-  const preview = categories.slice(0, 6);
-  const allActive = activeSlug === 'all' || activeSlug === 'popular';
+  const preview = categories.slice(0, 8);
 
   return (
     <ScrollView
@@ -55,25 +55,8 @@ export function TokajoCategoryStrip({
       {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
     >
-      <Pressable style={styles.item} onPress={onSelectAll}>
-        <View style={[styles.circle, allActive && styles.circleActive]}>
-          {allActive ? (
-            <LayoutGrid color="#FFFFFF" size={24} strokeWidth={2.4} />
-          ) : (
-            <Image
-              source={CATEGORY_ALL_ICON}
-              style={styles.icon}
-              contentFit="cover"
-            />
-          )}
-        </View>
-        <Text style={[styles.label, allActive && styles.labelActive]}>
-          All
-        </Text>
-      </Pressable>
-
       {loading && preview.length === 0
-        ? Array.from({ length: 5 }).map((_, i) => (
+        ? Array.from({ length: 6 }).map((_, i) => (
             <View key={`sk-${i}`} style={styles.item}>
               <View style={[styles.circle, styles.circleSkeleton]} />
               <View style={styles.labelSkeleton} />
@@ -85,16 +68,16 @@ export function TokajoCategoryStrip({
               <Pressable
                 key={cat.id}
                 style={styles.item}
-                onPress={() => onSelect(cat)}
+                onPress={() => (active ? onSelectAll() : onSelect(cat))}
               >
-                <View
-                  style={[styles.circle, active && styles.circleActive]}
-                >
+                <View style={[styles.circle, active && styles.circleActive]}>
                   <Image
                     source={iconFor(cat)}
                     style={styles.icon}
                     contentFit="cover"
+                    transition={120}
                   />
+                  {active ? <View style={styles.activeRing} /> : null}
                 </View>
                 <Text
                   style={[styles.label, active && styles.labelActive]}
@@ -107,7 +90,7 @@ export function TokajoCategoryStrip({
           })}
 
       <Pressable style={styles.item} onPress={onMore}>
-        <View style={styles.circle}>
+        <View style={[styles.circle, styles.moreCircle]}>
           <Image
             source={CATEGORY_MORE_ICON}
             style={styles.icon}
@@ -150,8 +133,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   circleActive: {
-    backgroundColor: ORANGE,
-    borderColor: '#FFD2B0',
+    borderColor: ORANGE,
+  },
+  activeRing: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: CIRCLE / 2,
+    borderWidth: 2.5,
+    borderColor: ORANGE,
+  },
+  moreCircle: {
+    backgroundColor: '#FFF3EA',
   },
   circleSkeleton: {
     backgroundColor: '#F0F0F0',
