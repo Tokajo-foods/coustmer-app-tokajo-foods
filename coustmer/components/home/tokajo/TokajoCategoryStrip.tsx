@@ -1,15 +1,19 @@
 import { Image } from 'expo-image';
+import { LayoutGrid } from 'lucide-react-native';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
 import {
-  CATEGORY_MORE_ICON,
-  localCategoryIcon,
-} from '@/components/home/tokajo/assets';
+  CATEGORY_PREVIEW_COUNT,
+  CIRCLE_CATEGORIES,
+  type CircleCategory,
+} from '@/components/home/tokajo/circle-categories';
 import { fonts } from '@/constants/typography';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 
 const ORANGE = '#F97316';
+const CIRCLE = 72;
 
 export type TokajoCategory = {
   id: string;
@@ -17,17 +21,6 @@ export type TokajoCategory = {
   slug: string;
   imageUrl?: string;
 };
-
-/**
- * Prefer the API's per-category photo (matches the name like Swiggy/Zomato);
- * fall back to shipped artwork, then the generic icon.
- */
-function iconFor(cat: TokajoCategory) {
-  if (cat.imageUrl) return { uri: cat.imageUrl };
-  const local = localCategoryIcon(cat.slug || cat.label);
-  if (local) return local;
-  return CATEGORY_MORE_ICON;
-}
 
 type Props = {
   categories: TokajoCategory[];
@@ -38,16 +31,98 @@ type Props = {
   loading?: boolean;
 };
 
-/** Circular category rail: <API categories with per-name photos> · More. */
+function CategoryTile({
+  cat,
+  active,
+  inGrid,
+  onPress,
+}: {
+  cat: CircleCategory;
+  active: boolean;
+  inGrid?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={[styles.item, inGrid && styles.itemGrid]} onPress={onPress}>
+      <View style={[styles.circle, active && styles.circleActive]}>
+        <Image
+          source={cat.image}
+          style={styles.photo}
+          contentFit="cover"
+          transition={120}
+        />
+      </View>
+      <Text
+        style={[styles.label, active && styles.labelActive]}
+        numberOfLines={1}
+      >
+        {cat.label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Circular food categories. Eight across, More expands the rest in place. */
 export function TokajoCategoryStrip({
-  categories,
   activeSlug,
   onSelectAll,
   onSelect,
-  onMore,
   loading,
 }: Props) {
-  const preview = categories.slice(0, 8);
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded
+    ? CIRCLE_CATEGORIES
+    : CIRCLE_CATEGORIES.slice(0, CATEGORY_PREVIEW_COUNT);
+
+  const open = (cat: CircleCategory) => {
+    if (activeSlug === cat.slug) {
+      onSelectAll();
+      return;
+    }
+    onSelect({ id: cat.id, label: cat.label, slug: cat.slug });
+  };
+
+  const more = (
+    <Pressable
+      style={[styles.item, expanded && styles.itemGrid]}
+      onPress={() => setExpanded((v) => !v)}
+    >
+      <View style={[styles.circle, styles.moreCircle]}>
+        <LayoutGrid color={ORANGE} size={26} strokeWidth={2.2} />
+      </View>
+      <Text style={styles.label}>{expanded ? 'Less' : 'More'}</Text>
+    </Pressable>
+  );
+
+  if (loading && CIRCLE_CATEGORIES.length === 0) {
+    return (
+      <View style={styles.row}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <View key={`sk-${i}`} style={styles.item}>
+            <View style={[styles.circle, styles.circleSkeleton]} />
+            <View style={styles.labelSkeleton} />
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  if (expanded) {
+    return (
+      <View style={styles.grid}>
+        {visible.map((cat) => (
+          <CategoryTile
+            key={cat.id}
+            cat={cat}
+            inGrid
+            active={activeSlug === cat.slug}
+            onPress={() => open(cat)}
+          />
+        ))}
+        {more}
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -55,106 +130,68 @@ export function TokajoCategoryStrip({
       {...PREMIUM_HORIZONTAL_LIST}
       contentContainerStyle={styles.row}
     >
-      {loading && preview.length === 0
-        ? Array.from({ length: 6 }).map((_, i) => (
-            <View key={`sk-${i}`} style={styles.item}>
-              <View style={[styles.circle, styles.circleSkeleton]} />
-              <View style={styles.labelSkeleton} />
-            </View>
-          ))
-        : preview.map((cat) => {
-            const active = activeSlug === cat.slug;
-            return (
-              <Pressable
-                key={cat.id}
-                style={styles.item}
-                onPress={() => (active ? onSelectAll() : onSelect(cat))}
-              >
-                <View style={[styles.circle, active && styles.circleActive]}>
-                  <Image
-                    source={iconFor(cat)}
-                    style={styles.icon}
-                    contentFit="cover"
-                    transition={120}
-                  />
-                  {active ? <View style={styles.activeRing} /> : null}
-                </View>
-                <Text
-                  style={[styles.label, active && styles.labelActive]}
-                  numberOfLines={1}
-                >
-                  {cat.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-
-      <Pressable style={styles.item} onPress={onMore}>
-        <View style={[styles.circle, styles.moreCircle]}>
-          <Image
-            source={CATEGORY_MORE_ICON}
-            style={styles.icon}
-            contentFit="cover"
-          />
-        </View>
-        <Text style={styles.label}>More</Text>
-      </Pressable>
+      {visible.map((cat) => (
+        <CategoryTile
+          key={cat.id}
+          cat={cat}
+          active={activeSlug === cat.slug}
+          onPress={() => open(cat)}
+        />
+      ))}
+      {more}
     </ScrollView>
   );
 }
 
-const CIRCLE = 58;
-
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: 14,
-    paddingBottom: 10,
-    gap: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 14,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    rowGap: 14,
   },
   item: {
-    width: 62,
+    width: 84,
     alignItems: 'center',
     gap: 6,
+  },
+  itemGrid: {
+    width: '25%',
+    marginBottom: 4,
   },
   circle: {
     width: CIRCLE,
     height: CIRCLE,
     borderRadius: CIRCLE / 2,
-    backgroundColor: '#FFF3EA',
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: '#FFE4D1',
-    shadowColor: '#B4541A',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    backgroundColor: '#F4F4F4',
   },
   circleActive: {
-    borderColor: ORANGE,
-  },
-  activeRing: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: CIRCLE / 2,
-    borderWidth: 2.5,
+    borderWidth: 2,
     borderColor: ORANGE,
   },
   moreCircle: {
     backgroundColor: '#FFF3EA',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   circleSkeleton: {
     backgroundColor: '#F0F0F0',
   },
-  icon: {
+  photo: {
     width: '100%',
     height: '100%',
   },
   label: {
     fontFamily: fonts.uiSemi,
     fontSize: 12,
-    color: '#4B4B4B',
+    color: '#3A3A3A',
     textAlign: 'center',
   },
   labelActive: {
@@ -162,7 +199,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiBold,
   },
   labelSkeleton: {
-    width: 36,
+    width: 40,
     height: 10,
     borderRadius: 5,
     backgroundColor: '#F0F0F0',
