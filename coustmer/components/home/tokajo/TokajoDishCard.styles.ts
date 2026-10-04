@@ -1,0 +1,186 @@
+import { StyleSheet } from 'react-native';
+
+import { fonts } from '@/constants/typography';
+
+const ORANGE = '#F97316';
+const GREEN = '#12833B';
+
+export const styles = StyleSheet.create({
+  card: {
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#0B1220',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  cardPressed: {
+    opacity: 0.94,
+  },
+  cardSuggested: {
+    borderWidth: 1,
+    borderColor: '#FFE0C2',
+  },
+  cardTrending: {
+    shadowColor: '#C2410C',
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+  },
+  trendBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9,
+    shadowColor: '#C2410C',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  trendBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.uiBold,
+    fontSize: 11,
+    letterSpacing: 0.3,
+  },
+  imageWrap: {
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  imageEmpty: {
+    backgroundColor: '#EFEFEF',
+  },
+  imageShade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 48,
+  },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
+    backgroundColor: ORANGE,
+  },
+  badgeLight: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.uiBold,
+    fontSize: 10,
+    letterSpacing: 0.3,
+  },
+  badgeTextLight: {
+    color: ORANGE,
+  },
+  heart: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingPill: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: GREEN,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  ratingText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.uiBold,
+    fontSize: 10.5,
+  },
+  body: {
+    padding: 11,
+    gap: 3,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  name: {
+    flex: 1,
+    fontFamily: fonts.uiBold,
+    fontSize: 14,
+    color: '#1C1C1C',
+  },
+  restaurant: {
+    fontFamily: fonts.ui,
+    fontSize: 12,
+    color: '#9A9A9A',
+  },
+  priceRow: {
+    marginTop: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  price: {
+    flexShrink: 1,
+    fontFamily: fonts.displayBold,
+    fontSize: 15.5,
+    color: '#1C1C1C',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF7F0',
+    borderWidth: 1.3,
+    borderColor: ORANGE,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  addText: {
+    color: ORANGE,
+    fontFamily: fonts.uiBold,
+    fontSize: 12.5,
+    letterSpacing: 0.4,
+  },
+  vegBox: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  vegDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+});
