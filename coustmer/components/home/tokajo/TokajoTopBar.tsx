@@ -18,7 +18,7 @@ type Props = {
   onLocationPress?: () => void;
 };
 
-/** White header: delivery location (left) · TOKAJO logo (center) · bell (right). */
+/** Compact header: logo · delivery location · bell, all on one row. */
 export function TokajoTopBar({
   deliveryTitle,
   deliverySubtitle,
@@ -39,48 +39,46 @@ export function TokajoTopBar({
 
   return (
     <View style={styles.root}>
-      <View style={styles.logoRow}>
-        <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
-      </View>
+      <Image source={TOKAJO_LOGO} style={styles.logo} contentFit="contain" />
 
-      <View style={styles.bottomRow}>
-        <SmoothPressable
-          style={styles.location}
-          onPress={onLocationPress}
-          pressScale={0.98}
-          accessibilityLabel="Change delivery location"
-        >
-          <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
-          <View style={styles.locationText}>
-            <Text style={styles.deliverTo}>Deliver to</Text>
-            <View style={styles.deliverToRow}>
-              <Text style={styles.locationTitle} numberOfLines={1}>
-                {headline}
-              </Text>
-              <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
-            </View>
-            {deliverySubtitle ? (
-              <Text style={styles.locationSub} numberOfLines={1}>
-                {deliverySubtitle}
-              </Text>
-            ) : null}
+      <SmoothPressable
+        style={styles.location}
+        onPress={onLocationPress}
+        pressScale={0.98}
+        accessibilityLabel="Change delivery location"
+      >
+        <View style={styles.pin}>
+          <MapPin color="#FFFFFF" size={14} strokeWidth={2.6} />
+        </View>
+        <View style={styles.locationText}>
+          <Text style={styles.deliverTo}>Deliver to</Text>
+          <View style={styles.deliverToRow}>
+            <Text style={styles.locationTitle} numberOfLines={1}>
+              {headline}
+            </Text>
+            <ChevronDown color={ORANGE} size={15} strokeWidth={2.8} />
           </View>
-        </SmoothPressable>
+          {deliverySubtitle ? (
+            <Text style={styles.locationSub} numberOfLines={1}>
+              {deliverySubtitle}
+            </Text>
+          ) : null}
+        </View>
+      </SmoothPressable>
 
-        <SmoothPressable
-          style={styles.bell}
-          onPress={() => router.push('/notifications')}
-          pressScale={0.94}
-          accessibilityLabel={
-            unreadCount > 0
-              ? `Notifications, ${unreadCount} unread`
-              : 'Notifications'
-          }
-        >
-          <Bell color={ORANGE} size={20} strokeWidth={2.4} />
-          {unreadCount > 0 ? <View style={styles.dot} /> : null}
-        </SmoothPressable>
-      </View>
+      <SmoothPressable
+        style={styles.bell}
+        onPress={() => router.push('/notifications')}
+        pressScale={0.94}
+        accessibilityLabel={
+          unreadCount > 0
+            ? `Notifications, ${unreadCount} unread`
+            : 'Notifications'
+        }
+      >
+        <Bell color={ORANGE} size={20} strokeWidth={2.4} />
+        {unreadCount > 0 ? <View style={styles.dot} /> : null}
+      </SmoothPressable>
     </View>
   );
 }
@@ -88,32 +86,33 @@ export function TokajoTopBar({
 const styles = StyleSheet.create({
   root: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  logoRow: {
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 184,
-    height: 50,
-  },
-  bottomRow: {
-    marginTop: 10,
+    paddingBottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 10,
+  },
+  logo: {
+    width: 108,
+    height: 36,
   },
   location: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
+  },
+  pin: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   locationText: {
-    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
   },
   deliverToRow: {
     flexDirection: 'row',
