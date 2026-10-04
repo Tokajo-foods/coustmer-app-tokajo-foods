@@ -173,6 +173,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFE4D1',
+    shadowColor: '#B4541A',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   circleActive: {
     borderWidth: 2,
@@ -189,7 +196,7 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
-    transform: [{ scale: 2.85 }, { translateY: 0 }, { translateX: 6 }],
+    transform: [{ scale: 2.65 }, { translateY: 0 }, { translateX: 1.5 }],
   },
   label: {
     fontFamily: fonts.uiSemi,
