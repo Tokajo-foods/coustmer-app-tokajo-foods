@@ -20,7 +20,7 @@ import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
 
 /** Space to leave above the floating tab bar on root tab screens. */
-export const APP_BOTTOM_NAV_INSET = 80;
+export const APP_BOTTOM_NAV_INSET = 96;
 
 const ORANGE = '#F97316';
 const IDLE_COLOR = '#9CA3AF';
@@ -131,12 +131,14 @@ function TabButton({
       haptic="selection"
     >
       <Animated.View style={[styles.tabInner, animStyle]}>
-        <Icon
-          color={active ? ORANGE : IDLE_COLOR}
-          size={23}
-          strokeWidth={active ? 2.5 : 1.9}
-          fill={active && tab.fillWhenActive ? ORANGE : 'transparent'}
-        />
+        <View style={[styles.iconSlot, active && styles.iconSlotActive]}>
+          <Icon
+            color={active ? ORANGE : IDLE_COLOR}
+            size={22}
+            strokeWidth={active ? 2.5 : 1.9}
+            fill={active && tab.fillWhenActive ? ORANGE : 'transparent'}
+          />
+        </View>
         <Text
           style={[styles.tabLabel, active && styles.tabLabelActive]}
           numberOfLines={1}
@@ -163,7 +165,10 @@ export function AppBottomNav() {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 6) }]}
+      style={[
+        styles.wrap,
+        { paddingBottom: Math.max(insets.bottom, 10) + 8 },
+      ]}
     >
       <View style={styles.bar}>
         {TABS.map((tab) => (
@@ -182,27 +187,27 @@ export function AppBottomNav() {
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
     bottom: 0,
     zIndex: 50,
-    backgroundColor: '#FFFFFF',
   },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    paddingHorizontal: 4,
-    paddingTop: 12,
+    borderRadius: 32,
+    paddingHorizontal: 6,
+    paddingTop: 8,
     paddingBottom: 8,
-    shadowColor: '#0B1220',
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 18,
+    borderWidth: 1,
+    borderColor: '#F3E8DE',
+    shadowColor: '#B4541A',
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
   },
   tab: {
     flex: 1,
@@ -213,8 +218,18 @@ const styles = StyleSheet.create({
   tabInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 3,
     paddingVertical: 2,
+  },
+  iconSlot: {
+    width: 46,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconSlotActive: {
+    backgroundColor: '#FFF1E6',
   },
   tabLabel: {
     fontSize: 11,
