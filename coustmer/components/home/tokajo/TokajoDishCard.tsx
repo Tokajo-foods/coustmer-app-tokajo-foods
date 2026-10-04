@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Heart, Plus, RotateCcw, Star } from 'lucide-react-native';
+import { Flame, Heart, Plus, RotateCcw, Star } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -16,14 +16,14 @@ export type DishCardVariant = 'trending' | 'suggested' | 'orderAgain' | 'default
 
 /** Per-variant image height so rails don't all look identical. */
 export const DISH_CARD_WIDTH: Record<DishCardVariant, number> = {
-  trending: 168,
+  trending: 178,
   suggested: 182,
   orderAgain: 158,
   default: 168,
 };
 
 const IMAGE_HEIGHT: Record<DishCardVariant, number> = {
-  trending: 116,
+  trending: 128,
   suggested: 128,
   orderAgain: 102,
   default: 112,
@@ -84,6 +84,7 @@ export const TokajoDishCard = memo(function TokajoDishCard({
   const tag = tagFor(variant, dish, rank);
   const isReorder = variant === 'orderAgain';
   const isSuggested = variant === 'suggested';
+  const isTrending = variant === 'trending';
 
   return (
     <Pressable
@@ -91,6 +92,7 @@ export const TokajoDishCard = memo(function TokajoDishCard({
         styles.card,
         { width: DISH_CARD_WIDTH[variant] },
         isSuggested && styles.cardSuggested,
+        isTrending && styles.cardTrending,
         pressed && styles.cardPressed,
       ]}
       onPress={() => onPress(dish.restaurantId)}
@@ -116,7 +118,19 @@ export const TokajoDishCard = memo(function TokajoDishCard({
           pointerEvents="none"
         />
 
-        {tag ? (
+        {isTrending ? (
+          <LinearGradient
+            colors={['#FF8A1E', '#F4420B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.trendBadge}
+          >
+            <Flame color="#FFFFFF" fill="#FFE2B0" size={11} strokeWidth={2} />
+            <Text style={styles.trendBadgeText} numberOfLines={1}>
+              {rank ? `#${rank}` : 'HOT'}
+            </Text>
+          </LinearGradient>
+        ) : tag ? (
           <View
             style={[
               styles.badge,
@@ -207,6 +221,34 @@ const styles = StyleSheet.create({
   cardSuggested: {
     borderWidth: 1,
     borderColor: '#FFE0C2',
+  },
+  cardTrending: {
+    shadowColor: '#C2410C',
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+  },
+  trendBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9,
+    shadowColor: '#C2410C',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  trendBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.uiBold,
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
   imageWrap: {
     borderTopLeftRadius: 18,
