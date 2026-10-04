@@ -92,7 +92,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
       ) : null}
 
       {suggested.length > 0 ? (
-        <View style={[styles.section, styles.bandOrange]}>
+        <View style={[styles.section, styles.bandFull]}>
           <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
           <TokajoDishRail
             dishes={suggested}
@@ -172,6 +172,16 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 22,
+  },
+  bandFull: {
+    alignSelf: 'stretch',
+    marginHorizontal: 0,
+    paddingTop: 18,
+    paddingBottom: 14,
+    backgroundColor: '#FFF4EA',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#FFE3CB',
   },
   bandOrange: {
     marginHorizontal: 12,
