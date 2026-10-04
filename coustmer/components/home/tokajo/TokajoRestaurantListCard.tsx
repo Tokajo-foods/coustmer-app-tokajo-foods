@@ -1,14 +1,11 @@
 import { Image } from 'expo-image';
 import { Clock, Heart, MapPin, Star } from 'lucide-react-native';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
-import { fonts } from '@/constants/typography';
+import { styles } from '@/components/home/tokajo/TokajoRestaurantListCard.styles';
 import type { Restaurant } from '@/lib/restaurant/types';
-
-const ORANGE = '#F97316';
-const GREEN = '#12833B';
 
 function formatCount(n?: number): string {
   if (!n || n <= 0) return '';
@@ -34,7 +31,7 @@ type Props = {
   onPress: (id: string) => void;
 };
 
-/** Full-width Zomato-style restaurant card for the vertical feed. */
+/** Full-width modern restaurant card for the home feed. */
 export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
   restaurant: r,
   isFavorite,
@@ -46,7 +43,7 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
   const eta = r.deliveryTimeLabel || r.deliveryTime;
   const rating = r.avgRating ?? r.rating;
   const count = formatCount(r.totalRatings ?? r.reviewCount);
-  const cuisines = (r.cuisines ?? []).slice(0, 4).join(', ');
+  const cuisines = (r.cuisines ?? []).slice(0, 3).join(' • ');
   const cost = Number(r.costForTwo || r.priceForTwo || 0);
   const distance = formatDistance(r);
   const offer =
@@ -79,7 +76,7 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
 
         {r.isPromoted ? (
           <View style={styles.promoted}>
-            <Text style={styles.promotedText}>PROMOTED</Text>
+            <Text style={styles.promotedText}>Ad</Text>
           </View>
         ) : null}
 
@@ -92,21 +89,14 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           <Heart
             color={isFavorite ? '#EF4444' : '#4B4B4B'}
             fill={isFavorite ? '#EF4444' : 'transparent'}
-            size={18}
+            size={17}
             strokeWidth={2.4}
           />
         </SmoothPressable>
 
-        {eta ? (
-          <View style={styles.etaBadge}>
-            <Clock color={ORANGE} size={13} strokeWidth={2.8} />
-            <Text style={styles.etaText}>{eta}</Text>
-          </View>
-        ) : null}
-
         {offer ? (
-          <View style={styles.offerWrap} pointerEvents="none">
-            <Text style={styles.offerBig} numberOfLines={1}>
+          <View style={styles.offerChip} pointerEvents="none">
+            <Text style={styles.offerChipText} numberOfLines={1}>
               {String(offer)}
             </Text>
           </View>
@@ -114,63 +104,35 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
       </View>
 
       <View style={styles.body}>
-        <View style={styles.headRow}>
-          <View style={styles.logoWrap}>
-            {r.logoUrl ? (
-              <Image
-                source={{ uri: r.logoUrl }}
-                style={styles.logo}
-                contentFit="cover"
-                recyclingKey={`${r.id}-logo`}
-                cachePolicy="memory-disk"
-              />
-            ) : (
-              <View style={[styles.logo, styles.logoFallback]}>
-                <Text style={styles.logoInitial}>
-                  {(r.name || '?').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.headText}>
-            <View style={styles.titleRow}>
-              <Text style={styles.name} numberOfLines={1}>
-                {r.name}
-              </Text>
-              {typeof rating === 'number' && rating > 0 ? (
-                <View style={styles.ratingPill}>
-                  <Star
-                    color="#FFFFFF"
-                    fill="#FFFFFF"
-                    size={11}
-                    strokeWidth={2}
-                  />
-                  <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-                </View>
-              ) : null}
+        <View style={styles.titleRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {r.name}
+          </Text>
+          {typeof rating === 'number' && rating > 0 ? (
+            <View style={styles.ratingPill}>
+              <Star color="#FFFFFF" fill="#FFFFFF" size={11} strokeWidth={2} />
+              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
             </View>
-            {cuisines ? (
-              <Text style={styles.cuisines} numberOfLines={1}>
-                {cuisines}
-              </Text>
-            ) : null}
-          </View>
+          ) : null}
         </View>
 
-        <View style={styles.divider} />
+        {cuisines ? (
+          <Text style={styles.cuisines} numberOfLines={1}>
+            {cuisines}
+          </Text>
+        ) : null}
 
         <View style={styles.metaRow}>
           {eta ? (
             <View style={styles.metaItem}>
-              <Clock color="#4B4B4B" size={13} strokeWidth={2.6} />
+              <Clock color="#6B6B6B" size={13} strokeWidth={2.5} />
               <Text style={styles.metaText}>{eta}</Text>
             </View>
           ) : null}
           {distance ? (
             <View style={styles.metaItem}>
               {eta ? <View style={styles.dot} /> : null}
-              <MapPin color="#4B4B4B" size={13} strokeWidth={2.6} />
+              <MapPin color="#6B6B6B" size={13} strokeWidth={2.5} />
               <Text style={styles.metaText}>{distance}</Text>
             </View>
           ) : null}
@@ -200,248 +162,4 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
       </View>
     </Pressable>
   );
-});
-
-const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: 16,
-    marginBottom: 18,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0B1220',
-    shadowOpacity: 0.09,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
-  cardPressed: {
-    opacity: 0.96,
-    transform: [{ scale: 0.995 }],
-  },
-  imageShade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 104,
-    backgroundColor: 'rgba(0,0,0,0.34)',
-  },
-  imageShadeLight: {
-    height: 56,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
-  imageWrap: {
-    height: 184,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imageEmpty: {
-    backgroundColor: '#EFEFEF',
-  },
-  promoted: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(17,17,17,0.72)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  promotedText: {
-    color: '#FFFFFF',
-    fontFamily: fonts.uiBold,
-    fontSize: 9.5,
-    letterSpacing: 0.6,
-  },
-  heart: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  etaBadge: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    shadowColor: '#0B1220',
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  etaText: {
-    color: '#1C1C1C',
-    fontFamily: fonts.uiBold,
-    fontSize: 12.5,
-  },
-  offerWrap: {
-    position: 'absolute',
-    left: 14,
-    bottom: 12,
-    right: 96,
-  },
-  offerBig: {
-    color: '#FFFFFF',
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    letterSpacing: -0.3,
-    textShadowColor: 'rgba(0,0,0,0.45)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  body: {
-    padding: 14,
-  },
-  headRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0B1220',
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  logo: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-  },
-  logoFallback: {
-    backgroundColor: '#FFF1E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoInitial: {
-    fontFamily: fonts.displayBold,
-    fontSize: 20,
-    color: ORANGE,
-  },
-  headText: {
-    flex: 1,
-    gap: 3,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  name: {
-    flex: 1,
-    fontFamily: fonts.displayBold,
-    fontSize: 17,
-    color: '#1C1C1C',
-    letterSpacing: -0.3,
-  },
-  ratingPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: GREEN,
-    borderRadius: 7,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  ratingText: {
-    color: '#FFFFFF',
-    fontFamily: fonts.uiBold,
-    fontSize: 12,
-  },
-  cuisines: {
-    fontFamily: fonts.ui,
-    fontSize: 13,
-    color: '#8A8A8A',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F1F1',
-    marginTop: 12,
-    marginBottom: 10,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaText: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 12.5,
-    color: '#4B4B4B',
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: '#C4C4C4',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 10,
-  },
-  vegChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#EAF7EF',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  vegSquare: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-    borderWidth: 1.5,
-    borderColor: GREEN,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vegDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: GREEN,
-  },
-  vegChipText: {
-    fontFamily: fonts.uiBold,
-    fontSize: 10.5,
-    color: GREEN,
-  },
-  subMeta: {
-    fontFamily: fonts.ui,
-    fontSize: 12,
-    color: '#9A9A9A',
-  },
 });
