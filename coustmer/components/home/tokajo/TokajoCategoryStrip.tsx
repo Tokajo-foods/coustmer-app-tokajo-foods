@@ -44,7 +44,7 @@ function CategoryTile({
 }) {
   return (
     <Pressable style={[styles.item, inGrid && styles.itemGrid]} onPress={onPress}>
-      <View style={[styles.circle, active && styles.circleActive]}>
+      <View style={styles.circle}>
         <Image
           source={cat.image}
           style={styles.photo}
@@ -109,7 +109,12 @@ export function TokajoCategoryStrip({
 
   if (expanded) {
     return (
-      <View style={styles.grid}>
+      <ScrollView
+        style={styles.expandedScroll}
+        contentContainerStyle={styles.grid}
+        nestedScrollEnabled
+        showsVerticalScrollIndicator
+      >
         {visible.map((cat) => (
           <CategoryTile
             key={cat.id}
@@ -120,7 +125,7 @@ export function TokajoCategoryStrip({
           />
         ))}
         {more}
-      </View>
+      </ScrollView>
     );
   }
 
@@ -148,6 +153,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 8,
     gap: 14,
+  },
+  expandedScroll: {
+    maxHeight: 340,
   },
   grid: {
     flexDirection: 'row',
@@ -181,10 +189,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
-  circleActive: {
-    borderWidth: 2,
-    borderColor: ORANGE,
-  },
   moreCircle: {
     backgroundColor: '#FFF3EA',
     alignItems: 'center',
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
-    transform: [{ scale: 2.65 }, { translateY: 0 }, { translateX: 1.5 }],
+    transform: [{ scale: 2.75 }, { translateY: 0 }, { translateX: 0.5 }],
   },
   label: {
     fontFamily: fonts.uiSemi,
