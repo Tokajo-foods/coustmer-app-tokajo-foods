@@ -185,7 +185,9 @@ export const TokajoDishCard = memo(function TokajoDishCard({
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.price}>₹{Math.round(dish.price)}</Text>
+          <Text style={styles.price} numberOfLines={1}>
+            ₹{Math.round(dish.price)}
+          </Text>
           <SmoothPressable
             style={[styles.addBtn, isReorder && styles.reorderBtn]}
             pressScale={0.9}
@@ -195,9 +197,13 @@ export const TokajoDishCard = memo(function TokajoDishCard({
             {isReorder ? (
               <RotateCcw color="#FFFFFF" size={13} strokeWidth={2.6} />
             ) : (
-              <Plus color="#FFFFFF" size={14} strokeWidth={3} />
+              <Plus color={ORANGE} size={14} strokeWidth={3} />
             )}
-            <Text style={styles.addText}>{isReorder ? 'REPEAT' : 'ADD'}</Text>
+            <Text
+              style={[styles.addText, isReorder && styles.addTextReorder]}
+            >
+              {isReorder ? 'REPEAT' : 'ADD'}
+            </Text>
           </SmoothPressable>
         </View>
       </View>
@@ -340,12 +346,14 @@ const styles = StyleSheet.create({
     color: '#9A9A9A',
   },
   priceRow: {
-    marginTop: 8,
+    marginTop: 9,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
   },
   price: {
+    flexShrink: 1,
     fontFamily: fonts.displayBold,
     fontSize: 15.5,
     color: '#1C1C1C',
@@ -353,26 +361,26 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    backgroundColor: ORANGE,
+    gap: 4,
+    backgroundColor: '#FFF7F0',
+    borderWidth: 1.3,
+    borderColor: ORANGE,
     borderRadius: 10,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    shadowColor: ORANGE,
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   reorderBtn: {
     backgroundColor: INK,
-    shadowColor: INK,
+    borderColor: INK,
   },
   addText: {
-    color: '#FFFFFF',
+    color: ORANGE,
     fontFamily: fonts.uiBold,
-    fontSize: 12,
-    letterSpacing: 0.3,
+    fontSize: 12.5,
+    letterSpacing: 0.4,
+  },
+  addTextReorder: {
+    color: '#FFFFFF',
   },
   vegBox: {
     width: 14,
