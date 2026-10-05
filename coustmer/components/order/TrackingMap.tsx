@@ -8,10 +8,10 @@ import { fixAgeMs, type RiderPoint } from '@/lib/delivery/rider-fix';
 import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
 
 type Props = {
-  restLat: number;
-  restLng: number;
-  custLat: number;
-  custLng: number;
+  restLat: number | null;
+  restLng: number | null;
+  custLat: number | null;
+  custLng: number | null;
   restName: string;
   rider: RiderPoint | null;
   stale: boolean;
@@ -31,21 +31,25 @@ export function TrackingMap({
 }: Props) {
   const webRef = useRef<WebView>(null);
   const ready = useRef(false);
-  const html = useMemo(
-    () => buildTrackingMapHtml({
+  const pinsReady = restLat != null && restLng != null && custLat != null && custLng != null;
+  const html = useMemo(() => {
+    if (restLat == null || restLng == null || custLat == null || custLng == null) return '';
+    return buildTrackingMapHtml({
       restLat,
       restLng,
       custLat,
       custLng,
       restName,
       apiKey: GOOGLE_MAPS_API_KEY,
-    }),
-    [restLat, restLng, custLat, custLng, restName],
-  );
+    });
+  }, [restLat, restLng, custLat, custLng, restName]);
 
   const pushRider = (point: RiderPoint | null) => {
+    const heading = point?.heading != null && Number.isFinite(point.heading) && point.heading >= 0
+      ? point.heading
+      : 'null';
     const js = point
-      ? `window.__setRider && window.__setRider(${point.lat}, ${point.lng}); true;`
+      ? `window.__setRider && window.__setRider(${point.lat}, ${point.lng}, ${heading}); true;`
       : 'window.__clearRider && window.__clearRider(); true;';
     webRef.current?.injectJavaScript(js);
   };
@@ -58,6 +62,13 @@ export function TrackingMap({
   }, [lat, lng]);
 
   if (!isGoogleMapsConfigured()) return <GoogleMapsErrorView />;
+  if (!pinsReady) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>Map opens when the restaurant and your selected address are ready.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.fill}>
@@ -105,6 +116,8 @@ function staleCopy(updatedAt: string | undefined): string {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#e8eaed' },
+  emptyText: { color: '#111827', fontSize: 14, fontWeight: '600', textAlign: 'center' },
   banner: {
     position: 'absolute',
     left: 16,

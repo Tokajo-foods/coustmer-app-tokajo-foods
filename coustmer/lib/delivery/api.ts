@@ -9,6 +9,7 @@ import axios from 'axios';
 
 import { api } from '@/lib/api';
 import { readLatLng } from '@/lib/delivery/rider-fix';
+import { readTrackerPins } from '@/lib/delivery/tracking-pins';
 import type {
   AddressChangePayload,
   ChatMessage,
@@ -173,11 +174,7 @@ function mapTracker(raw: unknown, orderId: string): OrderTracker {
   const partner = r.deliveryPartner ?? r.partner ?? r.rider;
   const partnerMapped = partner ? mapDeliveryPartner(partner) : undefined;
 
-  const restLoc = asRecord(r.restaurantLocation ?? r.pickupLocation ?? {});
-  const custLoc = asRecord(r.customerLocation ?? r.dropLocation ?? r.deliveryLocation ?? {});
-
-  const restCoords = Array.isArray(restLoc.coordinates) ? (restLoc.coordinates as number[]) : undefined;
-  const custCoords = Array.isArray(custLoc.coordinates) ? (custLoc.coordinates as number[]) : undefined;
+  const pins = readTrackerPins(r);
   const etaSeconds =
     typeof r.etaSeconds === 'number'
       ? r.etaSeconds
@@ -207,14 +204,10 @@ function mapTracker(raw: unknown, orderId: string): OrderTracker {
     etaAt,
     etaText: (r.etaText as string) || (r.estimatedArrival as string) || undefined,
     partner: partnerMapped ?? undefined,
-    restaurantLat:
-      typeof restLoc.lat === 'number' ? restLoc.lat : restCoords ? Number(restCoords[1]) : undefined,
-    restaurantLng:
-      typeof restLoc.lng === 'number' ? restLoc.lng : restCoords ? Number(restCoords[0]) : undefined,
-    customerLat:
-      typeof custLoc.lat === 'number' ? custLoc.lat : custCoords ? Number(custCoords[1]) : undefined,
-    customerLng:
-      typeof custLoc.lng === 'number' ? custLoc.lng : custCoords ? Number(custCoords[0]) : undefined,
+    restaurantLat: pins.restaurantLat,
+    restaurantLng: pins.restaurantLng,
+    customerLat: pins.customerLat,
+    customerLng: pins.customerLng,
     routePolyline: (r.routePolyline as string) || (r.polyline as string) || undefined,
     timeline: Array.isArray(r.timeline)
       ? (r.timeline as OrderTracker['timeline'])

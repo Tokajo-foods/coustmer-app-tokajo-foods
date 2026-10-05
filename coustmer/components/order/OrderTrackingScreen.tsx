@@ -42,6 +42,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { TrackingMap } from '@/components/order/TrackingMap';
+import { resolveTrackingPins } from '@/lib/delivery/tracking-pins';
 import { fonts } from '@/constants/typography';
 import { deliveryApi } from '@/lib/delivery/api';
 import {
@@ -386,10 +387,18 @@ export function OrderTrackingScreen() {
   const riderFix = riderOnTrip ? (socketLocation.fix ?? polledFix) : null;
   const riderStale = Boolean(riderFix) && (socketLocation.stale || isFixStale(riderFix?.updatedAt));
 
-  const restLat = t?.restaurantLat ?? 26.2183;
-  const restLng = t?.restaurantLng ?? 78.1828;
-  const custLat = t?.customerLat ?? 26.2124;
-  const custLng = t?.customerLng ?? 78.1772;
+  const mapPins = resolveTrackingPins({
+    restaurantLat: t?.restaurantLat,
+    restaurantLng: t?.restaurantLng,
+    customerLat: t?.customerLat,
+    customerLng: t?.customerLng,
+    addressLat: o?.deliveryAddress?.lat,
+    addressLng: o?.deliveryAddress?.lng,
+  });
+  const restLat = mapPins.restLat;
+  const restLng = mapPins.restLng;
+  const custLat = mapPins.custLat;
+  const custLng = mapPins.custLng;
 
   const step = currentStep(combinedStatus);
   const activeIdx = stepIndex(step);
