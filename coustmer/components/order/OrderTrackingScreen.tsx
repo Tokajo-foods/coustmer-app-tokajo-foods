@@ -20,6 +20,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   LayoutChangeEvent,
   Share,
   ScrollView,
@@ -65,7 +66,7 @@ import {
   useTrackingEta,
   useTrackingRoute,
 } from '@/lib/delivery/hooks';
-import { isFixStale, riderLocationVisible } from '@/lib/delivery/rider-fix';
+import { isFixStale, routeLeg, trackingMapVisible } from '@/lib/delivery/rider-fix';
 import { OrderCallPanel } from '@/components/call/OrderCallPanel';
 import { useOrder, useReorder } from '@/lib/order/hooks';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
@@ -310,14 +311,18 @@ export function OrderTrackingScreen() {
   const trackingActive =
     !combinedStatusEarly || isActiveOrderStatus(combinedStatusEarly);
 
-  const riderOnTrip = riderLocationVisible(combinedStatusEarly);
+  // Delivery trip status only. Kitchen "accepted" must not open the map.
+  const tripStatus = deliverySocketStatus ?? t?.status ?? null;
+  const showLiveMap = trackingMapVisible(tripStatus);
+  const mapLeg = routeLeg(tripStatus) ?? 'restaurant';
+  const riderOnTrip = showLiveMap;
   const partnerQuery = useOrderDeliveryPartner(id, {
     enabled: Boolean(id) && trackingActive,
     refetchInterval: trackingActive ? 12_000 : false,
   });
   const partner = partnerQuery.data;
 
-  // Poll only after pickup. The socket is the live path; this is the first paint and the fallback.
+  // Poll once the rider has accepted. The socket is the live path; this is the first paint and the fallback.
   const liveLocQuery = useLiveLocation(id, riderOnTrip);
   // GET /tracking/order/:orderId/eta — polled ETA fallback (30s poll)
   const etaQuery = useTrackingEta(id, trackingActive);
@@ -332,7 +337,9 @@ export function OrderTrackingScreen() {
   const [tipInput, setTipInput] = useState('');
   const [partnerRatingInput, setPartnerRatingInput] = useState('5');
 
-  const mapHeight = useSharedValue(52);
+  const screenH = Dimensions.get('window').height;
+  const headerBar = insets.top + 64;
+  const mapHeight = useSharedValue(headerBar);
   const pulse = useSharedValue(0);
   const progressAnim = useSharedValue(0);
   const scooterBob = useSharedValue(0);
@@ -404,8 +411,9 @@ export function OrderTrackingScreen() {
   const activeIdx = stepIndex(step);
 
   useEffect(() => {
-    mapHeight.value = withTiming(active ? 46 : 30, { duration: 380 });
-  }, [active, mapHeight]);
+    const next = showLiveMap ? Math.round(screenH * (active ? 0.48 : 0.34)) : headerBar;
+    mapHeight.value = withTiming(next, { duration: 380 });
+  }, [active, headerBar, mapHeight, screenH, showLiveMap]);
 
   useEffect(() => {
     progressAnim.value = withTiming(activeIdx / (STEPS.length - 1), {
@@ -449,7 +457,7 @@ export function OrderTrackingScreen() {
   }, [active, step, scooterBob]);
 
   const mapStyle = useAnimatedStyle(() => ({
-    height: `${mapHeight.value}%` as unknown as number,
+    height: mapHeight.value,
   }));
 
   const pulseStyle = useAnimatedStyle(() => ({
@@ -785,30 +793,35 @@ export function OrderTrackingScreen() {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.mapWrap, mapStyle]}>
-        <TrackingMap
-          restLat={restLat}
-          restLng={restLng}
-          custLat={custLat}
-          custLng={custLng}
-          restName={o?.restaurantName || 'Restaurant'}
-          rider={riderFix}
-          stale={riderStale}
-          onRoute={setDistanceInfo}
-        />
+      <Animated.View style={[styles.mapWrap, mapStyle, !showLiveMap && styles.mapWrapPlain]}>
+        {showLiveMap ? (
+          <TrackingMap
+            restLat={restLat}
+            restLng={restLng}
+            custLat={custLat}
+            custLng={custLng}
+            restName={o?.restaurantName || 'Restaurant'}
+            rider={riderFix}
+            stale={riderStale}
+            leg={mapLeg}
+            onRoute={setDistanceInfo}
+          />
+        ) : null}
 
-        <LinearGradient
-          colors={['rgba(17,24,39,0.28)', 'transparent']}
-          style={styles.mapScrim}
-          pointerEvents="none"
-        />
+        {showLiveMap ? (
+          <LinearGradient
+            colors={['rgba(17,24,39,0.28)', 'transparent']}
+            style={styles.mapScrim}
+            pointerEvents="none"
+          />
+        ) : null}
 
         <View style={[styles.headerOverlay, { paddingTop: insets.top + 6 }]}>
           <Pressable style={styles.circleBtn} onPress={goBack}>
             <ArrowLeft color={INK} size={20} strokeWidth={2.4} />
           </Pressable>
 
-          {active ? (
+          {showLiveMap && active ? (
             <View style={styles.livePill}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>Live tracking</Text>
@@ -839,7 +852,7 @@ export function OrderTrackingScreen() {
           </Pressable>
         </View>
 
-        {active && routeDistance ? (
+        {showLiveMap && active && routeDistance ? (
           <View style={styles.mapMeta}>
             <Text style={styles.mapMetaText}>
               {routeDistance} away
@@ -849,8 +862,8 @@ export function OrderTrackingScreen() {
         ) : null}
       </Animated.View>
 
-      <View style={styles.sheet}>
-        <View style={styles.handle} />
+      <View style={[styles.sheet, !showLiveMap && styles.sheetFlat]}>
+        {showLiveMap ? <View style={styles.handle} /> : null}
         <ScrollView
           {...PREMIUM_SCROLL}
           contentContainerStyle={{
@@ -1446,6 +1459,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     overflow: 'hidden',
   },
+  mapWrapPlain: {
+    backgroundColor: SHEET,
+  },
   map: { flex: 1, backgroundColor: 'transparent' },
   mapFallback: {
     flex: 1,
@@ -1566,6 +1582,13 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: -4 },
     elevation: 8,
+  },
+  sheetFlat: {
+    marginTop: 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   handle: {
     alignSelf: 'center',

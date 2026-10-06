@@ -4,7 +4,8 @@ import { WebView } from 'react-native-webview';
 
 import { GoogleMapsErrorView } from '@/components/location/GoogleMapsErrorView';
 import { buildTrackingMapHtml } from '@/components/order/tracking-map-html';
-import { fixAgeMs, type RiderPoint } from '@/lib/delivery/rider-fix';
+import { HOME_MARKER, RESTAURANT_MARKER, RIDER_MARKER } from '@/components/order/tracking-marker-icons';
+import { fixAgeMs, type RiderPoint, type RouteLeg } from '@/lib/delivery/rider-fix';
 import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
 
 type Props = {
@@ -15,10 +16,11 @@ type Props = {
   restName: string;
   rider: RiderPoint | null;
   stale: boolean;
+  leg: RouteLeg;
   onRoute?: (info: { dist: string; time: string }) => void;
 };
 
-/** Restaurant and drop stay put. The rider marker moves in the page, without a reload. */
+/** Restaurant and home pins stay put. The rider marker slides in the page. */
 export function TrackingMap({
   restLat,
   restLng,
@@ -27,13 +29,19 @@ export function TrackingMap({
   restName,
   rider,
   stale,
+  leg,
   onRoute,
 }: Props) {
   const webRef = useRef<WebView>(null);
   const ready = useRef(false);
+  const startLeg = useRef(leg);
+  const htmlBuilt = useRef(false);
+  if (!htmlBuilt.current) startLeg.current = leg;
   const pinsReady = restLat != null && restLng != null && custLat != null && custLng != null;
+
   const html = useMemo(() => {
     if (restLat == null || restLng == null || custLat == null || custLng == null) return '';
+    htmlBuilt.current = true;
     return buildTrackingMapHtml({
       restLat,
       restLng,
@@ -41,6 +49,10 @@ export function TrackingMap({
       custLng,
       restName,
       apiKey: GOOGLE_MAPS_API_KEY,
+      leg: startLeg.current,
+      riderIcon: RIDER_MARKER,
+      restaurantIcon: RESTAURANT_MARKER,
+      homeIcon: HOME_MARKER,
     });
   }, [restLat, restLng, custLat, custLng, restName]);
 
@@ -56,13 +68,21 @@ export function TrackingMap({
 
   const lat = rider?.lat;
   const lng = rider?.lng;
+  const heading = rider?.heading;
   useEffect(() => {
     if (!ready.current) return;
-    pushRider(lat == null || lng == null ? null : { lat, lng });
-  }, [lat, lng]);
+    pushRider(lat == null || lng == null ? null : { lat, lng, heading });
+  }, [lat, lng, heading]);
+
+  useEffect(() => {
+    if (!ready.current) return;
+    webRef.current?.injectJavaScript(
+      `window.__setLeg && window.__setLeg(${JSON.stringify(leg)}); true;`,
+    );
+  }, [leg]);
 
   if (!isGoogleMapsConfigured()) return <GoogleMapsErrorView />;
-  if (!pinsReady) {
+  if (!pinsReady || !html) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>Map opens when the restaurant and your selected address are ready.</Text>
@@ -79,6 +99,9 @@ export function TrackingMap({
         originWhitelist={['*']}
         onLoadEnd={() => {
           ready.current = true;
+          webRef.current?.injectJavaScript(
+            `window.__setLeg && window.__setLeg(${JSON.stringify(leg)}); true;`,
+          );
           pushRider(rider);
         }}
         onMessage={(event) => {
@@ -115,7 +138,7 @@ function staleCopy(updatedAt: string | undefined): string {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  fill: { flex: 1, backgroundColor: '#e8eaed' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#e8eaed' },
   emptyText: { color: '#111827', fontSize: 14, fontWeight: '600', textAlign: 'center' },
   banner: {

@@ -1,27 +1,4 @@
-const HOME_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
-  '<path d="M24 4 L44 20 H38 V44 H10 V20 H4 Z" fill="#FF6A00"/>' +
-  '<path d="M20 44 V30 H28 V44 Z" fill="#fff"/>' +
-  '<circle cx="24" cy="22" r="3" fill="#fff"/>' +
-  '</svg>';
-
-const STORE_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">' +
-  '<rect x="6" y="16" width="28" height="18" rx="2" fill="#111827"/>' +
-  '<path d="M4 16 L8 8 H32 L36 16 Z" fill="#FF6A00"/>' +
-  '<rect x="16" y="22" width="8" height="12" fill="#fff"/>' +
-  '</svg>';
-
-const RIDER_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">' +
-  '<g transform="rotate(__TURN__ 32 32)">' +
-  '<circle cx="32" cy="32" r="28" fill="#fff" stroke="#FF6A00" stroke-width="3"/>' +
-  '<circle cx="20" cy="40" r="5" fill="#111827"/>' +
-  '<circle cx="44" cy="40" r="5" fill="#111827"/>' +
-  '<path d="M16 38 H24 L30 28 H42 L48 38" fill="none" stroke="#FF6A00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
-  '<circle cx="36" cy="20" r="5" fill="#111827"/>' +
-  '<path d="M36 25 V32" stroke="#111827" stroke-width="2" stroke-linecap="round"/>' +
-  '</g></svg>';
+import type { RouteLeg } from '@/lib/delivery/rider-fix';
 
 export function buildTrackingMapHtml(opts: {
   restLat: number;
@@ -30,6 +7,10 @@ export function buildTrackingMapHtml(opts: {
   custLng: number;
   restName: string;
   apiKey: string;
+  leg: RouteLeg;
+  riderIcon: string;
+  restaurantIcon: string;
+  homeIcon: string;
 }): string {
   const safeName = opts.restName.replace(/[<'\\]/g, '');
   return `<!DOCTYPE html>
@@ -41,41 +22,82 @@ export function buildTrackingMapHtml(opts: {
 <body>
   <div id="map"></div>
   <script>
+    const ICONS = {
+      rider: ${JSON.stringify(opts.riderIcon)},
+      restaurant: ${JSON.stringify(opts.restaurantIcon)},
+      home: ${JSON.stringify(opts.homeIcon)}
+    };
+    function loadImage(src) {
+      return new Promise(function(resolve, reject) {
+        const img = new Image();
+        img.onload = function() { resolve(img); };
+        img.onerror = function() { reject(new Error('marker')); };
+        img.src = src;
+      });
+    }
     function initMap() {
       const rest = { lat: ${opts.restLat}, lng: ${opts.restLng} };
       const home = { lat: ${opts.custLat}, lng: ${opts.custLng} };
+      Promise.all([
+        loadImage(ICONS.rider),
+        loadImage(ICONS.restaurant),
+        loadImage(ICONS.home)
+      ]).then(function(images) {
+        start(images[0], images[1], images[2], rest, home);
+      }).catch(function() {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_ERROR' }));
+        }
+      });
+    }
+    function start(riderImg, restImg, homeImg, rest, home) {
       const map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 14,
         center: home,
+        zoom: 15,
         disableDefaultUI: true,
         gestureHandling: 'greedy',
+        clickableIcons: false,
+        keyboardShortcuts: false,
         styles: [
-          { elementType: 'geometry', stylers: [{ color: '#f1f3f4' }] },
-          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+          { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+          { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f3f4f6' }] },
           { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#dbeafe' }] }
+          { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e5e7eb' }] },
+          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#ffe8d6' }] },
+          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c5dff0' }] },
+          { featureType: 'administrative', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] }
         ]
       });
-      function icon(svg, w, h, ax, ay) {
+      function pinIcon(img, width, height, tip) {
         return {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-          scaledSize: new google.maps.Size(w, h),
-          anchor: new google.maps.Point(ax, ay)
+          url: img.src,
+          scaledSize: new google.maps.Size(width, height),
+          anchor: new google.maps.Point(width / 2, height * tip)
         };
       }
-      new google.maps.Marker({ position: rest, map: map, zIndex: 2, icon: icon(${JSON.stringify(STORE_SVG)}, 40, 40, 20, 36), title: '${safeName}' });
-      new google.maps.Marker({ position: home, map: map, zIndex: 3, icon: icon(${JSON.stringify(HOME_SVG)}, 48, 48, 24, 44), title: 'Home' });
+      new google.maps.Marker({
+        position: rest, map: map, zIndex: 2, title: '${safeName}',
+        icon: pinIcon(restImg, 52, 68, 0.98)
+      });
+      new google.maps.Marker({
+        position: home, map: map, zIndex: 3, title: 'Home',
+        icon: pinIcon(homeImg, 54, 70, 0.8)
+      });
       const directions = new google.maps.DirectionsService();
       const renderer = new google.maps.DirectionsRenderer({
         map: map,
         suppressMarkers: true,
         preserveViewport: true,
-        polylineOptions: { strokeColor: '#FF6A00', strokeOpacity: 0.95, strokeWeight: 5 }
+        polylineOptions: { strokeColor: '#FF6A00', strokeOpacity: 0.96, strokeWeight: 6 }
       });
+      let fallback = null;
       let riderMarker = null;
       let frame = 0;
       let lastRoute = null;
       let fitted = false;
+      let leg = ${JSON.stringify(opts.leg)};
       function meters(a, b) {
         const r = Math.PI / 180;
         const dLat = (b.lat - a.lat) * r;
@@ -89,29 +111,76 @@ export function buildTrackingMapHtml(opts: {
         const x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lng - a.lng) * r);
         return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
       }
-      function drawRoute(origin, fit) {
-        directions.route({ origin: origin, destination: home, travelMode: google.maps.TravelMode.DRIVING }, function(result, status) {
-          if (status !== 'OK' || !result.routes[0]) return;
+      function target() { return leg === 'home' ? home : rest; }
+      function fit(extra) {
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(rest);
+        bounds.extend(home);
+        if (extra) bounds.extend(extra);
+        map.fitBounds(bounds, { top: 108, bottom: 56, left: 40, right: 40 });
+        fitted = true;
+      }
+      function clearFallback() {
+        if (fallback) { fallback.setMap(null); fallback = null; }
+      }
+      function drawFallback(origin) {
+        clearFallback();
+        fallback = new google.maps.Polyline({
+          map: map,
+          path: [origin, target()],
+          strokeColor: '#FF6A00',
+          strokeOpacity: 0.95,
+          strokeWeight: 5
+        });
+      }
+      function riderIcon(turn) {
+        const size = 180;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(((turn - 90) * Math.PI) / 180);
+        const dw = 156;
+        const dh = dw * (riderImg.height / riderImg.width);
+        ctx.drawImage(riderImg, -dw / 2, -dh / 2 + 6, dw, dh);
+        return {
+          url: canvas.toDataURL('image/png'),
+          scaledSize: new google.maps.Size(78, 78),
+          anchor: new google.maps.Point(39, 44)
+        };
+      }
+      function drawRoute(origin, refit) {
+        const dest = target();
+        directions.route({
+          origin: origin,
+          destination: dest,
+          travelMode: google.maps.TravelMode.DRIVING
+        }, function(result, status) {
+          if (status !== 'OK' || !result.routes[0]) {
+            drawFallback(origin);
+            if (refit || !fitted) fit(origin);
+            return;
+          }
+          clearFallback();
           renderer.setDirections(result);
-          const leg = result.routes[0].legs[0];
-          if (window.ReactNativeWebView && leg) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ROUTE_INFO', distance: leg.distance.text, duration: leg.duration.text }));
+          const routeLeg = result.routes[0].legs[0];
+          if (window.ReactNativeWebView && routeLeg) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'ROUTE_INFO',
+              distance: routeLeg.distance.text,
+              duration: routeLeg.duration.text
+            }));
           }
-          if (fit || !fitted) {
-            const bounds = new google.maps.LatLngBounds();
-            bounds.extend(origin);
-            bounds.extend(home);
-            bounds.extend(rest);
-            map.fitBounds(bounds, { top: 80, bottom: 48, left: 40, right: 40 });
-            fitted = true;
-          }
+          if (refit || !fitted) fit(origin);
         });
       }
       function placeRider(next, turn) {
-        const svg = ${JSON.stringify(RIDER_SVG)}.replace('__TURN__', String(Math.round(turn)));
-        const drawn = icon(svg, 64, 64, 32, 32);
+        const drawn = riderIcon(turn);
         if (!riderMarker) {
-          riderMarker = new google.maps.Marker({ position: next, map: map, zIndex: 999, icon: drawn });
+          riderMarker = new google.maps.Marker({
+            position: next, map: map, zIndex: 999, icon: drawn, optimized: false
+          });
           return;
         }
         riderMarker.setIcon(drawn);
@@ -122,30 +191,47 @@ export function buildTrackingMapHtml(opts: {
         function step(now) {
           const p = Math.min(1, (now - t0) / 1000);
           const e = p * p * (3 - 2 * p);
-          riderMarker.setPosition({ lat: from.lat + (next.lat - from.lat) * e, lng: from.lng + (next.lng - from.lng) * e });
+          riderMarker.setPosition({
+            lat: from.lat + (next.lat - from.lat) * e,
+            lng: from.lng + (next.lng - from.lng) * e
+          });
           if (p < 1) frame = requestAnimationFrame(step);
         }
         frame = requestAnimationFrame(step);
       }
+      window.__setLeg = function(next) {
+        if (next !== 'home' && next !== 'restaurant') return;
+        if (next === leg) return;
+        leg = next;
+        lastRoute = null;
+        fitted = false;
+        if (!riderMarker) { fit(); return; }
+        const pos = riderMarker.getPosition();
+        drawRoute({ lat: pos.lat(), lng: pos.lng() }, true);
+      };
       window.__clearRider = function() {
         if (riderMarker) { riderMarker.setMap(null); riderMarker = null; }
         lastRoute = null;
-        drawRoute(rest, true);
+        clearFallback();
+        renderer.set('directions', null);
+        fit();
       };
       window.__setRider = function(lat, lng, heading) {
         const next = { lat: Number(lat), lng: Number(lng) };
         if (!Number.isFinite(next.lat) || !Number.isFinite(next.lng)) return;
-        const previous = riderMarker ? { lat: riderMarker.getPosition().lat(), lng: riderMarker.getPosition().lng() } : null;
+        const previous = riderMarker
+          ? { lat: riderMarker.getPosition().lat(), lng: riderMarker.getPosition().lng() }
+          : null;
         const turn = Number.isFinite(Number(heading)) && Number(heading) >= 0
           ? Number(heading)
-          : (previous ? bearing(previous, next) : 0);
+          : (previous ? bearing(previous, next) : 90);
         placeRider(next, turn);
         if (!lastRoute || meters(lastRoute, next) > 35) {
           lastRoute = next;
           drawRoute(next, !fitted);
         }
       };
-      drawRoute(rest, true);
+      fit();
       window.__mapReady = true;
     }
   </script>

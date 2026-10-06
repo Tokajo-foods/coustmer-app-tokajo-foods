@@ -1,14 +1,20 @@
-/** Customer-visible rider GPS. Active trip only — not before pickup. */
+/** Customer map and rider pin. Hidden until the rider accepts the trip. */
 
 export const RIDER_FIX_STALE_MS = 45_000;
 
-const VISIBLE = new Set([
+const TO_RESTAURANT = new Set([
+  'accepted',
+  'arrived',
+  'arrived_at_restaurant',
+  'returning_to_restaurant',
+]);
+
+const TO_HOME = new Set([
   'picked_up',
   'out_for_delivery',
   'on_the_way',
   'arrived_at_customer',
   'at_customer',
-  'returning_to_restaurant',
 ]);
 
 export type RiderPoint = {
@@ -19,9 +25,23 @@ export type RiderPoint = {
   updatedAt?: string;
 };
 
+export type RouteLeg = 'restaurant' | 'home';
+
+/** Delivery trip status only. Kitchen "accepted" must not be passed in. */
+export function trackingMapVisible(status: string | null | undefined): boolean {
+  return routeLeg(status) != null;
+}
+
+export function routeLeg(status: string | null | undefined): RouteLeg | null {
+  if (!status) return null;
+  const key = status.trim().toLowerCase();
+  if (TO_HOME.has(key)) return 'home';
+  if (TO_RESTAURANT.has(key)) return 'restaurant';
+  return null;
+}
+
 export function riderLocationVisible(status: string | null | undefined): boolean {
-  if (!status) return false;
-  return VISIBLE.has(status.trim().toLowerCase());
+  return trackingMapVisible(status);
 }
 
 export function readLatLng(source: object | null | undefined): { lat: number; lng: number } | null {

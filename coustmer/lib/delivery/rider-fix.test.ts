@@ -4,18 +4,24 @@ import {
   isFixStale,
   readLatLng,
   riderLocationVisible,
+  routeLeg,
+  trackingMapVisible,
 } from './rider-fix';
 
 describe('rider location visibility', () => {
-  it('hides the rider until the trip is out for delivery', () => {
-    assert.equal(riderLocationVisible(undefined), false);
-    assert.equal(riderLocationVisible('preparing'), false);
-    assert.equal(riderLocationVisible('ready'), false);
-    assert.equal(riderLocationVisible('assigned'), false);
-    assert.equal(riderLocationVisible('arrived_at_restaurant'), false);
-    assert.equal(riderLocationVisible('picked_up'), true);
-    assert.equal(riderLocationVisible('out_for_delivery'), true);
-    assert.equal(riderLocationVisible('returning_to_restaurant'), true);
+  it('hides the map until the rider accepts, then routes to the store and then home', () => {
+    assert.equal(trackingMapVisible(undefined), false);
+    assert.equal(trackingMapVisible('preparing'), false);
+    assert.equal(trackingMapVisible('ready'), false);
+    assert.equal(trackingMapVisible('assigned'), false);
+    assert.equal(riderLocationVisible('accepted'), true);
+    assert.equal(routeLeg('accepted'), 'restaurant');
+    assert.equal(routeLeg('arrived_at_restaurant'), 'restaurant');
+    assert.equal(routeLeg('returning_to_restaurant'), 'restaurant');
+    assert.equal(routeLeg('picked_up'), 'home');
+    assert.equal(routeLeg('out_for_delivery'), 'home');
+    assert.equal(routeLeg('arrived_at_customer'), 'home');
+    assert.equal(trackingMapVisible('delivered'), false);
   });
 });
 
