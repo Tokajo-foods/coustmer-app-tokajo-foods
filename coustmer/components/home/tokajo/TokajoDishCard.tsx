@@ -193,7 +193,7 @@ export const TokajoDishCard = memo(function TokajoDishCard({
             ₹{Math.round(dish.price)}
           </Text>
           <SmoothPressable
-            style={styles.addBtn}
+            style={[styles.addBtn, (isTrending || isReorder) && styles.addBtnRail]}
             pressScale={0.9}
             onPress={() => onPress(dish.restaurantId)}
             accessibilityLabel={`${isReorder ? 'Reorder' : 'Add'} ${dish.name}`}

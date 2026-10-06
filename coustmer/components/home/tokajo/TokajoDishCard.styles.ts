@@ -163,6 +163,11 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  addBtnRail: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    marginRight: -4,
+  },
   addText: {
     color: ORANGE,
     fontFamily: fonts.uiBold,
