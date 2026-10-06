@@ -93,6 +93,7 @@ export const TokajoDishCard = memo(function TokajoDishCard({
         { width: DISH_CARD_WIDTH[variant] },
         isSuggested && styles.cardSuggested,
         (isTrending || isReorder) && styles.cardTrending,
+        isTrending && styles.cardTrendingClip,
         pressed && styles.cardPressed,
       ]}
       onPress={() => onPress(dish.restaurantId)}
@@ -177,23 +178,35 @@ export const TokajoDishCard = memo(function TokajoDishCard({
         ) : null}
       </View>
 
-      <View style={styles.body}>
+      <View style={[styles.body, isTrending && styles.bodyTrending]}>
         <View style={styles.nameRow}>
           <VegDot veg={dish.isVeg} />
-          <Text style={styles.name} numberOfLines={1}>
+          <Text
+            style={[styles.name, isTrending && styles.trendingName]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {dish.name}
           </Text>
         </View>
-        <Text style={styles.restaurant} numberOfLines={1}>
+        <Text
+          style={[styles.restaurant, isTrending && styles.trendingRestaurant]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {dish.restaurantName}
         </Text>
 
-        <View style={styles.priceRow}>
+        <View style={[styles.priceRow, isTrending && styles.trendingPriceRow]}>
           <Text style={styles.price} numberOfLines={1}>
             ₹{Math.round(dish.price)}
           </Text>
           <SmoothPressable
-            style={[styles.addBtn, (isTrending || isReorder) && styles.addBtnRail]}
+            style={[
+              styles.addBtn,
+              isReorder && styles.addBtnRail,
+              isTrending && styles.addBtnTrending,
+            ]}
             pressScale={0.9}
             onPress={() => onPress(dish.restaurantId)}
             accessibilityLabel={`${isReorder ? 'Reorder' : 'Add'} ${dish.name}`}
