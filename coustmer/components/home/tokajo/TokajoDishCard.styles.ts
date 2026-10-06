@@ -28,9 +28,6 @@ export const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 7 },
   },
-  cardTrendingClip: {
-    overflow: 'hidden',
-  },
   trendBadge: {
     position: 'absolute',
     top: 8,
@@ -126,10 +123,6 @@ export const styles = StyleSheet.create({
     padding: 11,
     gap: 3,
   },
-  bodyTrending: {
-    width: '100%',
-    overflow: 'hidden',
-  },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,22 +139,12 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9A9A9A',
   },
-  trendingName: {
-    flex: 1,
-    minWidth: 0,
-  },
-  trendingRestaurant: {
-    alignSelf: 'stretch',
-  },
   priceRow: {
     marginTop: 9,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-  },
-  trendingPriceRow: {
-    gap: 16,
   },
   price: {
     flexShrink: 1,
@@ -184,11 +167,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 3,
     marginRight: -4,
-  },
-  addBtnTrending: {
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    marginLeft: 8,
   },
   addText: {
     color: ORANGE,
