@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { GoogleMapsErrorView } from '@/components/location/GoogleMapsErrorView';
 import { buildTrackingMapHtml } from '@/components/order/tracking-map-html';
+import { fonts } from '@/constants/typography';
 import { HOME_MARKER, RESTAURANT_MARKER, RIDER_MARKER } from '@/components/order/tracking-marker-icons';
 import { fixAgeMs, type RiderPoint, type RouteLeg } from '@/lib/delivery/rider-fix';
 import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps';
@@ -34,6 +35,7 @@ export function TrackingMap({
 }: Props) {
   const webRef = useRef<WebView>(null);
   const ready = useRef(false);
+  const [mapFailed, setMapFailed] = useState(false);
   const startLeg = useRef(leg);
   const htmlBuilt = useRef(false);
   if (!htmlBuilt.current) startLeg.current = leg;
@@ -81,7 +83,7 @@ export function TrackingMap({
     );
   }, [leg]);
 
-  if (!isGoogleMapsConfigured()) return <GoogleMapsErrorView />;
+  if (!isGoogleMapsConfigured() || mapFailed) return <GoogleMapsErrorView />;
   if (!pinsReady || !html) {
     return (
       <View style={styles.empty}>
@@ -107,6 +109,10 @@ export function TrackingMap({
         onMessage={(event) => {
           try {
             const data = JSON.parse(event.nativeEvent.data) as { type?: string; distance?: string; duration?: string };
+            if (data.type === 'MAP_ERROR') {
+              setMapFailed(true);
+              return;
+            }
             if (data.type === 'ROUTE_INFO' && data.distance && data.duration) {
               onRoute?.({ dist: data.distance, time: data.duration });
             }
@@ -138,18 +144,23 @@ function staleCopy(updatedAt: string | undefined): string {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: '#e8eaed' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#e8eaed' },
-  emptyText: { color: '#111827', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  fill: { flex: 1, backgroundColor: '#F7F8FA' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#F7F8FA' },
+  emptyText: { color: '#111827', fontFamily: fonts.uiMedium, fontSize: 14, textAlign: 'center' },
   banner: {
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 12,
-    backgroundColor: '#111827',
-    borderRadius: 10,
+    bottom: 36,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
-  bannerText: { color: '#fff', fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  bannerText: { color: '#FF6A00', fontFamily: fonts.uiBold, fontSize: 13, textAlign: 'center' },
 });

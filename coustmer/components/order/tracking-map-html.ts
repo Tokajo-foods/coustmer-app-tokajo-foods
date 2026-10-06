@@ -35,6 +35,11 @@ export function buildTrackingMapHtml(opts: {
         img.src = src;
       });
     }
+    window.gm_authFailure = function() {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_ERROR' }));
+      }
+    };
     function initMap() {
       const rest = { lat: ${opts.restLat}, lng: ${opts.restLng} };
       const home = { lat: ${opts.custLat}, lng: ${opts.custLng} };
@@ -57,18 +62,7 @@ export function buildTrackingMapHtml(opts: {
         disableDefaultUI: true,
         gestureHandling: 'greedy',
         clickableIcons: false,
-        keyboardShortcuts: false,
-        styles: [
-          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-          { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-          { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f3f4f6' }] },
-          { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-          { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e5e7eb' }] },
-          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#ffe8d6' }] },
-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c5dff0' }] },
-          { featureType: 'administrative', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] }
-        ]
+        keyboardShortcuts: false
       });
       function pinIcon(img, width, height, tip) {
         return {
