@@ -143,7 +143,7 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
     if (view === 'login') {
       return (
         <Pressable onPress={() => changeViewWithSlide('forgot-password')} hitSlop={10}>
-          <Text style={styles.headerAction}>Forgate your password?</Text>
+          <Text style={styles.headerAction}>Forgot password?</Text>
         </Pressable>
       );
     }

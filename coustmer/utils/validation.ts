@@ -23,6 +23,25 @@ export function isEmailOrPhone(value: string): 'email' | 'phone' | null {
   return null;
 }
 
+/** While typing: email if letters/@, phone if + or mostly digits. */
+export function detectLoginIdentifierMode(value: string): 'email' | 'phone' | 'unknown' {
+  const trimmed = value.trim();
+  if (!trimmed) return 'unknown';
+  if (trimmed.includes('@') || /[a-zA-Z]/.test(trimmed)) return 'email';
+  const digits = trimmed.replace(/\D/g, '');
+  if (trimmed.startsWith('+') || digits.length >= 3) return 'phone';
+  return 'unknown';
+}
+
+/** Normalize 10-digit Indian mobiles to +91XXXXXXXXXX. */
+export function normalizeIndianPhoneInput(value: string): string {
+  const trimmed = value.trim().replace(/[\s-]/g, '');
+  if (/^\+91[6-9]\d{9}$/.test(trimmed)) return trimmed;
+  if (/^[6-9]\d{9}$/.test(trimmed)) return `+91${trimmed}`;
+  if (/^91[6-9]\d{9}$/.test(trimmed)) return `+${trimmed}`;
+  return trimmed;
+}
+
 export function validateEmail(value: string, required = true): string | null {
   const trimmed = value.trim();
   if (!trimmed) return required ? 'Email is required' : null;

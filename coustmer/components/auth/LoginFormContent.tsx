@@ -1,59 +1,64 @@
 import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react-native';
-import { useState } from 'react';
-import { KeyboardAvoidingView,
+import { useMemo, useState } from 'react';
+import {
   Platform,
-  
-  ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View } from 'react-native';
+  View,
+} from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { FontAwesome, AntDesign } from '@expo/vector-icons';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { authTheme } from '@/constants/auth-theme';
-import { colors as appColors } from '@/constants/colors';
 import { useAuthStore } from '@/store/auth-store';
-import { validateEmail, validateEmailOrPhone, validatePassword } from '@/utils/validation';
+import {
+  detectLoginIdentifierMode,
+  normalizeIndianPhoneInput,
+  validateEmail,
+  validateIndianPhone,
+  validatePassword,
+} from '@/utils/validation';
 
-type LoginTab = 'password' | 'otp';
-type FocusField = 'email' | 'password' | 'emailOrPhone' | null;
+type FocusField = 'identifier' | 'password' | null;
 
-const CustomSwitch = ({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) => {
-  return (
-    <Pressable
-      onPress={() => onValueChange(!value)}
+const CustomSwitch = ({
+  value,
+  onValueChange,
+}: {
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) => (
+  <Pressable
+    onPress={() => onValueChange(!value)}
+    style={{
+      width: 40,
+      height: 22,
+      borderRadius: 12,
+      backgroundColor: value ? authTheme.brand : authTheme.inputBorder,
+      justifyContent: 'center',
+      padding: 2,
+    }}
+  >
+    <View
       style={{
-        width: 40,
-        height: 22,
-        borderRadius: 12,
-        backgroundColor: value ? authTheme.brand : authTheme.inputBorder,
-        justifyContent: 'center',
-        padding: 2,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: '#FFFFFF',
+        transform: [{ translateX: value ? 18 : 0 }],
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
       }}
-    >
-      <View
-        style={{
-          width: 18,
-          height: 18,
-          borderRadius: 9,
-          backgroundColor: '#FFFFFF',
-          transform: [{ translateX: value ? 18 : 0 }],
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 2,
-          elevation: 2,
-        }}
-      />
-    </Pressable>
-  );
-};
+    />
+  </Pressable>
+);
 
 type Props = {
   onSignUp?: () => void;
@@ -62,25 +67,34 @@ type Props = {
   onOtpSent?: (identifier: string) => void;
 };
 
-export function LoginFormContent({ onSignUp, onForgotPassword, onLoginSuccess, onOtpSent }: Props) {
+export function LoginFormContent({
+  onSignUp,
+  onForgotPassword,
+  onLoginSuccess,
+  onOtpSent,
+}: Props) {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const sendOtp = useAuthStore((s) => s.sendOtp);
   const isLoading = useAuthStore((s) => s.isLoading);
 
-  const [tab, setTab] = useState<LoginTab>('password');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [focusedField, setFocusedField] = useState<FocusField>(null);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+  const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(
+    null,
+  );
+
+  const mode = useMemo(() => detectLoginIdentifierMode(identifier), [identifier]);
+  const isEmail = mode === 'email';
+  const isPhone = mode === 'phone';
 
   const handlePasswordLogin = async () => {
     const nextErrors = {
-      email: validateEmail(email),
+      identifier: validateEmail(identifier),
       password: validatePassword(password),
     };
     setErrors(nextErrors);
@@ -88,35 +102,43 @@ export function LoginFormContent({ onSignUp, onForgotPassword, onLoginSuccess, o
     if (Object.values(nextErrors).some(Boolean)) return;
 
     try {
-      await login({ email: email.trim(), password });
+      await login({ email: identifier.trim(), password });
       onLoginSuccess?.();
       router.replace('/home');
     } catch (error) {
-      setBanner({ message: error instanceof Error ? error.message : 'Login failed', type: 'error' });
+      setBanner({
+        message: error instanceof Error ? error.message : 'Login failed',
+        type: 'error',
+      });
     }
   };
 
   const handleSendOtp = async () => {
-    const identifierError = validateEmailOrPhone(emailOrPhone);
-    setErrors({ emailOrPhone: identifierError });
+    const phone = normalizeIndianPhoneInput(identifier);
+    const phoneError = validateIndianPhone(phone, true);
+    setErrors({ identifier: phoneError });
     setBanner(null);
-    if (identifierError) return;
+    if (phoneError) return;
 
     try {
-      await sendOtp({ emailOrPhone: emailOrPhone.trim() });
-      const identifier = emailOrPhone.trim();
+      await sendOtp({ emailOrPhone: phone });
       if (onOtpSent) {
-        onOtpSent(identifier);
+        onOtpSent(phone);
         return;
       }
       onLoginSuccess?.();
-      router.push({
-        pathname: '/verify-otp',
-        params: { identifier },
-      });
+      router.push({ pathname: '/verify-otp', params: { identifier: phone } });
     } catch (error) {
-      setBanner({ message: error instanceof Error ? error.message : 'Failed to send OTP', type: 'error' });
+      setBanner({
+        message: error instanceof Error ? error.message : 'Failed to send OTP',
+        type: 'error',
+      });
     }
+  };
+
+  const handlePrimary = () => {
+    if (isPhone) void handleSendOtp();
+    else void handlePasswordLogin();
   };
 
   const handleForgotPassword = () => {
@@ -147,23 +169,29 @@ export function LoginFormContent({ onSignUp, onForgotPassword, onLoginSuccess, o
     return authTheme.textDim;
   };
 
+  const primaryLabel = isLoading
+    ? '...'
+    : isPhone
+      ? 'SEND OTP'
+      : 'SIGN IN';
+
   return (
     <View style={{ flex: 1 }}>
-      <KeyboardAwareScrollView enableOnAndroid={true} extraScrollHeight={20} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        extraScrollHeight={20}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <Text style={styles.title}>Let's get something</Text>
-        <Text style={styles.subtitle}>Good to see you back.</Text>
-
-        <View style={styles.socialRow}>
-          <View style={styles.socialCircle}>
-            <AntDesign name="google" size={24} color="#DB4437" />
-          </View>
-          <View style={[styles.socialCircle, styles.socialCircleBrand]}>
-            <FontAwesome name="facebook-f" size={20} color={appColors.facebook} />
-          </View>
-          <View style={[styles.socialCircle, styles.socialCircleBrand]}>
-            <FontAwesome name="twitter" size={20} color="#1DA1F2" />
-          </View>
-        </View>
+        <Text style={styles.subtitle}>
+          {isPhone
+            ? 'Enter your phone number to get an OTP.'
+            : isEmail
+              ? 'Enter your email and password to sign in.'
+              : 'Use email + password, or phone number for OTP.'}
+        </Text>
 
         {banner ? (
           <View style={{ marginBottom: 16 }}>
@@ -171,146 +199,126 @@ export function LoginFormContent({ onSignUp, onForgotPassword, onLoginSuccess, o
           </View>
         ) : null}
 
-        {tab === 'password' ? (
-          <View>
-            <View style={styles.fieldWrap}>
-              <View style={inputStyle('email', Boolean(errors.email))}>
-                <View style={[styles.iconCircle, focusedField === 'email' && styles.iconCircleFocused]}>
-                  <Mail color={iconColor('email', Boolean(errors.email))} size={18} strokeWidth={2} />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Gmail ID"
-                  placeholderTextColor={authTheme.textDim}
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  underlineColorAndroid="transparent"
-                  onFocus={() => setFocusedField('email')}
-                  onBlur={() => setFocusedField(null)}
-                />
-              </View>
-              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-            </View>
-
-            <View style={styles.fieldWrap}>
-              <View style={inputStyle('password', Boolean(errors.password))}>
-                <View style={[styles.iconCircle, focusedField === 'password' && styles.iconCircleFocused]}>
-                  <Lock color={iconColor('password', Boolean(errors.password))} size={18} strokeWidth={2} />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor={authTheme.textDim}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
-                  }}
-                  secureTextEntry={!showPassword}
-                  underlineColorAndroid="transparent"
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={10} style={styles.rightSlot}>
-                  {showPassword ? (
-                    <EyeOff color={authTheme.textMuted} size={20} />
-                  ) : (
-                    <Eye color={authTheme.textMuted} size={20} />
-                  )}
-                </Pressable>
-              </View>
-              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-            </View>
-
-            <View style={styles.rememberRow}>
-              <Text style={styles.rememberText}>Remember me next time</Text>
-              <CustomSwitch
-                value={rememberMe}
-                onValueChange={setRememberMe}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
-              onPress={handlePasswordLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
+        <View style={styles.fieldWrap}>
+          <View style={inputStyle('identifier', Boolean(errors.identifier))}>
+            <View
+              style={[
+                styles.iconCircle,
+                focusedField === 'identifier' && styles.iconCircleFocused,
+              ]}
             >
-              <Text style={styles.submitBtnText}>{isLoading ? '...' : 'SIGN IN'}</Text>
-            </TouchableOpacity>
+              {isPhone ? (
+                <Phone
+                  color={iconColor('identifier', Boolean(errors.identifier))}
+                  size={18}
+                  strokeWidth={2}
+                />
+              ) : (
+                <Mail
+                  color={iconColor('identifier', Boolean(errors.identifier))}
+                  size={18}
+                  strokeWidth={2}
+                />
+              )}
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Email or phone (+91…)"
+              placeholderTextColor={authTheme.textDim}
+              value={identifier}
+              onChangeText={(text) => {
+                setIdentifier(text);
+                if (errors.identifier) setErrors((prev) => ({ ...prev, identifier: null }));
+                if (detectLoginIdentifierMode(text) !== 'email' && password) {
+                  setPassword('');
+                }
+              }}
+              keyboardType={isPhone ? 'phone-pad' : 'email-address'}
+              autoCapitalize="none"
+              autoCorrect={false}
+              underlineColorAndroid="transparent"
+              onFocus={() => setFocusedField('identifier')}
+              onBlur={() => setFocusedField(null)}
+            />
           </View>
-        ) : (
-          <View>
-            <View style={styles.fieldWrap}>
-              <View style={inputStyle('emailOrPhone', Boolean(errors.emailOrPhone))}>
-                <View style={[styles.iconCircle, focusedField === 'emailOrPhone' && styles.iconCircleFocused]}>
-                  <Phone color={iconColor('emailOrPhone', Boolean(errors.emailOrPhone))} size={18} strokeWidth={2} />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email or phone"
-                  placeholderTextColor={authTheme.textDim}
-                  value={emailOrPhone}
-                  onChangeText={(text) => {
-                    setEmailOrPhone(text);
-                    if (errors.emailOrPhone) setErrors((prev) => ({ ...prev, emailOrPhone: null }));
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  underlineColorAndroid="transparent"
-                  onFocus={() => setFocusedField('emailOrPhone')}
-                  onBlur={() => setFocusedField(null)}
+          {errors.identifier ? <Text style={styles.errorText}>{errors.identifier}</Text> : null}
+        </View>
+
+        {isEmail ? (
+          <View style={styles.fieldWrap}>
+            <View style={inputStyle('password', Boolean(errors.password))}>
+              <View
+                style={[
+                  styles.iconCircle,
+                  focusedField === 'password' && styles.iconCircleFocused,
+                ]}
+              >
+                <Lock
+                  color={iconColor('password', Boolean(errors.password))}
+                  size={18}
+                  strokeWidth={2}
                 />
               </View>
-              {errors.emailOrPhone ? <Text style={styles.errorText}>{errors.emailOrPhone}</Text> : null}
-            </View>
-
-            <View style={styles.rememberRow}>
-              <Text style={styles.rememberText}>Reminder me next time</Text>
-              <CustomSwitch
-                value={rememberMe}
-                onValueChange={setRememberMe}
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={authTheme.textDim}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
+                }}
+                secureTextEntry={!showPassword}
+                underlineColorAndroid="transparent"
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
               />
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={10}
+                style={styles.rightSlot}
+              >
+                {showPassword ? (
+                  <EyeOff color={authTheme.textMuted} size={20} />
+                ) : (
+                  <Eye color={authTheme.textMuted} size={20} />
+                )}
+              </Pressable>
             </View>
-
-            <TouchableOpacity
-              style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
-              onPress={handleSendOtp}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.submitBtnText}>{isLoading ? '...' : 'SEND OTP'}</Text>
-            </TouchableOpacity>
+            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
           </View>
-        )}
+        ) : null}
+
+        <View style={styles.rowBetween}>
+          <View style={styles.rememberInline}>
+            <Text style={styles.rememberText}>Remember me</Text>
+            <CustomSwitch value={rememberMe} onValueChange={setRememberMe} />
+          </View>
+          {isEmail || mode === 'unknown' ? (
+            <Pressable onPress={handleForgotPassword} hitSlop={8}>
+              <Text style={styles.forgotLink}>Forgot password?</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.forgotSpacer} />
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
+          onPress={handlePrimary}
+          disabled={isLoading || mode === 'unknown'}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.submitBtnText}>{primaryLabel}</Text>
+        </TouchableOpacity>
 
         <View style={styles.bottomLinks}>
           <Text style={styles.signupText}>
-            Don't have account?{' '}
+            Don&apos;t have an account?{' '}
             <Text style={styles.signupLink} onPress={handleSignUp}>
-              Sign in
+              Sign up
             </Text>
           </Text>
-
-          <Pressable
-            onPress={() => {
-              setTab(tab === 'password' ? 'otp' : 'password');
-              setErrors({});
-              setBanner(null);
-            }}
-            style={{ marginTop: 20 }}
-          >
-            <Text style={styles.switchTabText}>
-              {tab === 'password' ? 'Use OTP Login instead' : 'Use Password Login instead'}
-            </Text>
-          </Pressable>
         </View>
       </KeyboardAwareScrollView>
     </View>
@@ -332,29 +340,7 @@ export const loginFormStyles = StyleSheet.create({
     fontSize: 14,
     color: authTheme.textMuted,
     marginBottom: 24,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    marginBottom: 32,
-    gap: 16,
-  },
-  socialCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: authTheme.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: authTheme.cardBorder,
-    shadowColor: authTheme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  socialCircleBrand: {
-    backgroundColor: authTheme.bgSoft,
+    lineHeight: 20,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -372,11 +358,11 @@ export const loginFormStyles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     ...(Platform.OS === 'ios'
       ? {
-        shadowColor: authTheme.brand,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      }
+          shadowColor: authTheme.brand,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        }
       : {}),
   },
   inputError: {
@@ -424,16 +410,30 @@ export const loginFormStyles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '500',
   },
-  rememberRow: {
+  rowBetween: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 28,
+    gap: 12,
+  },
+  rememberInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   rememberText: {
     fontSize: 14,
     color: authTheme.text,
     fontWeight: '500',
+  },
+  forgotLink: {
+    fontSize: 13,
+    color: authTheme.brand,
+    fontWeight: '700',
+  },
+  forgotSpacer: {
+    width: 8,
   },
   submitBtn: {
     backgroundColor: authTheme.brand,
@@ -447,10 +447,6 @@ export const loginFormStyles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
     marginBottom: 24,
-  },
-  submitBtnPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.985 }],
   },
   submitBtnDisabled: {
     opacity: 0.65,
@@ -471,11 +467,6 @@ export const loginFormStyles = StyleSheet.create({
   signupLink: {
     color: authTheme.brand,
     fontWeight: '800',
-  },
-  switchTabText: {
-    color: authTheme.textDim,
-    fontSize: 12,
-    textDecorationLine: 'underline',
   },
 });
 
