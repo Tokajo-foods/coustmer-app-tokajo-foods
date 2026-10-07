@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
-import { CheckCircle2, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
@@ -203,14 +203,15 @@ export function ForgotSuccessStep({ onSignIn }: { onSignIn?: () => void }) {
   return (
     <View style={styles.successWrap}>
       <View style={styles.successRing}>
-        <CheckCircle2 color={authTheme.success} size={40} strokeWidth={2} />
+        <CheckCircle2 color={authTheme.success} size={42} strokeWidth={2} />
       </View>
       <Text style={styles.successTitle}>Password updated</Text>
       <Text style={styles.successBody}>
         Your new password is saved. Sign in with your email and updated password.
       </Text>
-      <Pressable style={styles.submitBtn} onPress={() => onSignIn?.()}>
-        <Text style={styles.submitBtnTextCalm}>Back to sign in</Text>
+      <Pressable style={styles.successBtn} onPress={() => onSignIn?.()}>
+        <Text style={styles.successBtnText}>Continue to sign in</Text>
+        <ArrowRight color="#FFFFFF" size={18} strokeWidth={2.4} />
       </Pressable>
     </View>
   );
