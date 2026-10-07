@@ -234,7 +234,11 @@ function mapChat(raw: unknown, orderId: string): ChatMessage {
   return {
     id: String(r._id ?? r.id ?? ''),
     orderId: String(r.orderId ?? orderId),
-    from: (r.senderRole as ChatMessage['from']) === 'partner' ? 'partner' : 'customer',
+    from:
+      r.senderRole === 'partner' || r.senderRole === 'restaurant'
+        ? r.senderRole
+        : 'customer',
+    to: typeof r.to === 'string' ? r.to : undefined,
     text: String(r.text ?? r.message ?? r.content ?? ''),
     sentAt: String(r.sentAt ?? r.createdAt ?? new Date().toISOString()),
   };
@@ -518,6 +522,7 @@ export const deliveryApi = {
     const raw = await mutate<unknown>('POST', `${TRACKING}/${orderId}/chat`, {
       text: payload.text,
       message: payload.text,
+      ...(payload.to ? { to: payload.to } : {}),
     });
     return mapChat(asRecord(raw), orderId);
   },

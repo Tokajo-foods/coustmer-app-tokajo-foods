@@ -42,13 +42,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
+import { RestaurantChatEntry } from '@/components/order/RestaurantChatEntry';
 import { TrackingMap } from '@/components/order/TrackingMap';
 import { resolveTrackingPins } from '@/lib/delivery/tracking-pins';
 import { fonts } from '@/constants/typography';
 import { deliveryApi } from '@/lib/delivery/api';
 import {
   deliveryKeys,
-  useChatHistory,
   useChangeAddress,
   useContactSupport,
   useCreateShareLink,
@@ -59,7 +59,6 @@ import {
   useOrderTracking as useDeliveryTracking,
   useRevokeShareLink,
   useRatePartner,
-  useSendChat,
   useSetContactless,
   useSetDeliveryInstructions,
   useAddTip,
@@ -331,7 +330,6 @@ export function OrderTrackingScreen() {
     dist: string;
     time: string;
   } | null>(null);
-  const [chatText, setChatText] = useState('');
   const [instructionText, setInstructionText] = useState('');
   const [contactless, setContactless] = useState(false);
   const [tipInput, setTipInput] = useState('');
@@ -491,11 +489,6 @@ export function OrderTrackingScreen() {
 
   const routeQuery = useTrackingRoute(id);
   const otpQuery = useDropOtp(id, trackingActive);
-  const chatQuery = useChatHistory(id, {
-    enabled: Boolean(id),
-    refetchInterval: trackingActive ? 8_000 : false,
-  });
-  const sendChat = useSendChat(id);
   const createShare = useCreateShareLink(id);
   const revokeShare = useRevokeShareLink(id);
   const nudgePartner = useNudgePartner(id);
@@ -514,18 +507,6 @@ export function OrderTrackingScreen() {
     typeof routeQuery.data?.durationSeconds === 'number'
       ? `${Math.max(1, Math.round(routeQuery.data.durationSeconds / 60))} mins`
       : distanceInfo?.time;
-
-  const handleSendChat = async () => {
-    const text = chatText.trim();
-    if (!text) return;
-    try {
-      await sendChat.mutateAsync(text);
-      setChatText('');
-      void chatQuery.refetch();
-    } catch (e) {
-      Alert.alert('Could not send', e instanceof Error ? e.message : 'Try again');
-    }
-  };
 
   const handleShareTracking = async () => {
     try {
@@ -1173,54 +1154,6 @@ export function OrderTrackingScreen() {
 
           {partnerAssigned ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Chat with partner</Text>
-              <View style={styles.chatCard}>
-                {chatQuery.data?.length ? (
-                  chatQuery.data.slice(-4).map((m) => (
-                    <View
-                      key={m.id}
-                      style={[
-                        styles.chatBubble,
-                        m.from === 'customer' ? styles.chatBubbleMine : styles.chatBubbleTheirs,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.chatText,
-                          m.from === 'customer' && { color: WHITE },
-                        ]}
-                      >
-                        {m.text}
-                      </Text>
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.chatEmpty}>No messages yet</Text>
-                )}
-                <View style={styles.chatInputRow}>
-                  <TextInput
-                    value={chatText}
-                    onChangeText={setChatText}
-                    placeholder="Type a message..."
-                    placeholderTextColor="#9CA3AF"
-                    style={styles.chatInput}
-                  />
-                  <Pressable
-                    style={styles.chatSendBtn}
-                    onPress={handleSendChat}
-                    disabled={sendChat.isPending}
-                  >
-                    <Text style={styles.chatSendText}>
-                      {sendChat.isPending ? '...' : 'Send'}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          ) : null}
-
-          {partnerAssigned ? (
-            <View style={styles.section}>
               <Text style={styles.sectionTitle}>Delivery controls</Text>
               <View style={styles.chatCard}>
                 <View style={styles.partnerActions}>
@@ -1327,6 +1260,12 @@ export function OrderTrackingScreen() {
                 {o?.restaurantName || 'Restaurant'}
               </Text>
             </View>
+            {id ? (
+              <RestaurantChatEntry
+                orderId={id}
+                restaurantName={o?.restaurantName || 'Restaurant'}
+              />
+            ) : null}
 
             {items.map((item, index) => (
               <View key={`${item.id ?? item.name}-${index}`}>

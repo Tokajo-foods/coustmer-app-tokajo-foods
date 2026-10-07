@@ -83,7 +83,8 @@ export type TrackingRoute = {
 export type ChatMessage = {
   id: string;
   orderId: string;
-  from: 'customer' | 'partner';
+  from: 'customer' | 'partner' | 'restaurant';
+  to?: string;
   text: string;
   sentAt: string;
 };
@@ -190,4 +191,5 @@ export type TrackingTipPayload = {
 
 export type SendChatPayload = {
   text: string;
+  to?: 'partner' | 'restaurant';
 };

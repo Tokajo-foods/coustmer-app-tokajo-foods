@@ -100,10 +100,14 @@ export type ClientToServerEvents = {
 
 export type ChatMessageEvent = {
   orderId: string;
-  from: 'customer' | 'partner';
+  from?: 'customer' | 'partner' | 'restaurant';
+  senderRole?: string;
+  to?: string;
   text: string;
+  id?: string;
   messageId?: string;
   sentAt?: string;
+  createdAt?: string;
 };
 
 export type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'error';

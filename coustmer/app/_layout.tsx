@@ -18,6 +18,7 @@ import { queryClient, asyncStoragePersister, shouldPersistQuery } from '@/lib/qu
 import { useAuthStore } from '@/store/auth-store';
 import { CrashBoundary } from '@/components/common/CrashBoundary';
 import { PREMIUM_STACK_OPTIONS } from '@/lib/motion/premium';
+import { CustomerPushSync } from '@/components/notification/CustomerPushSync';
 import { SocketProvider } from '@/lib/socket/SocketProvider';
 
 // Keep the native splash visible while we initialise.
@@ -102,6 +103,7 @@ export default function RootLayout() {
           <ScreenTopOffsetProvider>
             <CrashBoundary>
             <SocketProvider>
+              <CustomerPushSync />
               <View
                 style={{ flex: 1, backgroundColor: authTheme.bg }}
                 onLayout={onLayoutRootView}

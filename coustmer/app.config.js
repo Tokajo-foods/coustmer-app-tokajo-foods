@@ -42,6 +42,13 @@ const config = {
     './withMinSdkVersion.js',
     ['@livekit/react-native-expo-plugin', { android: { audioType: 'communication' } }],
     '@config-plugins/react-native-webrtc',
+    [
+      'expo-notifications',
+      {
+        icon: './assets/icon.png',
+        color: '#FF6A00',
+      },
+    ],
   ],
   ios: {
     supportsTablet: true,

@@ -19,6 +19,9 @@ const FALLBACK: Record<CallRole, string> = {
 export function OrderCallPanel({ orderId, viewer, names }: Props) {
   const calls = useOrderCalls(orderId, viewer);
   if (!orderId) return null;
+  const rows = viewer === 'customer'
+    ? calls.rows.filter((row) => row.role !== 'restaurant')
+    : calls.rows;
   const incoming = calls.live?.direction === 'in' && calls.live.state === 'ringing';
   const titleFor = (role: CallRole) => names?.[role] || FALLBACK[role];
 
@@ -28,7 +31,7 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
       <Text style={styles.title}>Reach them without sharing your number</Text>
       <Text style={styles.disclosure}>{calls.disclosure}</Text>
 
-      {calls.loading && calls.rows.length === 0 ? (
+      {calls.loading && rows.length === 0 ? (
         <ActivityIndicator color="#FF6A00" style={styles.spinner} />
       ) : null}
       {calls.loadError ? <Text style={styles.error}>{calls.loadError}</Text> : null}
@@ -63,13 +66,15 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
         </View>
       ) : null}
 
-      {!calls.loading && calls.rows.length === 0 && !calls.loadError ? (
+      {!calls.loading && rows.length === 0 && !calls.loadError ? (
         <Text style={styles.empty}>
-          The restaurant call shows after the order is placed. The delivery partner call shows after they accept. Chat still works.
+          {viewer === 'customer'
+            ? 'The delivery partner call shows after they accept the trip.'
+            : 'The customer call shows after the order is placed. The delivery partner call shows after they accept.'}
         </Text>
       ) : null}
 
-      {calls.rows.map((row) => (
+      {rows.map((row) => (
         <PersonRow
           key={row.role}
           row={row}
