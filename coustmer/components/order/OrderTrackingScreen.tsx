@@ -848,6 +848,7 @@ export function OrderTrackingScreen() {
         <ScrollView
           {...PREMIUM_SCROLL}
           contentContainerStyle={{
+            paddingTop: showLiveMap ? 4 : 12,
             paddingBottom: insets.bottom + 28,
             paddingHorizontal: 18,
           }}
@@ -1541,7 +1542,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#D1D5DB',
     marginTop: 10,
-    marginBottom: 22,
+    marginBottom: 28,
   },
   kicker: {
     fontFamily: fonts.uiMedium,
