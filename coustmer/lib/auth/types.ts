@@ -72,6 +72,13 @@ export type MessageResponse = {
   message: string;
 };
 
+/** Timing returned by OTP send/resend (`data.expiresInSeconds`). */
+export type OtpSendTiming = {
+  message: string;
+  expiresInSeconds: number;
+  cooldownSeconds: number;
+};
+
 /** Normalize role strings from user-service. */
 export function normalizeUserRole(role: unknown): string {
   return String(role ?? '')

@@ -272,6 +272,86 @@ const extra = StyleSheet.create({
     fontWeight: '700',
     color: authTheme.success,
   },
+  otpTimerCard: {
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 14,
+    backgroundColor: authTheme.brandSoft,
+    borderWidth: 1,
+    borderColor: authTheme.brandMuted,
+  },
+  otpTimerCardUrgent: {
+    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+    borderColor: 'rgba(234, 88, 12, 0.28)',
+  },
+  otpTimerCardExpired: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  otpTimerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  otpTimerIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  otpTimerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: authTheme.textMuted,
+    marginBottom: 2,
+  },
+  otpTimerValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: authTheme.text,
+    letterSpacing: 0.5,
+    fontVariant: ['tabular-nums'],
+  },
+  otpTimerValueUrgent: {
+    color: authTheme.brandDark,
+  },
+  otpTimerValueExpired: {
+    color: authTheme.error,
+  },
+  otpTimerTrack: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(15, 23, 42, 0.08)',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  otpTimerFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: authTheme.brand,
+  },
+  otpTimerFillUrgent: {
+    backgroundColor: authTheme.brandDark,
+  },
+  otpTimerFillExpired: {
+    backgroundColor: authTheme.error,
+    width: '0%',
+  },
+  otpTimerHint: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: authTheme.textDim,
+    fontWeight: '500',
+  },
+  resendCountdown: {
+    color: authTheme.brandDark,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
 });
 
 export const registerFormStyles = {

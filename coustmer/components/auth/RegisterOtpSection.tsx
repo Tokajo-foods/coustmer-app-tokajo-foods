@@ -2,6 +2,11 @@ import { Pressable } from '@/components/common/Pressable';
 import { CheckCircle2 } from 'lucide-react-native';
 import { Text, TextInput, View } from 'react-native';
 
+import { RegisterOtpTimer } from '@/components/auth/RegisterOtpTimer';
+import {
+  formatOtpClock,
+  useOtpValidityTimer,
+} from '@/components/auth/use-otp-validity-timer';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
 import { authTheme } from '@/constants/auth-theme';
 
@@ -15,6 +20,9 @@ type Props = {
   focused: boolean;
   setFocused: (v: boolean) => void;
   isLoading: boolean;
+  expiresAtMs: number | null;
+  cooldownEndsAtMs: number | null;
+  totalExpiresSeconds: number;
   onSend: () => void;
   onVerify: () => void;
   onResend: () => void;
@@ -30,10 +38,18 @@ export function RegisterOtpSection({
   focused,
   setFocused,
   isLoading,
+  expiresAtMs,
+  cooldownEndsAtMs,
+  totalExpiresSeconds,
   onSend,
   onVerify,
   onResend,
 }: Props) {
+  const cooldownLeft = useOtpValidityTimer(cooldownEndsAtMs);
+  const validityLeft = useOtpValidityTimer(expiresAtMs);
+  const expired = Boolean(expiresAtMs) && validityLeft <= 0;
+  const canResend = cooldownLeft <= 0 && !isLoading;
+
   if (verified) {
     return (
       <View style={styles.otpVerifiedRow}>
@@ -69,6 +85,12 @@ export function RegisterOtpSection({
 
   return (
     <View style={styles.otpInlineCard}>
+      <RegisterOtpTimer
+        channel={channel}
+        expiresAtMs={expiresAtMs}
+        totalExpiresSeconds={totalExpiresSeconds}
+      />
+
       <Text style={styles.otpInlineLabel}>
         {channel === 'email' ? 'Email verification code' : 'Phone verification code'}
       </Text>
@@ -85,6 +107,7 @@ export function RegisterOtpSection({
                   filled && styles.otpBoxFilled,
                   active && styles.otpBoxActive,
                   err && styles.otpBoxError,
+                  expired && styles.otpBoxError,
                 ]}
               >
                 <Text style={styles.otpDigit}>{filled ? d : ''}</Text>
@@ -100,6 +123,7 @@ export function RegisterOtpSection({
           maxLength={6}
           autoFocus
           caretHidden
+          editable={!expired}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           textContentType="oneTimeCode"
@@ -107,22 +131,33 @@ export function RegisterOtpSection({
         />
       </View>
       {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
-      <Pressable
-        style={[styles.submitBtn, { marginBottom: 10 }, isLoading && styles.submitBtnDisabled]}
-        onPress={onVerify}
-        disabled={isLoading}
-      >
-        <Text style={styles.submitBtnTextCalm}>
-          {isLoading ? 'Verifying…' : 'Verify code'}
-        </Text>
-      </Pressable>
-      <View style={styles.resendRow}>
-        <Text style={styles.resendMuted}>
-          Didn’t get it?{' '}
-          <Text style={styles.resendLink} onPress={isLoading ? undefined : onResend}>
-            Resend
+
+      {!expired ? (
+        <Pressable
+          style={[styles.submitBtn, { marginBottom: 10 }, isLoading && styles.submitBtnDisabled]}
+          onPress={onVerify}
+          disabled={isLoading}
+        >
+          <Text style={styles.submitBtnTextCalm}>
+            {isLoading ? 'Verifying…' : 'Verify code'}
           </Text>
-        </Text>
+        </Pressable>
+      ) : null}
+
+      <View style={styles.resendRow}>
+        {canResend ? (
+          <Text style={styles.resendMuted}>
+            Didn’t get it?{' '}
+            <Text style={styles.resendLink} onPress={onResend}>
+              Resend code
+            </Text>
+          </Text>
+        ) : (
+          <Text style={styles.resendMuted}>
+            Resend available in{' '}
+            <Text style={styles.resendCountdown}>{formatOtpClock(cooldownLeft)}</Text>
+          </Text>
+        )}
       </View>
     </View>
   );

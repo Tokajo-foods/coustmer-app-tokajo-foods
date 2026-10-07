@@ -9,6 +9,7 @@ import type {
   LoginPayload,
   MessageResponse,
   OtpSendPayload,
+  OtpSendTiming,
   OtpVerifyPayload,
   RegisterPayload,
   ResetPasswordPayload,
@@ -69,6 +70,27 @@ function normalizeAuthResponse(data: unknown): AuthResponse {
 function normalizeMessageResponse(data: unknown): MessageResponse {
   const payload = data as { message?: string };
   return { message: payload.message ?? 'Success' };
+}
+
+function normalizeOtpSendTiming(data: unknown): OtpSendTiming {
+  const payload = data as {
+    message?: string;
+    data?: { expiresInSeconds?: number; cooldownSeconds?: number };
+    expiresInSeconds?: number;
+    cooldownSeconds?: number;
+  };
+  const nested = payload.data ?? {};
+  const expiresInSeconds = Number(
+    nested.expiresInSeconds ?? payload.expiresInSeconds ?? 600,
+  );
+  const cooldownSeconds = Number(
+    nested.cooldownSeconds ?? payload.cooldownSeconds ?? 30,
+  );
+  return {
+    message: payload.message ?? 'OTP sent successfully',
+    expiresInSeconds: Number.isFinite(expiresInSeconds) ? expiresInSeconds : 600,
+    cooldownSeconds: Number.isFinite(cooldownSeconds) ? cooldownSeconds : 30,
+  };
 }
 
 function extractErrorMessage(data: unknown, fallback: string): string {
@@ -230,7 +252,7 @@ export const authApi = {
   },
 
   /** Signup contact proof — purpose register + confirm-register (no session). */
-  sendRegisterOtp: async (identifier: string) => {
+  sendRegisterOtp: async (identifier: string): Promise<OtpSendTiming> => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/send`, {
       method: 'POST',
       body: {
@@ -239,7 +261,7 @@ export const authApi = {
         role: 'customer',
       },
     });
-    return normalizeMessageResponse(data);
+    return normalizeOtpSendTiming(data);
   },
 
   confirmRegisterOtp: async (payload: { identifier: string; otp: string }) => {

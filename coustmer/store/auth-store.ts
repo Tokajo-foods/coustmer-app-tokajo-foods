@@ -14,6 +14,7 @@ import type {
   ForgotPasswordPayload,
   LoginPayload,
   OtpSendPayload,
+  OtpSendTiming,
   OtpVerifyPayload,
   RegisterPayload,
   ResetPasswordPayload,
@@ -35,7 +36,7 @@ type AuthState = {
   login: (payload: LoginPayload) => Promise<void>;
   sendOtp: (payload: OtpSendPayload) => Promise<string>;
   verifyOtp: (payload: OtpVerifyPayload) => Promise<void>;
-  sendRegisterOtp: (identifier: string) => Promise<string>;
+  sendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
   confirmRegisterOtp: (identifier: string, otp: string) => Promise<void>;
   forgotPassword: (payload: ForgotPasswordPayload) => Promise<string>;
   sendForgotPasswordOtp: (email: string) => Promise<string>;
@@ -179,8 +180,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendRegisterOtp: async (identifier) => {
     set({ isLoading: true });
     try {
-      const response = await authApi.sendRegisterOtp(identifier.trim());
-      return response.message ?? 'OTP sent successfully';
+      return await authApi.sendRegisterOtp(identifier.trim());
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
     } finally {
