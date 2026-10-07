@@ -11,13 +11,6 @@ export type RegisterFocusField =
 
 export type RegisterFieldKey = Exclude<RegisterFocusField, null>;
 
-export type RegisterStep =
-  | 'email'
-  | 'email_otp'
-  | 'phone'
-  | 'phone_otp'
-  | 'details';
-
 export function mapRegisterApiError(
   message: string,
 ): { field?: RegisterFieldKey; message: string } {
@@ -49,20 +42,4 @@ export function mapRegisterApiError(
   }
 
   return { message };
-}
-
-export function maskEmail(email: string) {
-  const trimmed = email.trim();
-  const at = trimmed.indexOf('@');
-  if (at < 1) return trimmed;
-  const name = trimmed.slice(0, at);
-  const domain = trimmed.slice(at);
-  const visible = name.slice(0, Math.min(2, name.length));
-  return `${visible}${'•'.repeat(Math.max(name.length - visible.length, 2))}${domain}`;
-}
-
-export function maskPhone(phone: string) {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 4) return phone;
-  return `+${digits.slice(0, 2)} •••• ••${digits.slice(-4)}`;
 }

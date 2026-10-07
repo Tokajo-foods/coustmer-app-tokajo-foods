@@ -1,16 +1,32 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Eye, EyeOff, Gift, Lock, User } from 'lucide-react-native';
+import { Eye, EyeOff, Gift, Lock, Mail, Phone, User } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
+import { RegisterOtpSection } from '@/components/auth/RegisterOtpSection';
 import type { RegisterFieldKey, RegisterFocusField } from '@/components/auth/register-form-helpers';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
 import { authTheme } from '@/constants/auth-theme';
+
+type OtpBlock = {
+  verified: boolean;
+  otpSent: boolean;
+  otp: string;
+  setOtp: (v: string) => void;
+  otpError: string | null;
+  focused: boolean;
+  setFocused: (v: boolean) => void;
+  onSend: () => void;
+  onVerify: () => void;
+  onResend: () => void;
+};
 
 type Props = {
   values: {
     firstName: string;
     lastName: string;
+    email: string;
+    phone: string;
     password: string;
     confirmPassword: string;
     referralCode: string;
@@ -19,6 +35,9 @@ type Props = {
   focusedField: RegisterFocusField;
   showPassword: boolean;
   showConfirmPassword: boolean;
+  isLoading: boolean;
+  emailOtp: OtpBlock;
+  phoneOtp: OtpBlock;
   setFocusedField: (f: RegisterFocusField) => void;
   clearFieldError: (field: RegisterFieldKey) => void;
   setShowPassword: (v: boolean) => void;
@@ -26,24 +45,31 @@ type Props = {
   onChange: {
     firstName: (v: string) => void;
     lastName: (v: string) => void;
+    email: (v: string) => void;
+    phone: (v: string) => void;
     password: (v: string) => void;
     confirmPassword: (v: string) => void;
     referralCode: (v: string) => void;
   };
 };
 
-export function RegisterFormFields({
-  values,
-  errors,
-  focusedField,
-  showPassword,
-  showConfirmPassword,
-  setFocusedField,
-  clearFieldError,
-  setShowPassword,
-  setShowConfirmPassword,
-  onChange,
-}: Props) {
+export function RegisterFormFields(props: Props) {
+  const {
+    values,
+    errors,
+    focusedField,
+    showPassword,
+    showConfirmPassword,
+    isLoading,
+    emailOtp,
+    phoneOtp,
+    setFocusedField,
+    clearFieldError,
+    setShowPassword,
+    setShowConfirmPassword,
+    onChange,
+  } = props;
+
   const inputStyle = (field: RegisterFocusField, hasError: boolean) => [
     styles.inputContainer,
     focusedField === field && styles.inputFocused,
@@ -66,10 +92,12 @@ export function RegisterFormFields({
       onChangeText: (text: string) => void;
       error?: string | null;
       secureTextEntry?: boolean;
+      keyboardType?: 'default' | 'email-address' | 'phone-pad';
       autoCapitalize?: 'none' | 'words' | 'characters';
       maxLength?: number;
       returnKeyType?: 'next' | 'done';
       rightElement?: ReactNode;
+      editable?: boolean;
     },
   ) => {
     const Icon = opts.icon;
@@ -90,10 +118,12 @@ export function RegisterFormFields({
               clearFieldError(field);
             }}
             secureTextEntry={opts.secureTextEntry}
+            keyboardType={opts.keyboardType}
             autoCapitalize={opts.autoCapitalize ?? 'none'}
             autoCorrect={false}
             returnKeyType={opts.returnKeyType}
             maxLength={opts.maxLength}
+            editable={opts.editable !== false}
             underlineColorAndroid="transparent"
             onFocus={() => setFocusedField(field)}
             onBlur={() => setFocusedField(null)}
@@ -136,6 +166,61 @@ export function RegisterFormFields({
           })}
         </View>
       </View>
+
+      <Text style={styles.sectionLabel}>Contact</Text>
+      {renderInput('email', 'Email', {
+        icon: Mail,
+        placeholder: 'you@gmail.com',
+        value: values.email,
+        onChangeText: onChange.email,
+        error: errors.email,
+        keyboardType: 'email-address',
+        returnKeyType: 'next',
+        editable: !emailOtp.verified,
+      })}
+      <RegisterOtpSection
+        channel="email"
+        isLoading={isLoading}
+        verified={emailOtp.verified}
+        otpSent={emailOtp.otpSent}
+        otp={emailOtp.otp}
+        setOtp={emailOtp.setOtp}
+        otpError={emailOtp.otpError}
+        focused={emailOtp.focused}
+        setFocused={emailOtp.setFocused}
+        onSend={emailOtp.onSend}
+        onVerify={emailOtp.onVerify}
+        onResend={emailOtp.onResend}
+      />
+
+      {renderInput('phone', 'Phone number', {
+        icon: Phone,
+        placeholder: '+91 98765 43210',
+        value: values.phone,
+        onChangeText: onChange.phone,
+        error: errors.phone,
+        keyboardType: 'phone-pad',
+        maxLength: 15,
+        returnKeyType: 'next',
+        editable: !phoneOtp.verified,
+      })}
+      {!errors.phone && !phoneOtp.verified ? (
+        <Text style={styles.hint}>Required. Add +91 before your 10-digit number.</Text>
+      ) : null}
+      <RegisterOtpSection
+        channel="phone"
+        isLoading={isLoading}
+        verified={phoneOtp.verified}
+        otpSent={phoneOtp.otpSent}
+        otp={phoneOtp.otp}
+        setOtp={phoneOtp.setOtp}
+        otpError={phoneOtp.otpError}
+        focused={phoneOtp.focused}
+        setFocused={phoneOtp.setFocused}
+        onSend={phoneOtp.onSend}
+        onVerify={phoneOtp.onVerify}
+        onResend={phoneOtp.onResend}
+      />
 
       <Text style={styles.sectionLabel}>Security</Text>
       {renderInput('password', 'Password', {

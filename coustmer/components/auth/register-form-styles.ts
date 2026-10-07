@@ -228,6 +228,50 @@ const extra = StyleSheet.create({
     color: authTheme.brand,
     fontWeight: '800',
   },
+  otpSendBtn: {
+    alignSelf: 'flex-start',
+    marginTop: -4,
+    marginBottom: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: authTheme.brandSoft,
+    borderWidth: 1,
+    borderColor: authTheme.brandMuted,
+  },
+  otpSendBtnText: {
+    color: authTheme.brandDark,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  otpInlineCard: {
+    marginTop: -4,
+    marginBottom: 14,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: authTheme.bgSoft,
+    borderWidth: 1,
+    borderColor: authTheme.cardBorder,
+  },
+  otpInlineLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: authTheme.textMuted,
+    marginBottom: 10,
+  },
+  otpVerifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: -4,
+    marginBottom: 14,
+    paddingHorizontal: 2,
+  },
+  otpVerifiedText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: authTheme.success,
+  },
 });
 
 export const registerFormStyles = {
