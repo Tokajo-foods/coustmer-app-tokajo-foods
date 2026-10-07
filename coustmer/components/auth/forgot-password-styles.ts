@@ -1,70 +1,229 @@
-import { authTheme } from '@/constants/auth-theme';
-import { loginFormStyles } from '@/components/auth/login-form-styles';
+import { Platform, StyleSheet } from 'react-native';
 
-export const forgotPasswordStyles = {
-  ...loginFormStyles,
-  stepsRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
+import { loginFormStyles } from '@/components/auth/login-form-styles';
+import { authTheme } from '@/constants/auth-theme';
+
+const extra = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 18,
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: authTheme.text,
+    letterSpacing: -0.35,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: authTheme.textMuted,
+    fontWeight: '500',
     marginBottom: 16,
-    gap: 8,
   },
-  stepItem: {
-    flex: 1,
-    alignItems: 'center' as const,
-    gap: 6,
+  emailHighlight: {
+    color: authTheme.text,
+    fontWeight: '700',
   },
-  stepDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  progressWrap: {
+    marginBottom: 18,
+  },
+  progressTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  progressNode: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: authTheme.tabBg,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    borderWidth: 1.5,
+    borderColor: authTheme.inputBorder,
   },
-  stepDotOn: {
+  progressNodeActive: {
     backgroundColor: authTheme.brand,
+    borderColor: authTheme.brand,
   },
-  stepNum: {
+  progressNodeDone: {
+    backgroundColor: authTheme.brandSoft,
+    borderColor: authTheme.brand,
+  },
+  progressNum: {
     fontSize: 12,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     color: authTheme.textDim,
   },
-  stepNumOn: {
+  progressNumOn: {
     color: '#FFFFFF',
   },
-  stepLabel: {
+  progressLine: {
+    flex: 1,
+    height: 2,
+    marginHorizontal: 6,
+    borderRadius: 1,
+    backgroundColor: authTheme.inputBorder,
+  },
+  progressLineOn: {
+    backgroundColor: authTheme.brand,
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressLabel: {
+    width: 72,
     fontSize: 11,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: authTheme.textDim,
+    textAlign: 'center',
   },
-  stepLabelOn: {
+  progressLabelFirst: {
+    textAlign: 'left',
+  },
+  progressLabelLast: {
+    textAlign: 'right',
+  },
+  progressLabelOn: {
     color: authTheme.brandDark,
+    fontWeight: '700',
   },
-  resendText: {
-    textAlign: 'center' as const,
-    color: authTheme.brand,
-    fontWeight: '700' as const,
-    fontSize: 13,
-  },
-  successCard: {
-    alignItems: 'center' as const,
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 10,
-    paddingTop: 8,
-    paddingBottom: 8,
+    backgroundColor: authTheme.brandSoft,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: authTheme.brandMuted,
+  },
+  tipIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: authTheme.textMuted,
+    fontWeight: '500',
+    paddingTop: 1,
+  },
+  otpRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  otpBox: {
+    width: 44,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: authTheme.inputBorder,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  otpBoxFilled: {
+    borderColor: authTheme.brandLight,
+    backgroundColor: authTheme.brandSoft,
+  },
+  otpBoxActive: {
+    borderColor: authTheme.brand,
+    ...(Platform.OS === 'ios'
+      ? {
+          shadowColor: authTheme.brand,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.12,
+          shadowRadius: 6,
+        }
+      : {}),
+  },
+  otpBoxError: {
+    borderColor: authTheme.error,
+  },
+  otpDigit: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: authTheme.text,
+    letterSpacing: 0.5,
+  },
+  otpHiddenInput: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.02,
+    color: 'transparent',
+  },
+  otpFieldWrap: {
+    marginBottom: 16,
+    position: 'relative',
+  },
+  resendRow: {
+    alignItems: 'center',
+    marginBottom: 14,
+    marginTop: 2,
+  },
+  resendMuted: {
+    fontSize: 13,
+    color: authTheme.textMuted,
+    fontWeight: '500',
+  },
+  resendLink: {
+    color: authTheme.brand,
+    fontWeight: '800',
+  },
+  submitBtnTextCalm: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  successWrap: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  successRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   successTitle: {
-    fontSize: 20,
-    fontWeight: '800' as const,
+    fontSize: 22,
+    fontWeight: '800',
     color: authTheme.text,
-    marginTop: 4,
+    letterSpacing: -0.3,
+    marginBottom: 8,
   },
   successBody: {
     fontSize: 14,
+    lineHeight: 21,
     color: authTheme.textMuted,
-    textAlign: 'center' as const,
-    lineHeight: 20,
-    marginBottom: 8,
-    paddingHorizontal: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+    paddingHorizontal: 12,
+    marginBottom: 22,
   },
+});
+
+export const forgotPasswordStyles = {
+  ...loginFormStyles,
+  ...extra,
 };

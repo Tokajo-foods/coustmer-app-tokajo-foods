@@ -1,50 +1,23 @@
 import { Pressable } from '@/components/common/Pressable';
-import { CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react-native';
+import { CheckCircle2, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
+import { ForgotOtpStep } from '@/components/auth/ForgotPasswordOtpStep';
+import { ForgotStepIndicator } from '@/components/auth/ForgotPasswordProgress';
 import { forgotPasswordStyles as styles } from '@/components/auth/forgot-password-styles';
+import {
+  forgotFieldTint,
+  type ForgotChromeProps,
+  type ForgotStep,
+} from '@/components/auth/forgot-password-types';
 import { authTheme } from '@/constants/auth-theme';
 
-export type ForgotStep = 'email' | 'otp' | 'password' | 'done';
-
-type ChromeProps = {
-  focused: string | null;
-  fieldError: string | null;
-  setFocused: (key: string | null) => void;
-};
-
-function tint(focused: string | null, key: string, err: boolean) {
-  if (err) return authTheme.error;
-  if (focused === key) return authTheme.brand;
-  return authTheme.textDim;
-}
-
-export function ForgotStepIndicator({ step }: { step: ForgotStep }) {
-  if (step === 'done') return null;
-  const order: Array<'email' | 'otp' | 'password'> = ['email', 'otp', 'password'];
-  const idx = order.indexOf(step as 'email' | 'otp' | 'password');
-  return (
-    <View style={styles.stepsRow}>
-      {order.map((key, i) => {
-        const on = i <= idx;
-        return (
-          <View key={key} style={styles.stepItem}>
-            <View style={[styles.stepDot, on && styles.stepDotOn]}>
-              <Text style={[styles.stepNum, on && styles.stepNumOn]}>{i + 1}</Text>
-            </View>
-            <Text style={[styles.stepLabel, on && styles.stepLabelOn]}>
-              {key === 'email' ? 'Email' : key === 'otp' ? 'OTP' : 'Password'}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
+export type { ForgotStep };
+export { ForgotOtpStep, ForgotStepIndicator };
 
 export function ForgotEmailStep(
-  props: ChromeProps & {
+  props: ForgotChromeProps & {
     email: string;
     setEmail: (v: string) => void;
     clearError: () => void;
@@ -55,8 +28,16 @@ export function ForgotEmailStep(
   const err = Boolean(props.fieldError);
   return (
     <>
+      <View style={styles.tipRow}>
+        <View style={styles.tipIcon}>
+          <Mail color={authTheme.brand} size={16} strokeWidth={2.2} />
+        </View>
+        <Text style={styles.tipText}>
+          We’ll email a 6-digit code. Use the address linked to your Tokajo account.
+        </Text>
+      </View>
       <View style={styles.fieldWrap}>
-        <Text style={styles.fieldLabel}>Email</Text>
+        <Text style={styles.fieldLabel}>Email address</Text>
         <View
           style={[
             styles.inputContainer,
@@ -65,11 +46,11 @@ export function ForgotEmailStep(
           ]}
         >
           <View style={styles.iconCircle}>
-            <Mail color={tint(props.focused, 'email', err)} size={18} strokeWidth={2} />
+            <Mail color={forgotFieldTint(props.focused, 'email', err)} size={18} strokeWidth={2} />
           </View>
           <TextInput
             style={styles.input}
-            placeholder="you@gmail.com"
+            placeholder="you@example.com"
             placeholderTextColor={authTheme.textDim}
             value={props.email}
             onChangeText={(t) => {
@@ -79,8 +60,11 @@ export function ForgotEmailStep(
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
             onFocus={() => props.setFocused('email')}
             onBlur={() => props.setFocused(null)}
+            returnKeyType="go"
+            onSubmitEditing={props.onSubmit}
           />
         </View>
         {props.fieldError ? <Text style={styles.errorText}>{props.fieldError}</Text> : null}
@@ -90,70 +74,16 @@ export function ForgotEmailStep(
         onPress={props.onSubmit}
         disabled={props.isLoading}
       >
-        <Text style={styles.submitBtnText}>{props.isLoading ? '...' : 'SEND OTP'}</Text>
-      </Pressable>
-    </>
-  );
-}
-
-export function ForgotOtpStep(
-  props: ChromeProps & {
-    otp: string;
-    setOtp: (v: string) => void;
-    clearError: () => void;
-    onSubmit: () => void;
-    onResend: () => void;
-    isLoading: boolean;
-  },
-) {
-  const err = Boolean(props.fieldError);
-  return (
-    <>
-      <View style={styles.fieldWrap}>
-        <Text style={styles.fieldLabel}>OTP code</Text>
-        <View
-          style={[
-            styles.inputContainer,
-            props.focused === 'otp' && styles.inputFocused,
-            err && styles.inputError,
-          ]}
-        >
-          <View style={styles.iconCircle}>
-            <ShieldCheck color={tint(props.focused, 'otp', err)} size={18} strokeWidth={2} />
-          </View>
-          <TextInput
-            style={styles.input}
-            placeholder="6-digit code"
-            placeholderTextColor={authTheme.textDim}
-            value={props.otp}
-            onChangeText={(t) => {
-              props.setOtp(t.replace(/\D/g, '').slice(0, 6));
-              props.clearError();
-            }}
-            keyboardType="number-pad"
-            maxLength={6}
-            onFocus={() => props.setFocused('otp')}
-            onBlur={() => props.setFocused(null)}
-          />
-        </View>
-        {props.fieldError ? <Text style={styles.errorText}>{props.fieldError}</Text> : null}
-      </View>
-      <Pressable
-        style={[styles.submitBtn, props.isLoading && styles.submitBtnDisabled]}
-        onPress={props.onSubmit}
-        disabled={props.isLoading}
-      >
-        <Text style={styles.submitBtnText}>{props.isLoading ? '...' : 'VERIFY OTP'}</Text>
-      </Pressable>
-      <Pressable onPress={props.onResend} disabled={props.isLoading} style={{ marginBottom: 12 }}>
-        <Text style={styles.resendText}>Resend OTP</Text>
+        <Text style={styles.submitBtnTextCalm}>
+          {props.isLoading ? 'Sending…' : 'Send verification code'}
+        </Text>
       </Pressable>
     </>
   );
 }
 
 export function ForgotPasswordFields(
-  props: ChromeProps & {
+  props: ForgotChromeProps & {
     password: string;
     confirm: string;
     setPassword: (v: string) => void;
@@ -166,8 +96,17 @@ export function ForgotPasswordFields(
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const err = Boolean(props.fieldError);
+
   return (
     <>
+      <View style={styles.tipRow}>
+        <View style={styles.tipIcon}>
+          <Lock color={authTheme.brand} size={16} strokeWidth={2.2} />
+        </View>
+        <Text style={styles.tipText}>
+          Use at least 8 characters. You’ll sign in with this password next.
+        </Text>
+      </View>
       <View style={styles.fieldWrap}>
         <Text style={styles.fieldLabel}>New password</Text>
         <View
@@ -178,11 +117,15 @@ export function ForgotPasswordFields(
           ]}
         >
           <View style={styles.iconCircle}>
-            <Lock color={tint(props.focused, 'password', err)} size={18} strokeWidth={2} />
+            <Lock
+              color={forgotFieldTint(props.focused, 'password', err)}
+              size={18}
+              strokeWidth={2}
+            />
           </View>
           <TextInput
             style={styles.input}
-            placeholder="New password"
+            placeholder="Create password"
             placeholderTextColor={authTheme.textDim}
             value={props.password}
             onChangeText={(t) => {
@@ -212,7 +155,11 @@ export function ForgotPasswordFields(
           ]}
         >
           <View style={styles.iconCircle}>
-            <Lock color={tint(props.focused, 'confirm', err)} size={18} strokeWidth={2} />
+            <Lock
+              color={forgotFieldTint(props.focused, 'confirm', err)}
+              size={18}
+              strokeWidth={2}
+            />
           </View>
           <TextInput
             style={styles.input}
@@ -226,6 +173,8 @@ export function ForgotPasswordFields(
             secureTextEntry={!showConfirm}
             onFocus={() => props.setFocused('confirm')}
             onBlur={() => props.setFocused(null)}
+            returnKeyType="done"
+            onSubmitEditing={props.onSubmit}
           />
           <Pressable onPress={() => setShowConfirm((v) => !v)} style={styles.rightSlot}>
             {showConfirm ? (
@@ -242,7 +191,9 @@ export function ForgotPasswordFields(
         onPress={props.onSubmit}
         disabled={props.isLoading}
       >
-        <Text style={styles.submitBtnText}>{props.isLoading ? '...' : 'SAVE PASSWORD'}</Text>
+        <Text style={styles.submitBtnTextCalm}>
+          {props.isLoading ? 'Saving…' : 'Save new password'}
+        </Text>
       </Pressable>
     </>
   );
@@ -250,14 +201,16 @@ export function ForgotPasswordFields(
 
 export function ForgotSuccessStep({ onSignIn }: { onSignIn?: () => void }) {
   return (
-    <View style={styles.successCard}>
-      <CheckCircle2 color={authTheme.success} size={40} strokeWidth={2} />
-      <Text style={styles.successTitle}>Saved successfully</Text>
+    <View style={styles.successWrap}>
+      <View style={styles.successRing}>
+        <CheckCircle2 color={authTheme.success} size={40} strokeWidth={2} />
+      </View>
+      <Text style={styles.successTitle}>Password updated</Text>
       <Text style={styles.successBody}>
-        Your password was updated. Sign in with your new password.
+        Your new password is saved. Sign in with your email and updated password.
       </Text>
       <Pressable style={styles.submitBtn} onPress={() => onSignIn?.()}>
-        <Text style={styles.submitBtnText}>BACK TO SIGN IN</Text>
+        <Text style={styles.submitBtnTextCalm}>Back to sign in</Text>
       </Pressable>
     </View>
   );

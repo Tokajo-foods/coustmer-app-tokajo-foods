@@ -24,6 +24,16 @@ type Props = {
   onBackToLogin?: () => void;
 };
 
+function maskEmail(email: string) {
+  const trimmed = email.trim();
+  const at = trimmed.indexOf('@');
+  if (at < 1) return trimmed;
+  const name = trimmed.slice(0, at);
+  const domain = trimmed.slice(at);
+  const visible = name.slice(0, Math.min(2, name.length));
+  return `${visible}${'•'.repeat(Math.max(name.length - visible.length, 2))}${domain}`;
+}
+
 export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
   const sendForgotPasswordOtp = useAuthStore((s) => s.sendForgotPasswordOtp);
   const confirmForgotPasswordOtp = useAuthStore((s) => s.confirmForgotPasswordOtp);
@@ -54,14 +64,15 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     if (err) return;
     try {
       await sendForgotPasswordOtp(email.trim());
+      setOtp('');
       setStep('otp');
       setBanner({
-        message: 'We sent a 6-digit code to your email. Check your inbox.',
+        message: 'Code sent. Check your email inbox (and spam).',
         type: 'success',
       });
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Failed to send OTP',
+        message: e instanceof Error ? e.message : 'Failed to send code',
         type: 'error',
       });
     }
@@ -75,10 +86,10 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     try {
       await confirmForgotPasswordOtp(email.trim(), otp.trim());
       setStep('password');
-      setBanner({ message: 'OTP verified. Choose a new password.', type: 'success' });
+      setBanner(null);
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Invalid OTP',
+        message: e instanceof Error ? e.message : 'Invalid code',
         type: 'error',
       });
     }
@@ -110,10 +121,10 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     setBanner(null);
     try {
       await sendForgotPasswordOtp(email.trim());
-      setBanner({ message: 'A new OTP was sent to your email.', type: 'success' });
+      setBanner({ message: 'A new code was sent to your email.', type: 'success' });
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Could not resend OTP',
+        message: e instanceof Error ? e.message : 'Could not resend code',
         type: 'error',
       });
     }
@@ -121,34 +132,44 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
 
   const title =
     step === 'email'
-      ? 'Forgot password'
+      ? 'Forgot password?'
       : step === 'otp'
-        ? 'Enter OTP'
+        ? 'Check your email'
         : step === 'password'
-          ? 'New password'
-          : 'Password updated';
+          ? 'Create new password'
+          : 'All set';
 
   const subtitle =
-    step === 'email'
-      ? 'Enter the email on your account. We’ll send a one-time code.'
-      : step === 'otp'
-        ? `Enter the 6-digit code sent to ${email.trim()}.`
-        : step === 'password'
-          ? 'Create a strong password and confirm it below.'
-          : 'You can sign in with your new password.';
+    step === 'email' ? (
+      'Enter your account email and we’ll send a verification code.'
+    ) : step === 'otp' ? (
+      <>
+        Enter the 6-digit code sent to{' '}
+        <Text style={styles.emailHighlight}>{maskEmail(email)}</Text>.
+      </>
+    ) : step === 'password' ? (
+      'Choose a strong password, then confirm it below.'
+    ) : (
+      'Your password was changed successfully.'
+    );
 
   return (
     <View style={{ flex: 1 }}>
       <KeyboardAwareScrollView
         enableOnAndroid
-        extraScrollHeight={20}
+        extraScrollHeight={24}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-        <ForgotStepIndicator step={step} />
+        {step !== 'done' ? (
+          <View style={styles.header}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+            <ForgotStepIndicator step={step} />
+          </View>
+        ) : null}
 
         {banner ? (
           <View style={{ marginBottom: 12 }}>
