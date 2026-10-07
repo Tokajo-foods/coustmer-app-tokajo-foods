@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
   },
   deliveringSection: {
     borderTopWidth: 1,
-    borderTopColor: '#B7BDC7',
+    borderTopColor: '#D1D5DB',
   },
   sectionHead: {
     flexDirection: 'row',
@@ -2019,7 +2019,7 @@ const styles = StyleSheet.create({
   },
   totalRule: {
     height: 1,
-    backgroundColor: '#B7BDC7',
+    backgroundColor: '#D1D5DB',
     marginVertical: 6,
   },
   totalRow: {
