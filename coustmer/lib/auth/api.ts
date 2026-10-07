@@ -28,12 +28,14 @@ const USERS_ME = '/api/v1/user-service/users/me';
 export const SESSION_AUTH_TOKEN = 'session';
 
 function mapApiUser(data: Record<string, unknown>): AuthUser {
+  const emailRaw = data.email != null ? String(data.email).trim() : '';
+  const phoneRaw = data.phone != null ? String(data.phone).trim() : '';
   return {
     id: String(data._id ?? data.id ?? ''),
-    email: String(data.email ?? ''),
+    email: emailRaw,
     firstName: (data.firstName as string) || undefined,
     lastName: (data.lastName as string) || undefined,
-    phone: (data.phone as string) || undefined,
+    phone: phoneRaw || undefined,
     role:
       normalizeUserRole(
         data.role ?? data.userType ?? data.type ?? data.accountType
@@ -60,7 +62,11 @@ function normalizeAuthResponse(data: unknown): AuthResponse {
     payload) as Record<string, unknown>;
   const user = mapApiUser(userSource);
 
-  if (!user.id || !user.email) {
+  if (!user.id) {
+    throw new Error('Invalid authentication response from server');
+  }
+  // Phone OTP login may create/return users without email.
+  if (!user.email && !user.phone) {
     throw new Error('Invalid authentication response from server');
   }
 
@@ -216,10 +222,10 @@ export const authApi = {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/register`, {
       method: 'POST',
       body: {
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        email: payload.email,
-        phone: payload.phone,
+        firstName: payload.firstName.trim(),
+        lastName: payload.lastName?.trim() || undefined,
+        email: payload.email.trim().toLowerCase(),
+        phone: payload.phone.trim(),
         password: payload.password,
         ...(payload.referralCode?.trim()
           ? { referralCode: payload.referralCode.trim().toUpperCase() }
@@ -254,6 +260,19 @@ export const authApi = {
   /** Signup contact proof — purpose register + confirm-register (no session). */
   sendRegisterOtp: async (identifier: string): Promise<OtpSendTiming> => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/send`, {
+      method: 'POST',
+      body: {
+        identifier: identifier.trim(),
+        purpose: 'register',
+        role: 'customer',
+      },
+    });
+    return normalizeOtpSendTiming(data);
+  },
+
+  /** Respects server resend cooldown / window (do not use send for resend). */
+  resendRegisterOtp: async (identifier: string): Promise<OtpSendTiming> => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/resend`, {
       method: 'POST',
       body: {
         identifier: identifier.trim(),

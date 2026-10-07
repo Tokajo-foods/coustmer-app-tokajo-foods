@@ -17,7 +17,7 @@ import {
   normalizeIndianPhoneInput,
   validateEmail,
   validateIndianPhone,
-  validatePassword,
+  validateLoginPassword,
 } from '@/utils/validation';
 
 type FocusField = 'identifier' | 'password' | null;
@@ -64,14 +64,14 @@ export function LoginFormContent({
   const handlePasswordLogin = async () => {
     const nextErrors = {
       identifier: validateEmail(identifier),
-      password: validatePassword(password),
+      password: validateLoginPassword(password),
     };
     setErrors(nextErrors);
     setBanner(null);
     if (Object.values(nextErrors).some(Boolean)) return;
 
     try {
-      await login({ email: identifier.trim(), password });
+      await login({ email: identifier.trim().toLowerCase(), password });
       onLoginSuccess?.();
       router.replace('/home');
     } catch (error) {

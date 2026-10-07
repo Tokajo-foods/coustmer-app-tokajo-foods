@@ -37,6 +37,7 @@ type AuthState = {
   sendOtp: (payload: OtpSendPayload) => Promise<string>;
   verifyOtp: (payload: OtpVerifyPayload) => Promise<void>;
   sendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
+  resendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
   confirmRegisterOtp: (identifier: string, otp: string) => Promise<void>;
   forgotPassword: (payload: ForgotPasswordPayload) => Promise<string>;
   sendForgotPasswordOtp: (email: string) => Promise<string>;
@@ -183,6 +184,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return await authApi.sendRegisterOtp(identifier.trim());
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
+    }
+  },
+
+  resendRegisterOtp: async (identifier) => {
+    try {
+      return await authApi.resendRegisterOtp(identifier.trim());
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to resend OTP'));
     }
   },
 

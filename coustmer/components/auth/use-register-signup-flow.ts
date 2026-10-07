@@ -97,7 +97,7 @@ export function useRegisterSignupFlow({ onSignIn, onRegisterSuccess }: Options) 
       await register({
         firstName: firstName.trim(),
         lastName: lastName.trim() || undefined,
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         phone: normalizeIndianPhoneInput(phone),
         password,
         confirmPassword,

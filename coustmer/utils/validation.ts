@@ -1,11 +1,13 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASSWORD_REGEX =
-  /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 const INDIAN_PHONE_REGEX = /^\+91[6-9]\d{9}$/;
 const NAME_REGEX = /^[a-zA-Z\s'-]{2,50}$/;
 
 export function isValidEmail(value: string): boolean {
-  return EMAIL_REGEX.test(value.trim());
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.length > 254) return false;
+  return EMAIL_REGEX.test(trimmed);
 }
 
 export function isValidPassword(value: string): boolean {
@@ -43,25 +45,36 @@ export function normalizeIndianPhoneInput(value: string): string {
 }
 
 export function validateEmail(value: string, required = true): string | null {
-  const trimmed = value.trim();
+  const trimmed = value.trim().toLowerCase();
   if (!trimmed) return required ? 'Email is required' : null;
+  if (trimmed.length > 254) return 'Email is too long';
   if (!isValidEmail(trimmed)) return 'Enter a valid email address';
   return null;
 }
 
+/** Signup / change-password rules — matches user-service RegisterSchema. */
 export function validatePassword(value: string): string | null {
   if (!value) return 'Password is required';
   if (value.length < 8) return 'Password must be at least 8 characters';
-  if (!/[A-Z]/.test(value))
-    return 'Password must include at least one uppercase letter';
+  if (value.length > 128) return 'Password is too long';
+  if (!/[a-z]/.test(value)) return 'Password must include at least one lowercase letter';
+  if (!/[A-Z]/.test(value)) return 'Password must include at least one uppercase letter';
+  if (!/[0-9]/.test(value)) return 'Password must include at least one digit';
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value))
     return 'Password must include at least one special character';
   return null;
 }
 
+/** Sign-in only — server accepts any non-empty password. */
+export function validateLoginPassword(value: string): string | null {
+  if (!value) return 'Password is required';
+  if (value.length > 128) return 'Password is too long';
+  return null;
+}
+
 export function validateConfirmPassword(
   password: string,
-  confirm: string
+  confirm: string,
 ): string | null {
   if (!confirm) return 'Please confirm your password';
   if (password !== confirm) return 'Passwords do not match';
@@ -78,7 +91,7 @@ export function validateName(value: string, label: string): string | null {
 
 export function validateOptionalName(
   value: string,
-  label: string
+  label: string,
 ): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -89,12 +102,11 @@ export function validateOptionalName(
 
 export function validateIndianPhone(
   value: string,
-  required = false
+  required = false,
 ): string | null {
   const trimmed = value.trim();
   if (!trimmed) return required ? 'Phone number is required' : null;
-  if (!trimmed.startsWith('+91'))
-    return 'Indian numbers must start with +91';
+  if (!trimmed.startsWith('+91')) return 'Indian numbers must start with +91';
   if (!isValidIndianPhone(trimmed))
     return 'Enter a valid Indian number (+91XXXXXXXXXX)';
   return null;
@@ -111,21 +123,18 @@ export function validateEmailOrPhone(value: string): string | null {
 export function validateOtp(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return 'OTP is required';
-  if (!/^\d{4,8}$/.test(trimmed)) return 'Enter a valid OTP code';
+  if (!/^\d{6}$/.test(trimmed)) return 'Enter the 6-digit code';
   return null;
 }
 
-export function validateRegisterContact(
+/** Customer signup requires both email and phone. */
+export function validateRegisterContactsBoth(
   email: string,
-  phone: string
+  phone: string,
 ): string | null {
-  const emailError = validateEmail(email, false);
-  const phoneError = validateIndianPhone(phone, false);
-
-  if (!email.trim() && !phone.trim()) {
-    return 'Email or phone number is required';
-  }
-  if (email.trim() && emailError) return emailError;
-  if (phone.trim() && phoneError) return phoneError;
+  const emailError = validateEmail(email, true);
+  if (emailError) return emailError;
+  const phoneError = validateIndianPhone(normalizeIndianPhoneInput(phone), true);
+  if (phoneError) return phoneError;
   return null;
 }

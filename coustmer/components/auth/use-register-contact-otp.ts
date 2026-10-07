@@ -22,6 +22,7 @@ export function useRegisterContactOtp(
   setBanner: (b: Banner) => void,
 ) {
   const sendRegisterOtp = useAuthStore((s) => s.sendRegisterOtp);
+  const resendRegisterOtp = useAuthStore((s) => s.resendRegisterOtp);
   const confirmRegisterOtp = useAuthStore((s) => s.confirmRegisterOtp);
 
   const [emailOtp, setEmailOtp] = useState('');
@@ -84,7 +85,7 @@ export function useRegisterContactOtp(
     if (err) return;
     setEmailBusy('sending');
     try {
-      const timing = await sendRegisterOtp(email.trim());
+      const timing = await sendRegisterOtp(email.trim().toLowerCase());
       setEmailOtp('');
       setEmailOtpSent(true);
       applyTiming('email', timing);
@@ -106,7 +107,7 @@ export function useRegisterContactOtp(
     if (err) return;
     setEmailBusy('verifying');
     try {
-      await confirmRegisterOtp(email.trim(), emailOtp.trim());
+      await confirmRegisterOtp(email.trim().toLowerCase(), emailOtp.trim());
       setEmailVerified(true);
       setBanner({ message: 'Email verified.', type: 'success' });
     } catch (e) {
@@ -146,9 +147,10 @@ export function useRegisterContactOtp(
     setPhoneOtpError(err);
     setBanner(null);
     if (err) return;
+    const normalized = normalizeIndianPhoneInput(phone);
     setPhoneBusy('verifying');
     try {
-      await confirmRegisterOtp(phone.trim(), phoneOtp.trim());
+      await confirmRegisterOtp(normalized, phoneOtp.trim());
       setPhoneVerified(true);
       setBanner({ message: 'Phone verified.', type: 'success' });
     } catch (e) {
@@ -162,7 +164,7 @@ export function useRegisterContactOtp(
     setBanner(null);
     setEmailBusy('resending');
     try {
-      const timing = await sendRegisterOtp(email.trim());
+      const timing = await resendRegisterOtp(email.trim().toLowerCase());
       setEmailOtp('');
       applyTiming('email', timing);
       setBanner({ message: 'A new email OTP was sent.', type: 'success' });
@@ -177,7 +179,7 @@ export function useRegisterContactOtp(
     setBanner(null);
     setPhoneBusy('resending');
     try {
-      const timing = await sendRegisterOtp(phone.trim());
+      const timing = await resendRegisterOtp(normalizeIndianPhoneInput(phone));
       setPhoneOtp('');
       applyTiming('phone', timing);
       setBanner({ message: 'A new phone OTP was sent.', type: 'success' });
