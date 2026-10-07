@@ -36,6 +36,8 @@ type AuthState = {
   sendOtp: (payload: OtpSendPayload) => Promise<string>;
   verifyOtp: (payload: OtpVerifyPayload) => Promise<void>;
   forgotPassword: (payload: ForgotPasswordPayload) => Promise<string>;
+  sendForgotPasswordOtp: (email: string) => Promise<string>;
+  confirmForgotPasswordOtp: (identifier: string, otp: string) => Promise<void>;
   resetPassword: (payload: ResetPasswordPayload) => Promise<string>;
   verifyEmail: (token: string) => Promise<string>;
   changePassword: (payload: ChangePasswordPayload) => Promise<string>;
@@ -179,6 +181,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return response.message ?? 'Password reset link sent to your email';
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'Failed to send reset link'));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  sendForgotPasswordOtp: async (email) => {
+    set({ isLoading: true });
+    try {
+      const response = await authApi.sendForgotPasswordOtp(email.trim());
+      return response.message ?? 'OTP sent to your email';
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  confirmForgotPasswordOtp: async (identifier, otp) => {
+    set({ isLoading: true });
+    try {
+      await authApi.confirmForgotPasswordOtp({ identifier, otp });
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
     } finally {
       set({ isLoading: false });
     }

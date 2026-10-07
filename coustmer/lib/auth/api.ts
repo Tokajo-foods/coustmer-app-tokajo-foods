@@ -248,14 +248,44 @@ export const authApi = {
     return normalizeMessageResponse(data);
   },
 
-  resetPassword: async (payload: ResetPasswordPayload) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/reset-password`, {
+  /** Send branded nodemailer OTP for password reset (purpose: forgot_password). */
+  sendForgotPasswordOtp: async (identifier: string) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/send`, {
       method: 'POST',
       body: {
-        token: payload.token,
-        password: payload.password,
-        confirmPassword: payload.confirmPassword ?? payload.password,
+        identifier: identifier.trim(),
+        purpose: 'forgot_password',
       },
+    });
+    return normalizeMessageResponse(data);
+  },
+
+  confirmForgotPasswordOtp: async (payload: {
+    identifier: string;
+    otp: string;
+  }) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-forgot-password`, {
+      method: 'POST',
+      body: {
+        identifier: payload.identifier.trim(),
+        otp: payload.otp.trim(),
+      },
+    });
+    return data;
+  },
+
+  resetPassword: async (payload: ResetPasswordPayload) => {
+    const body: Record<string, string> = {
+      newPassword: payload.password,
+    };
+    if (payload.identifier?.trim()) {
+      body.identifier = payload.identifier.trim();
+    } else if (payload.token?.trim()) {
+      body.token = payload.token.trim();
+    }
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/reset-password`, {
+      method: 'POST',
+      body,
     });
     return normalizeMessageResponse(data);
   },

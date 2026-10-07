@@ -31,23 +31,32 @@ export type LoginPayload = {
   password: string;
 };
 
+export type OtpPurpose = 'login' | 'register' | 'verification' | 'forgot_password';
+
 export type OtpSendPayload = {
   emailOrPhone: string;
-  purpose?: 'login' | 'register' | 'verification';
+  purpose?: OtpPurpose;
 };
 
 export type OtpVerifyPayload = {
   emailOrPhone: string;
   otp: string;
-  purpose?: 'login' | 'register' | 'verification';
+  purpose?: OtpPurpose;
 };
 
 export type ForgotPasswordPayload = {
   email: string;
 };
 
+export type ConfirmForgotPasswordOtpPayload = {
+  identifier: string;
+  otp: string;
+};
+
+/** OTP path uses identifier; legacy web link uses token. */
 export type ResetPasswordPayload = {
-  token: string;
+  token?: string;
+  identifier?: string;
   password: string;
   confirmPassword?: string;
 };

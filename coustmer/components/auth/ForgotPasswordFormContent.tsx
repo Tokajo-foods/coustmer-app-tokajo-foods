@@ -1,100 +1,200 @@
-import { Pressable } from '@/components/common/Pressable';
-import { Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView,
-  Platform,
-  
-  ScrollView,
-  Text,
-  TextInput,
-  View } from 'react-native';
+import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
-import { loginFormStyles } from '@/components/auth/LoginFormContent';
-import { authTheme } from '@/constants/auth-theme';
+import {
+  ForgotEmailStep,
+  ForgotOtpStep,
+  ForgotPasswordFields,
+  ForgotStepIndicator,
+  ForgotSuccessStep,
+  type ForgotStep,
+} from '@/components/auth/ForgotPasswordSteps';
+import { forgotPasswordStyles as styles } from '@/components/auth/forgot-password-styles';
 import { useAuthStore } from '@/store/auth-store';
-import { validateEmail } from '@/utils/validation';
+import {
+  validateConfirmPassword,
+  validateEmail,
+  validateOtp,
+  validatePassword,
+} from '@/utils/validation';
 
 type Props = {
   onBackToLogin?: () => void;
 };
 
 export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
-  const forgotPassword = useAuthStore((s) => s.forgotPassword);
+  const sendForgotPasswordOtp = useAuthStore((s) => s.sendForgotPasswordOtp);
+  const confirmForgotPasswordOtp = useAuthStore((s) => s.confirmForgotPasswordOtp);
+  const resetPassword = useAuthStore((s) => s.resetPassword);
   const isLoading = useAuthStore((s) => s.isLoading);
 
+  const [step, setStep] = useState<ForgotStep>('email');
   const [email, setEmail] = useState('');
-  const [focused, setFocused] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [focused, setFocused] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(
+    null,
+  );
 
-  const handleSubmit = async () => {
-    const emailError = validateEmail(email);
-    setError(emailError);
+  const clearError = () => {
+    if (fieldError) setFieldError(null);
+  };
+
+  const chrome = { focused, fieldError, setFocused };
+
+  const sendOtp = async () => {
+    const err = validateEmail(email);
+    setFieldError(err);
     setBanner(null);
-    if (emailError) return;
-
+    if (err) return;
     try {
-      const message = await forgotPassword({ email: email.trim() });
+      await sendForgotPasswordOtp(email.trim());
+      setStep('otp');
       setBanner({
-        message: message || 'If that email exists, a reset link has been sent. Check your inbox.',
+        message: 'We sent a 6-digit code to your email. Check your inbox.',
         type: 'success',
       });
-    } catch (err) {
+    } catch (e) {
       setBanner({
-        message: err instanceof Error ? err.message : 'Request failed',
+        message: e instanceof Error ? e.message : 'Failed to send OTP',
         type: 'error',
       });
     }
   };
 
+  const verifyOtp = async () => {
+    const err = validateOtp(otp);
+    setFieldError(err);
+    setBanner(null);
+    if (err) return;
+    try {
+      await confirmForgotPasswordOtp(email.trim(), otp.trim());
+      setStep('password');
+      setBanner({ message: 'OTP verified. Choose a new password.', type: 'success' });
+    } catch (e) {
+      setBanner({
+        message: e instanceof Error ? e.message : 'Invalid OTP',
+        type: 'error',
+      });
+    }
+  };
+
+  const savePassword = async () => {
+    const pwdErr = validatePassword(password);
+    const confErr = validateConfirmPassword(password, confirm);
+    setFieldError(pwdErr || confErr);
+    setBanner(null);
+    if (pwdErr || confErr) return;
+    try {
+      await resetPassword({
+        identifier: email.trim(),
+        password,
+        confirmPassword: confirm,
+      });
+      setStep('done');
+      setBanner(null);
+    } catch (e) {
+      setBanner({
+        message: e instanceof Error ? e.message : 'Could not save password',
+        type: 'error',
+      });
+    }
+  };
+
+  const resend = async () => {
+    setBanner(null);
+    try {
+      await sendForgotPasswordOtp(email.trim());
+      setBanner({ message: 'A new OTP was sent to your email.', type: 'success' });
+    } catch (e) {
+      setBanner({
+        message: e instanceof Error ? e.message : 'Could not resend OTP',
+        type: 'error',
+      });
+    }
+  };
+
+  const title =
+    step === 'email'
+      ? 'Forgot password'
+      : step === 'otp'
+        ? 'Enter OTP'
+        : step === 'password'
+          ? 'New password'
+          : 'Password updated';
+
+  const subtitle =
+    step === 'email'
+      ? 'Enter the email on your account. We’ll send a one-time code.'
+      : step === 'otp'
+        ? `Enter the 6-digit code sent to ${email.trim()}.`
+        : step === 'password'
+          ? 'Create a strong password and confirm it below.'
+          : 'You can sign in with your new password.';
+
   return (
     <View style={{ flex: 1 }}>
-      <KeyboardAwareScrollView enableOnAndroid={true} extraScrollHeight={20} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
-        <Text style={styles.title}>Forgot Password</Text>
-        <Text style={styles.subtitle}>Enter your email and we&apos;ll send you a password reset link.</Text>
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        extraScrollHeight={20}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+        <ForgotStepIndicator step={step} />
 
         {banner ? (
-          <View style={{ marginBottom: 16 }}>
+          <View style={{ marginBottom: 12 }}>
             <AuthMessageBanner message={banner.message} type={banner.type} />
           </View>
         ) : null}
 
-        <View style={styles.fieldWrap}>
-          <View style={[styles.inputContainer, focused && styles.inputFocused, error && styles.inputError]}>
-            <View style={[styles.iconCircle, focused && styles.iconCircleFocused]}>
-              <Mail color={error ? authTheme.error : focused ? authTheme.brand : authTheme.textDim} size={18} strokeWidth={2} />
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Email address"
-              placeholderTextColor={authTheme.textDim}
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (error) setError(null);
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              underlineColorAndroid="transparent"
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-            />
-          </View>
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        </View>
+        {step === 'email' ? (
+          <ForgotEmailStep
+            {...chrome}
+            email={email}
+            setEmail={setEmail}
+            clearError={clearError}
+            onSubmit={() => void sendOtp()}
+            isLoading={isLoading}
+          />
+        ) : null}
 
-        <Pressable
-          style={({ pressed }) => [styles.submitBtn, pressed && styles.submitBtnPressed, isLoading && styles.submitBtnDisabled]}
-          onPress={handleSubmit}
-          disabled={isLoading}
-        >
-          <Text style={styles.submitBtnText}>{isLoading ? '...' : 'SEND RESET LINK'}</Text>
-        </Pressable>
+        {step === 'otp' ? (
+          <ForgotOtpStep
+            {...chrome}
+            otp={otp}
+            setOtp={setOtp}
+            clearError={clearError}
+            onSubmit={() => void verifyOtp()}
+            onResend={() => void resend()}
+            isLoading={isLoading}
+          />
+        ) : null}
 
-        {onBackToLogin ? (
+        {step === 'password' ? (
+          <ForgotPasswordFields
+            {...chrome}
+            password={password}
+            confirm={confirm}
+            setPassword={setPassword}
+            setConfirm={setConfirm}
+            clearError={clearError}
+            onSubmit={() => void savePassword()}
+            isLoading={isLoading}
+          />
+        ) : null}
+
+        {step === 'done' ? <ForgotSuccessStep onSignIn={onBackToLogin} /> : null}
+
+        {step !== 'done' && onBackToLogin ? (
           <View style={styles.bottomLinks}>
             <Text style={styles.signupText}>
               Remember your password?{' '}
@@ -108,5 +208,3 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     </View>
   );
 }
-
-const styles = loginFormStyles;
