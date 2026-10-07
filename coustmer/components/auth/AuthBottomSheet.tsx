@@ -20,7 +20,7 @@ import { authTheme } from '@/constants/auth-theme';
 import { type AuthSheetView } from '@/store/auth-sheet-store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.74;
+export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.70;
 
 const OPEN_SPRING = { damping: 26, stiffness: 185, mass: 0.92 };
 const CLOSE_DURATION = 340;
