@@ -21,6 +21,7 @@ import {
   setVoiceSpeaker,
 } from '@/lib/call/internet-audio';
 import {
+  bringAppToForeground,
   displayNativeIncomingCall,
   endNativeIncomingCall,
   listenNativeIncomingCallActions,
@@ -68,6 +69,10 @@ export function useCustomerInternetCalls() {
   const callRef = useRef(call);
   const joined = useRef(false);
   const closed = useRef(new Set<string>());
+  /** Last ringing payload by callId — CallKeep answer can fire before React state settles. */
+  const pendingByCallId = useRef(
+    new Map<string, { orderId: string; callerRole: string; callerName: string }>(),
+  );
   const acceptRef = useRef<(orderId: string, callId: string, callerRole: string) => Promise<void>>(
     async () => undefined,
   );
@@ -77,6 +82,7 @@ export function useCustomerInternetCalls() {
   const clear = useCallback(async (callId?: string) => {
     if (callId) {
       closed.current.add(callId);
+      pendingByCallId.current.delete(callId);
       await endNativeIncomingCall(callId);
     }
     joined.current = false;
@@ -100,6 +106,11 @@ export function useCustomerInternetCalls() {
       callerRole,
       callerName: callerLabel(callerRole),
     };
+    pendingByCallId.current.set(callId, {
+      orderId,
+      callerRole,
+      callerName: next.callerName,
+    });
     setCall(next);
     setNotice(null);
 
@@ -226,13 +237,17 @@ export function useCustomerInternetCalls() {
     void listenNativeIncomingCallActions({
       onAnswer: (callId) => {
         const current = callRef.current;
-        if (!current || current.callId !== callId) return;
-        void acceptRef.current(current.orderId, callId, current.callerRole);
+        const pending = pendingByCallId.current.get(callId);
+        const orderId = current?.callId === callId ? current.orderId : pending?.orderId;
+        const callerRole =
+          current?.callId === callId ? current.callerRole : pending?.callerRole ?? 'restaurant';
+        if (!orderId) return;
+        void acceptRef.current(orderId, callId, callerRole);
       },
       onEnd: (callId) => {
         const current = callRef.current;
-        if (!current || current.callId !== callId) return;
-        if (current.phase === 'ringing') {
+        const phase = current?.callId === callId ? current.phase : 'ringing';
+        if (phase === 'ringing') {
           void declineRef.current(callId);
         } else {
           void (async () => {
@@ -253,8 +268,22 @@ export function useCustomerInternetCalls() {
 
   async function acceptFromIds(orderId: string, callId: string, callerRole: string) {
     if (closed.current.has(callId)) return;
+    const name =
+      pendingByCallId.current.get(callId)?.callerName ?? callerLabel(callerRole);
+    // Show WhatsApp-style in-call UI immediately (mute / speaker / end) while audio connects.
+    setNativeRinging(false);
     setBusy('accept');
     setNotice(null);
+    setMuted(false);
+    setSpeaker(true);
+    setCall({
+      phase: 'active',
+      orderId,
+      callId,
+      callerRole,
+      callerName: name,
+    });
+    void bringAppToForeground();
     try {
       await ensureMicrophone();
       const session = await acceptInternetCall(callId);
@@ -263,16 +292,9 @@ export function useCustomerInternetCalls() {
       joined.current = true;
       await setVoiceSpeaker(true);
       setSpeaker(true);
-      setNativeRinging(false);
-      setCall({
-        phase: 'active',
-        orderId,
-        callId,
-        callerRole,
-        callerName: callerLabel(callerRole),
-      });
       await markNativeCallActive(callId);
       await dismissIncomingCallNotification();
+      pendingByCallId.current.delete(callId);
     } catch (err) {
       setNotice(callErrorMessage(err));
       await clear(callId);

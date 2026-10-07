@@ -128,13 +128,23 @@ export async function endNativeIncomingCall(callId: string): Promise<void> {
   callIdByUuid.delete(uuid.toLowerCase());
 }
 
+export async function bringAppToForeground(): Promise<void> {
+  const keep = await loadCallKeep();
+  if (!keep) return;
+  try {
+    keep.backToForeground();
+  } catch {
+    // iOS / Expo Go may not support this.
+  }
+}
+
 export async function markNativeCallActive(callId: string): Promise<void> {
   const keep = await loadCallKeep();
   if (!keep) return;
   const uuid = uuidByCallId.get(callId) ?? callUuidFromId(callId);
   try {
     keep.setCurrentCallActive(uuid);
-    if (Platform.OS === 'android') keep.backToForeground();
+    keep.backToForeground();
   } catch {
     // Optional on some OS versions.
   }
