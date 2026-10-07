@@ -21,9 +21,15 @@ import { type AuthSheetView } from '@/store/auth-sheet-store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.67;
+const AUTH_SHEET_HEIGHT_REGISTER = SCREEN_HEIGHT * 0.84;
+const SHEET_OFFSCREEN = SCREEN_HEIGHT;
 
 const OPEN_SPRING = { damping: 26, stiffness: 185, mass: 0.92 };
 const CLOSE_DURATION = 340;
+
+function sheetHeightFor(view: AuthSheetView) {
+  return view === 'register' ? AUTH_SHEET_HEIGHT_REGISTER : AUTH_SHEET_HEIGHT;
+}
 
 type Props = {
   visible: boolean;
@@ -39,9 +45,10 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
   const prevViewRef = useRef<AuthSheetView | null>(null);
   const hasOpenedRef = useRef(false);
 
-  const translateY = useSharedValue(AUTH_SHEET_HEIGHT);
+  const translateY = useSharedValue(SHEET_OFFSCREEN);
   const backdropOpacity = useSharedValue(0);
   const sheetOpacity = useSharedValue(0);
+  const activeSheetHeight = sheetHeightFor(view);
 
   const finishClose = useCallback(() => {
     setMounted(false);
@@ -61,7 +68,7 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
         easing: Easing.out(Easing.quad),
       });
       translateY.value = withTiming(
-        AUTH_SHEET_HEIGHT,
+        SHEET_OFFSCREEN,
         { duration: CLOSE_DURATION, easing: Easing.bezier(0.4, 0, 0.2, 1) },
         (finished) => {
           if (finished) {
@@ -75,7 +82,7 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
   );
 
   const animateOpen = useCallback(() => {
-    translateY.value = AUTH_SHEET_HEIGHT;
+    translateY.value = SHEET_OFFSCREEN;
     backdropOpacity.value = 0;
     sheetOpacity.value = 0;
     backdropOpacity.value = withTiming(1, {
@@ -109,14 +116,14 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
     if (prevViewRef.current === view) return;
     prevViewRef.current = view;
 
-    translateY.value = AUTH_SHEET_HEIGHT * 0.42;
+    translateY.value = activeSheetHeight * 0.35;
     sheetOpacity.value = 0.5;
     sheetOpacity.value = withTiming(1, {
       duration: 260,
       easing: Easing.out(Easing.quad),
     });
     translateY.value = withSpring(0, OPEN_SPRING);
-  }, [view, visible, mounted, sheetOpacity, translateY]);
+  }, [view, visible, mounted, sheetOpacity, translateY, activeSheetHeight]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -213,7 +220,7 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
           style={[
             styles.sheet,
             sheetStyle,
-            { height: AUTH_SHEET_HEIGHT, paddingBottom: Math.max(insets.bottom, 16) },
+            { height: activeSheetHeight, paddingBottom: Math.max(insets.bottom, 16) },
           ]}
         >
           <View style={styles.handle} />
