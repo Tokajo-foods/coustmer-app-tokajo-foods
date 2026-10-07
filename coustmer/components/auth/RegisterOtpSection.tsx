@@ -2,13 +2,15 @@ import { Pressable } from '@/components/common/Pressable';
 import { CheckCircle2 } from 'lucide-react-native';
 import { Text, TextInput, View } from 'react-native';
 
-import { RegisterOtpTimer } from '@/components/auth/RegisterOtpTimer';
 import {
   formatOtpClock,
-  useOtpValidityTimer,
+  useOtpCountdown,
 } from '@/components/auth/use-otp-validity-timer';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
 import { authTheme } from '@/constants/auth-theme';
+
+const DEFAULT_VALIDITY_SECONDS = 600; // 10 minutes
+const DEFAULT_COOLDOWN_SECONDS = 30;
 
 type Props = {
   channel: 'email' | 'phone';
@@ -20,9 +22,10 @@ type Props = {
   focused: boolean;
   setFocused: (v: boolean) => void;
   isLoading: boolean;
-  expiresAtMs: number | null;
-  cooldownEndsAtMs: number | null;
-  totalExpiresSeconds: number;
+  /** Bumps on each successful send/resend to restart timers */
+  timerKey: number;
+  validitySeconds?: number;
+  cooldownSeconds?: number;
   onSend: () => void;
   onVerify: () => void;
   onResend: () => void;
@@ -38,16 +41,16 @@ export function RegisterOtpSection({
   focused,
   setFocused,
   isLoading,
-  expiresAtMs,
-  cooldownEndsAtMs,
-  totalExpiresSeconds,
+  timerKey,
+  validitySeconds = DEFAULT_VALIDITY_SECONDS,
+  cooldownSeconds = DEFAULT_COOLDOWN_SECONDS,
   onSend,
   onVerify,
   onResend,
 }: Props) {
-  const cooldownLeft = useOtpValidityTimer(cooldownEndsAtMs);
-  const validityLeft = useOtpValidityTimer(expiresAtMs);
-  const expired = Boolean(expiresAtMs) && validityLeft <= 0;
+  const validityLeft = useOtpCountdown(otpSent && !verified, validitySeconds, timerKey);
+  const cooldownLeft = useOtpCountdown(otpSent && !verified, cooldownSeconds, timerKey);
+  const expired = otpSent && !verified && validityLeft <= 0;
   const canResend = cooldownLeft <= 0 && !isLoading;
 
   if (verified) {
@@ -85,16 +88,10 @@ export function RegisterOtpSection({
 
   return (
     <View style={styles.otpInlineCard}>
-      <RegisterOtpTimer
-        channel={channel}
-        expiresAtMs={expiresAtMs}
-        totalExpiresSeconds={totalExpiresSeconds}
-      />
-
       <Text style={styles.otpInlineLabel}>
         {channel === 'email' ? 'Email verification code' : 'Phone verification code'}
       </Text>
-      <View style={{ position: 'relative', marginBottom: 8 }}>
+      <View style={{ position: 'relative', marginBottom: 6 }}>
         <View style={styles.otpRow} pointerEvents="none">
           {digits.map((d, i) => {
             const filled = d.trim().length > 0;
@@ -130,11 +127,18 @@ export function RegisterOtpSection({
           autoComplete="sms-otp"
         />
       </View>
+
+      <Text style={[styles.otpTinyTimer, expired && styles.otpTinyTimerExpired]}>
+        {expired
+          ? 'Code expired — resend a new one'
+          : `Code valid for ${formatOtpClock(validityLeft)}`}
+      </Text>
+
       {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
 
       {!expired ? (
         <Pressable
-          style={[styles.submitBtn, { marginBottom: 10 }, isLoading && styles.submitBtnDisabled]}
+          style={[styles.submitBtn, { marginBottom: 10, marginTop: 8 }, isLoading && styles.submitBtnDisabled]}
           onPress={onVerify}
           disabled={isLoading}
         >
@@ -154,8 +158,7 @@ export function RegisterOtpSection({
           </Text>
         ) : (
           <Text style={styles.resendMuted}>
-            Resend available in{' '}
-            <Text style={styles.resendCountdown}>{formatOtpClock(cooldownLeft)}</Text>
+            Resend in <Text style={styles.resendCountdown}>{formatOtpClock(cooldownLeft)}</Text>
           </Text>
         )}
       </View>

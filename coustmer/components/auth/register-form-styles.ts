@@ -272,6 +272,18 @@ const extra = StyleSheet.create({
     fontWeight: '700',
     color: authTheme.success,
   },
+  otpTinyTimer: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: authTheme.textMuted,
+    textAlign: 'center',
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  otpTinyTimerExpired: {
+    color: authTheme.error,
+    fontWeight: '700',
+  },
   otpTimerCard: {
     marginBottom: 12,
     paddingHorizontal: 12,

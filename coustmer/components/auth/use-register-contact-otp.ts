@@ -10,6 +10,9 @@ import {
 
 type Banner = { message: string; type: 'error' | 'success' } | null;
 
+const DEFAULT_VALIDITY = 600;
+const DEFAULT_COOLDOWN = 30;
+
 export function useRegisterContactOtp(
   email: string,
   phone: string,
@@ -30,28 +33,28 @@ export function useRegisterContactOtp(
   const [phoneOtpError, setPhoneOtpError] = useState<string | null>(null);
   const [emailOtpFocused, setEmailOtpFocused] = useState(false);
   const [phoneOtpFocused, setPhoneOtpFocused] = useState(false);
-  const [emailExpiresAtMs, setEmailExpiresAtMs] = useState<number | null>(null);
-  const [phoneExpiresAtMs, setPhoneExpiresAtMs] = useState<number | null>(null);
-  const [emailCooldownEndsAtMs, setEmailCooldownEndsAtMs] = useState<number | null>(null);
-  const [phoneCooldownEndsAtMs, setPhoneCooldownEndsAtMs] = useState<number | null>(null);
-  const [emailExpiryTotal, setEmailExpiryTotal] = useState(600);
-  const [phoneExpiryTotal, setPhoneExpiryTotal] = useState(600);
+  const [emailTimerKey, setEmailTimerKey] = useState(0);
+  const [phoneTimerKey, setPhoneTimerKey] = useState(0);
+  const [emailValiditySeconds, setEmailValiditySeconds] = useState(DEFAULT_VALIDITY);
+  const [phoneValiditySeconds, setPhoneValiditySeconds] = useState(DEFAULT_VALIDITY);
+  const [emailCooldownSeconds, setEmailCooldownSeconds] = useState(DEFAULT_COOLDOWN);
+  const [phoneCooldownSeconds, setPhoneCooldownSeconds] = useState(DEFAULT_COOLDOWN);
 
   const applyTiming = (
     channel: 'email' | 'phone',
-    timing: { expiresInSeconds: number; cooldownSeconds: number },
+    timing?: { expiresInSeconds?: number; cooldownSeconds?: number },
   ) => {
-    const now = Date.now();
-    const expiresAt = now + timing.expiresInSeconds * 1000;
-    const cooldownEnds = now + timing.cooldownSeconds * 1000;
+    // Always show a 10-minute validity window for signup OTPs.
+    const validity = DEFAULT_VALIDITY;
+    const cooldown = Math.max(1, Number(timing?.cooldownSeconds) || DEFAULT_COOLDOWN);
     if (channel === 'email') {
-      setEmailExpiresAtMs(expiresAt);
-      setEmailCooldownEndsAtMs(cooldownEnds);
-      setEmailExpiryTotal(timing.expiresInSeconds);
+      setEmailValiditySeconds(validity);
+      setEmailCooldownSeconds(cooldown);
+      setEmailTimerKey((k) => k + 1);
     } else {
-      setPhoneExpiresAtMs(expiresAt);
-      setPhoneCooldownEndsAtMs(cooldownEnds);
-      setPhoneExpiryTotal(timing.expiresInSeconds);
+      setPhoneValiditySeconds(validity);
+      setPhoneCooldownSeconds(cooldown);
+      setPhoneTimerKey((k) => k + 1);
     }
   };
 
@@ -60,8 +63,6 @@ export function useRegisterContactOtp(
     setEmailOtpSent(false);
     setEmailOtp('');
     setEmailOtpError(null);
-    setEmailExpiresAtMs(null);
-    setEmailCooldownEndsAtMs(null);
   };
 
   const resetPhoneOtp = () => {
@@ -69,8 +70,6 @@ export function useRegisterContactOtp(
     setPhoneOtpSent(false);
     setPhoneOtp('');
     setPhoneOtpError(null);
-    setPhoneExpiresAtMs(null);
-    setPhoneCooldownEndsAtMs(null);
   };
 
   const sendEmailCode = async () => {
@@ -183,9 +182,9 @@ export function useRegisterContactOtp(
       otpError: emailOtpError,
       focused: emailOtpFocused,
       setFocused: setEmailOtpFocused,
-      expiresAtMs: emailExpiresAtMs,
-      cooldownEndsAtMs: emailCooldownEndsAtMs,
-      totalExpiresSeconds: emailExpiryTotal,
+      timerKey: emailTimerKey,
+      validitySeconds: emailValiditySeconds,
+      cooldownSeconds: emailCooldownSeconds,
       onSend: () => void sendEmailCode(),
       onVerify: () => void verifyEmailCode(),
       onResend: () => void resendEmail(),
@@ -201,9 +200,9 @@ export function useRegisterContactOtp(
       otpError: phoneOtpError,
       focused: phoneOtpFocused,
       setFocused: setPhoneOtpFocused,
-      expiresAtMs: phoneExpiresAtMs,
-      cooldownEndsAtMs: phoneCooldownEndsAtMs,
-      totalExpiresSeconds: phoneExpiryTotal,
+      timerKey: phoneTimerKey,
+      validitySeconds: phoneValiditySeconds,
+      cooldownSeconds: phoneCooldownSeconds,
       onSend: () => void sendPhoneCode(),
       onVerify: () => void verifyPhoneCode(),
       onResend: () => void resendPhone(),

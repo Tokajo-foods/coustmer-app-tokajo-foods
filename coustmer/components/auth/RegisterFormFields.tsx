@@ -16,9 +16,9 @@ type OtpBlock = {
   otpError: string | null;
   focused: boolean;
   setFocused: (v: boolean) => void;
-  expiresAtMs: number | null;
-  cooldownEndsAtMs: number | null;
-  totalExpiresSeconds: number;
+  timerKey: number;
+  validitySeconds: number;
+  cooldownSeconds: number;
   onSend: () => void;
   onVerify: () => void;
   onResend: () => void;
@@ -191,9 +191,9 @@ export function RegisterFormFields(props: Props) {
         otpError={emailOtp.otpError}
         focused={emailOtp.focused}
         setFocused={emailOtp.setFocused}
-        expiresAtMs={emailOtp.expiresAtMs}
-        cooldownEndsAtMs={emailOtp.cooldownEndsAtMs}
-        totalExpiresSeconds={emailOtp.totalExpiresSeconds}
+        timerKey={emailOtp.timerKey}
+        validitySeconds={emailOtp.validitySeconds}
+        cooldownSeconds={emailOtp.cooldownSeconds}
         onSend={emailOtp.onSend}
         onVerify={emailOtp.onVerify}
         onResend={emailOtp.onResend}
@@ -223,9 +223,9 @@ export function RegisterFormFields(props: Props) {
         otpError={phoneOtp.otpError}
         focused={phoneOtp.focused}
         setFocused={phoneOtp.setFocused}
-        expiresAtMs={phoneOtp.expiresAtMs}
-        cooldownEndsAtMs={phoneOtp.cooldownEndsAtMs}
-        totalExpiresSeconds={phoneOtp.totalExpiresSeconds}
+        timerKey={phoneOtp.timerKey}
+        validitySeconds={phoneOtp.validitySeconds}
+        cooldownSeconds={phoneOtp.cooldownSeconds}
         onSend={phoneOtp.onSend}
         onVerify={phoneOtp.onVerify}
         onResend={phoneOtp.onResend}
