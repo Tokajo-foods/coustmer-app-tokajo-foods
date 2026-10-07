@@ -1556,13 +1556,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   statusHint: {
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: fonts.ui,
     fontSize: 14,
     color: MUTED,
   },
   etaRow: {
-    marginTop: 18,
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ORANGE_SOFT,
@@ -1616,7 +1616,7 @@ const styles = StyleSheet.create({
     color: MUTED,
   },
   timeline: {
-    marginTop: 22,
+    marginTop: 12,
     marginBottom: 8,
   },
   timelineRail: {
