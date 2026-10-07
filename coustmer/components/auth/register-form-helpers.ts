@@ -6,9 +6,17 @@ export type RegisterFocusField =
   | 'password'
   | 'confirmPassword'
   | 'referralCode'
+  | 'otp'
   | null;
 
 export type RegisterFieldKey = Exclude<RegisterFocusField, null>;
+
+export type RegisterStep =
+  | 'email'
+  | 'email_otp'
+  | 'phone'
+  | 'phone_otp'
+  | 'details';
 
 export function mapRegisterApiError(
   message: string,
@@ -29,6 +37,7 @@ export function mapRegisterApiError(
   }
   if (lower.includes('email')) return { field: 'email', message };
   if (lower.includes('phone')) return { field: 'phone', message };
+  if (lower.includes('otp') || lower.includes('code')) return { field: 'otp', message };
   if (lower.includes('first name') || lower.includes('firstname')) {
     return { field: 'firstName', message };
   }
@@ -40,4 +49,20 @@ export function mapRegisterApiError(
   }
 
   return { message };
+}
+
+export function maskEmail(email: string) {
+  const trimmed = email.trim();
+  const at = trimmed.indexOf('@');
+  if (at < 1) return trimmed;
+  const name = trimmed.slice(0, at);
+  const domain = trimmed.slice(at);
+  const visible = name.slice(0, Math.min(2, name.length));
+  return `${visible}${'•'.repeat(Math.max(name.length - visible.length, 2))}${domain}`;
+}
+
+export function maskPhone(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 4) return phone;
+  return `+${digits.slice(0, 2)} •••• ••${digits.slice(-4)}`;
 }

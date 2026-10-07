@@ -1,18 +1,16 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Eye, EyeOff, Gift, Lock, Mail, Phone, User } from 'lucide-react-native';
+import { Eye, EyeOff, Gift, Lock, User } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
-import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
 import type { RegisterFieldKey, RegisterFocusField } from '@/components/auth/register-form-helpers';
+import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
 import { authTheme } from '@/constants/auth-theme';
 
 type Props = {
   values: {
     firstName: string;
     lastName: string;
-    email: string;
-    phone: string;
     password: string;
     confirmPassword: string;
     referralCode: string;
@@ -28,8 +26,6 @@ type Props = {
   onChange: {
     firstName: (v: string) => void;
     lastName: (v: string) => void;
-    email: (v: string) => void;
-    phone: (v: string) => void;
     password: (v: string) => void;
     confirmPassword: (v: string) => void;
     referralCode: (v: string) => void;
@@ -70,7 +66,6 @@ export function RegisterFormFields({
       onChangeText: (text: string) => void;
       error?: string | null;
       secureTextEntry?: boolean;
-      keyboardType?: 'default' | 'email-address' | 'phone-pad';
       autoCapitalize?: 'none' | 'words' | 'characters';
       maxLength?: number;
       returnKeyType?: 'next' | 'done';
@@ -79,39 +74,38 @@ export function RegisterFormFields({
   ) => {
     const Icon = opts.icon;
     return (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={inputStyle(field, Boolean(opts.error))}>
-        <View style={[styles.iconCircle, focusedField === field && styles.iconCircleFocused]}>
-          <Icon color={iconColor(field, Boolean(opts.error))} size={18} strokeWidth={2} />
+      <View style={styles.fieldWrap}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <View style={inputStyle(field, Boolean(opts.error))}>
+          <View style={[styles.iconCircle, focusedField === field && styles.iconCircleFocused]}>
+            <Icon color={iconColor(field, Boolean(opts.error))} size={18} strokeWidth={2} />
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder={opts.placeholder}
+            placeholderTextColor={authTheme.textDim}
+            value={opts.value}
+            onChangeText={(text) => {
+              opts.onChangeText(text);
+              clearFieldError(field);
+            }}
+            secureTextEntry={opts.secureTextEntry}
+            autoCapitalize={opts.autoCapitalize ?? 'none'}
+            autoCorrect={false}
+            returnKeyType={opts.returnKeyType}
+            maxLength={opts.maxLength}
+            underlineColorAndroid="transparent"
+            onFocus={() => setFocusedField(field)}
+            onBlur={() => setFocusedField(null)}
+          />
+          {opts.rightElement ? <View style={styles.rightSlot}>{opts.rightElement}</View> : null}
         </View>
-        <TextInput
-          style={styles.input}
-          placeholder={opts.placeholder}
-          placeholderTextColor={authTheme.textDim}
-          value={opts.value}
-          onChangeText={(text) => {
-            opts.onChangeText(text);
-            clearFieldError(field);
-          }}
-          secureTextEntry={opts.secureTextEntry}
-          keyboardType={opts.keyboardType}
-          autoCapitalize={opts.autoCapitalize ?? 'none'}
-          autoCorrect={false}
-          returnKeyType={opts.returnKeyType}
-          maxLength={opts.maxLength}
-          underlineColorAndroid="transparent"
-          onFocus={() => setFocusedField(field)}
-          onBlur={() => setFocusedField(null)}
-        />
-        {opts.rightElement ? <View style={styles.rightSlot}>{opts.rightElement}</View> : null}
+        {opts.error ? (
+          <Text style={styles.errorText} numberOfLines={3}>
+            {opts.error}
+          </Text>
+        ) : null}
       </View>
-      {opts.error ? (
-        <Text style={styles.errorText} numberOfLines={3}>
-          {opts.error}
-        </Text>
-      ) : null}
-    </View>
     );
   };
 
@@ -142,30 +136,6 @@ export function RegisterFormFields({
           })}
         </View>
       </View>
-
-      <Text style={styles.sectionLabel}>Contact</Text>
-      {renderInput('email', 'Email', {
-        icon: Mail,
-        placeholder: 'you@gmail.com',
-        value: values.email,
-        onChangeText: onChange.email,
-        error: errors.email,
-        keyboardType: 'email-address',
-        returnKeyType: 'next',
-      })}
-      {renderInput('phone', 'Phone (optional)', {
-        icon: Phone,
-        placeholder: '+91 98765 43210',
-        value: values.phone,
-        onChangeText: onChange.phone,
-        error: errors.phone,
-        keyboardType: 'phone-pad',
-        maxLength: 15,
-        returnKeyType: 'next',
-      })}
-      {!errors.phone ? (
-        <Text style={styles.hint}>Add +91 before your 10-digit mobile number.</Text>
-      ) : null}
 
       <Text style={styles.sectionLabel}>Security</Text>
       {renderInput('password', 'Password', {

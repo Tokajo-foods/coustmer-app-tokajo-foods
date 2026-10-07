@@ -35,6 +35,8 @@ type AuthState = {
   login: (payload: LoginPayload) => Promise<void>;
   sendOtp: (payload: OtpSendPayload) => Promise<string>;
   verifyOtp: (payload: OtpVerifyPayload) => Promise<void>;
+  sendRegisterOtp: (identifier: string) => Promise<string>;
+  confirmRegisterOtp: (identifier: string, otp: string) => Promise<void>;
   forgotPassword: (payload: ForgotPasswordPayload) => Promise<string>;
   sendForgotPasswordOtp: (email: string) => Promise<string>;
   confirmForgotPasswordOtp: (identifier: string, otp: string) => Promise<void>;
@@ -167,6 +169,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await authApi.verifyOtp(payload);
       await get().setSession(response.token, response.user);
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  sendRegisterOtp: async (identifier) => {
+    set({ isLoading: true });
+    try {
+      const response = await authApi.sendRegisterOtp(identifier.trim());
+      return response.message ?? 'OTP sent successfully';
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  confirmRegisterOtp: async (identifier, otp) => {
+    set({ isLoading: true });
+    try {
+      await authApi.confirmRegisterOtp({ identifier, otp });
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
     } finally {

@@ -223,9 +223,35 @@ export const authApi = {
       body: {
         identifier: payload.emailOrPhone,
         purpose: payload.purpose ?? 'login',
+        ...(payload.purpose === 'register' ? { role: 'customer' } : {}),
       },
     });
     return normalizeMessageResponse(data);
+  },
+
+  /** Signup contact proof — purpose register + confirm-register (no session). */
+  sendRegisterOtp: async (identifier: string) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/send`, {
+      method: 'POST',
+      body: {
+        identifier: identifier.trim(),
+        purpose: 'register',
+        role: 'customer',
+      },
+    });
+    return normalizeMessageResponse(data);
+  },
+
+  confirmRegisterOtp: async (payload: { identifier: string; otp: string }) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-register`, {
+      method: 'POST',
+      body: {
+        identifier: payload.identifier.trim(),
+        otp: payload.otp.trim(),
+        role: 'customer',
+      },
+    });
+    return data;
   },
 
   verifyOtp: async (payload: OtpVerifyPayload) => {

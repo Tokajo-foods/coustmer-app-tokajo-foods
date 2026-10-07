@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 import { loginFormStyles } from '@/components/auth/login-form-styles';
 import { authTheme } from '@/constants/auth-theme';
@@ -96,6 +96,137 @@ const extra = StyleSheet.create({
     color: authTheme.text,
     marginBottom: 7,
     marginLeft: 2,
+  },
+  emailHighlight: {
+    color: authTheme.text,
+    fontWeight: '700',
+  },
+  progressWrap: {
+    marginBottom: 16,
+  },
+  progressTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  progressNode: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: authTheme.tabBg,
+    borderWidth: 1.5,
+    borderColor: authTheme.inputBorder,
+  },
+  progressNodeActive: {
+    backgroundColor: authTheme.brand,
+    borderColor: authTheme.brand,
+  },
+  progressNodeDone: {
+    backgroundColor: authTheme.brandSoft,
+    borderColor: authTheme.brand,
+  },
+  progressNum: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: authTheme.textDim,
+  },
+  progressNumOn: {
+    color: '#FFFFFF',
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    marginHorizontal: 6,
+    borderRadius: 1,
+    backgroundColor: authTheme.inputBorder,
+  },
+  progressLineOn: {
+    backgroundColor: authTheme.brand,
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressLabel: {
+    width: 72,
+    fontSize: 11,
+    fontWeight: '600',
+    color: authTheme.textDim,
+    textAlign: 'center',
+  },
+  progressLabelFirst: {
+    textAlign: 'left',
+  },
+  progressLabelLast: {
+    textAlign: 'right',
+  },
+  progressLabelOn: {
+    color: authTheme.brandDark,
+    fontWeight: '700',
+  },
+  otpRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  otpBox: {
+    width: 44,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: authTheme.inputBorder,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  otpBoxFilled: {
+    borderColor: authTheme.brandLight,
+    backgroundColor: authTheme.brandSoft,
+  },
+  otpBoxActive: {
+    borderColor: authTheme.brand,
+    ...(Platform.OS === 'ios'
+      ? {
+          shadowColor: authTheme.brand,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.12,
+          shadowRadius: 6,
+        }
+      : {}),
+  },
+  otpBoxError: {
+    borderColor: authTheme.error,
+  },
+  otpDigit: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: authTheme.text,
+  },
+  otpHiddenInput: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.02,
+    color: 'transparent',
+  },
+  otpFieldWrap: {
+    marginBottom: 16,
+    position: 'relative',
+  },
+  resendRow: {
+    alignItems: 'center',
+    marginBottom: 14,
+    marginTop: 2,
+  },
+  resendMuted: {
+    fontSize: 13,
+    color: authTheme.textMuted,
+    fontWeight: '500',
+  },
+  resendLink: {
+    color: authTheme.brand,
+    fontWeight: '800',
   },
 });
 

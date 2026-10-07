@@ -1,29 +1,21 @@
 import { Pressable } from '@/components/common/Pressable';
-import { useRouter } from 'expo-router';
 import { ArrowRight, Sparkles } from 'lucide-react-native';
-import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { LoginFormHeader } from '@/components/auth/LoginFormHeader';
+import {
+  RegisterEmailStep,
+  RegisterOtpStep,
+  RegisterPhoneStep,
+} from '@/components/auth/RegisterContactSteps';
 import { RegisterFormFields } from '@/components/auth/RegisterFormFields';
-import {
-  mapRegisterApiError,
-  type RegisterFieldKey,
-  type RegisterFocusField,
-} from '@/components/auth/register-form-helpers';
+import { RegisterFormProgress } from '@/components/auth/RegisterFormProgress';
+import { maskEmail, maskPhone } from '@/components/auth/register-form-helpers';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
+import { useRegisterSignupFlow } from '@/components/auth/use-register-signup-flow';
 import { authTheme } from '@/constants/auth-theme';
-import { useAuthStore } from '@/store/auth-store';
-import {
-  validateConfirmPassword,
-  validateEmail,
-  validateIndianPhone,
-  validateName,
-  validateOptionalName,
-  validatePassword,
-} from '@/utils/validation';
 
 type Props = {
   onSignIn?: () => void;
@@ -31,75 +23,36 @@ type Props = {
 };
 
 export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
-  const router = useRouter();
-  const register = useAuthStore((s) => s.register);
-  const isLoading = useAuthStore((s) => s.isLoading);
+  const flow = useRegisterSignupFlow({ onSignIn, onRegisterSuccess });
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState<RegisterFocusField>(null);
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(
-    null,
-  );
+  const title =
+    flow.step === 'email'
+      ? 'Create account'
+      : flow.step === 'email_otp'
+        ? 'Verify email'
+        : flow.step === 'phone'
+          ? 'Add phone number'
+          : flow.step === 'phone_otp'
+            ? 'Verify phone'
+            : 'Finish signup';
 
-  const clearFieldError = (field: RegisterFieldKey) => {
-    setErrors((prev) => (prev[field] ? { ...prev, [field]: null } : prev));
-  };
+  const subtitle =
+    flow.step === 'email'
+      ? 'Verify your email, then your phone, then set your password.'
+      : flow.step === 'email_otp'
+        ? `Enter the 6-digit code sent to ${maskEmail(flow.email)}.`
+        : flow.step === 'phone'
+          ? 'Email verified. Confirm your mobile number next.'
+          : flow.step === 'phone_otp'
+            ? `Enter the SMS code sent to ${maskPhone(flow.phone)}.`
+            : `${maskEmail(flow.email)} · ${maskPhone(flow.phone)}`;
 
-  const handleSignIn = () => {
-    if (onSignIn) {
-      onSignIn();
-      return;
-    }
-    router.replace('/?auth=login');
-  };
-
-  const handleRegister = async () => {
-    const nextErrors = {
-      firstName: validateName(firstName, 'First name'),
-      lastName: validateOptionalName(lastName, 'Last name'),
-      email: validateEmail(email),
-      phone: phone.trim() ? validateIndianPhone(phone) : null,
-      password: validatePassword(password),
-      confirmPassword: validateConfirmPassword(password, confirmPassword),
-    };
-
-    setErrors(nextErrors);
-    setBanner(null);
-    if (Object.values(nextErrors).some(Boolean)) return;
-
-    try {
-      await register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim() || undefined,
-        email: email.trim(),
-        phone: phone.trim() || undefined,
-        password,
-        confirmPassword,
-        referralCode: referralCode.trim() || undefined,
-      });
-      onRegisterSuccess?.();
-      router.replace('/home');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      const mapped = mapRegisterApiError(message);
-
-      if (mapped.field) {
-        setErrors({ [mapped.field]: mapped.message });
-        setBanner(null);
-        return;
-      }
-
-      setBanner({ message, type: 'error' });
-    }
+  const chrome = {
+    focused: flow.focusedField,
+    fieldError: flow.fieldError,
+    setFocused: flow.setFocusedField as (k: string | null) => void,
+    clearError: flow.clearError,
+    isLoading: flow.isLoading,
   };
 
   return (
@@ -112,81 +65,124 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
         bounces={false}
         keyboardShouldPersistTaps="handled"
       >
-        <LoginFormHeader
-          title="Create account"
-          subtitle="Join Tokajo for faster checkout and order tracking."
-        />
+        <LoginFormHeader title={title} subtitle={subtitle} />
+        <RegisterFormProgress step={flow.step} />
 
-        <View style={styles.tipRow}>
-          <View style={styles.tipIcon}>
-            <Sparkles color={authTheme.brand} size={16} strokeWidth={2.2} />
-          </View>
-          <Text style={styles.tipText}>
-            Email and password are required. Phone and referral code are optional.
-          </Text>
-        </View>
-
-        {banner ? (
-          <View style={styles.bannerWrap}>
-            <AuthMessageBanner message={banner.message} type={banner.type} />
+        {flow.step === 'email' ? (
+          <View style={styles.tipRow}>
+            <View style={styles.tipIcon}>
+              <Sparkles color={authTheme.brand} size={16} strokeWidth={2.2} />
+            </View>
+            <Text style={styles.tipText}>
+              Both email and phone are required. Each is verified with a one-time code.
+            </Text>
           </View>
         ) : null}
 
-        <RegisterFormFields
-          values={{
-            firstName,
-            lastName,
-            email,
-            phone,
-            password,
-            confirmPassword,
-            referralCode,
-          }}
-          errors={errors}
-          focusedField={focusedField}
-          showPassword={showPassword}
-          showConfirmPassword={showConfirmPassword}
-          setFocusedField={setFocusedField}
-          clearFieldError={clearFieldError}
-          setShowPassword={setShowPassword}
-          setShowConfirmPassword={setShowConfirmPassword}
-          onChange={{
-            firstName: setFirstName,
-            lastName: setLastName,
-            email: setEmail,
-            phone: setPhone,
-            password: setPassword,
-            confirmPassword: setConfirmPassword,
-            referralCode: setReferralCode,
-          }}
-        />
-
-        <Pressable
-          style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
-          onPress={() => void handleRegister()}
-          disabled={isLoading}
-        >
-          <View style={styles.submitBtnInner}>
-            <Text style={styles.submitBtnTextCalm}>
-              {isLoading ? 'Creating account…' : 'Create account'}
-            </Text>
-            {!isLoading ? <ArrowRight color="#FFFFFF" size={18} strokeWidth={2.4} /> : null}
+        {flow.banner ? (
+          <View style={styles.bannerWrap}>
+            <AuthMessageBanner message={flow.banner.message} type={flow.banner.type} />
           </View>
-        </Pressable>
+        ) : null}
+
+        {flow.step === 'email' ? (
+          <RegisterEmailStep
+            {...chrome}
+            email={flow.email}
+            setEmail={flow.setEmail}
+            onSubmit={() => void flow.sendEmailOtp()}
+          />
+        ) : null}
+
+        {flow.step === 'email_otp' ? (
+          <RegisterOtpStep
+            {...chrome}
+            otp={flow.otp}
+            setOtp={flow.setOtp}
+            channel="email"
+            onSubmit={() => void flow.verifyEmailOtp()}
+            onResend={() => void flow.resend()}
+          />
+        ) : null}
+
+        {flow.step === 'phone' ? (
+          <RegisterPhoneStep
+            {...chrome}
+            phone={flow.phone}
+            setPhone={flow.setPhone}
+            onSubmit={() => void flow.sendPhoneOtp()}
+          />
+        ) : null}
+
+        {flow.step === 'phone_otp' ? (
+          <RegisterOtpStep
+            {...chrome}
+            otp={flow.otp}
+            setOtp={flow.setOtp}
+            channel="phone"
+            onSubmit={() => void flow.verifyPhoneOtp()}
+            onResend={() => void flow.resend()}
+          />
+        ) : null}
+
+        {flow.step === 'details' ? (
+          <>
+            <RegisterFormFields
+              values={{
+                firstName: flow.firstName,
+                lastName: flow.lastName,
+                password: flow.password,
+                confirmPassword: flow.confirmPassword,
+                referralCode: flow.referralCode,
+              }}
+              errors={flow.errors}
+              focusedField={flow.focusedField}
+              showPassword={flow.showPassword}
+              showConfirmPassword={flow.showConfirmPassword}
+              setFocusedField={flow.setFocusedField}
+              clearFieldError={flow.clearFieldError}
+              setShowPassword={flow.setShowPassword}
+              setShowConfirmPassword={flow.setShowConfirmPassword}
+              onChange={{
+                firstName: flow.setFirstName,
+                lastName: flow.setLastName,
+                password: flow.setPassword,
+                confirmPassword: flow.setConfirmPassword,
+                referralCode: flow.setReferralCode,
+              }}
+            />
+            <Pressable
+              style={[styles.submitBtn, flow.isLoading && styles.submitBtnDisabled]}
+              onPress={() => void flow.handleRegister()}
+              disabled={flow.isLoading}
+            >
+              <View style={styles.submitBtnInner}>
+                <Text style={styles.submitBtnTextCalm}>
+                  {flow.isLoading ? 'Creating account…' : 'Create account'}
+                </Text>
+                {!flow.isLoading ? (
+                  <ArrowRight color="#FFFFFF" size={18} strokeWidth={2.4} />
+                ) : null}
+              </View>
+            </Pressable>
+          </>
+        ) : null}
 
         <View style={styles.bottomLinks}>
           <Text style={styles.signupText}>
             Already have an account?{' '}
-            <Text style={styles.signupLink} onPress={handleSignIn}>
+            <Text style={styles.signupLink} onPress={flow.handleSignIn}>
               Sign in
             </Text>
           </Text>
         </View>
 
-        <Text style={styles.terms}>
-          By signing up, you agree to our <Text style={styles.termsLink}>Terms</Text> &{' '}
-          <Text style={styles.termsLink}>Privacy Policy</Text>
-        </Text>
+        {flow.step === 'details' ? (
+          <Text style={styles.terms}>
+            By signing up, you agree to our <Text style={styles.termsLink}>Terms</Text> &{' '}
+            <Text style={styles.termsLink}>Privacy Policy</Text>
+          </Text>
+        ) : null}
       </KeyboardAwareScrollView>
     </View>
   );

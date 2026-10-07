@@ -19,7 +19,8 @@ export type RegisterPayload = {
   firstName: string;
   lastName?: string;
   email: string;
-  phone?: string;
+  /** Required E.164 phone — verified via register OTP before create */
+  phone: string;
   password: string;
   confirmPassword: string;
   /** Optional friend code — one-time wallet bonus for both when valid */
