@@ -1343,7 +1343,7 @@ export function OrderTrackingScreen() {
             </View>
           </Animated.View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, styles.deliveringSection]}>
             <Text style={styles.sectionTitle}>Delivering to</Text>
             <View style={styles.addressRow}>
               <View style={styles.addressIcon}>
@@ -1541,7 +1541,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#D1D5DB',
     marginTop: 10,
-    marginBottom: 14,
+    marginBottom: 22,
   },
   kicker: {
     fontFamily: fonts.uiMedium,
@@ -1897,6 +1897,10 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: LINE,
   },
+  deliveringSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#B7BDC7',
+  },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2014,8 +2018,8 @@ const styles = StyleSheet.create({
     color: INK,
   },
   totalRule: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: LINE,
+    height: 1,
+    backgroundColor: '#B7BDC7',
     marginVertical: 6,
   },
   totalRow: {
