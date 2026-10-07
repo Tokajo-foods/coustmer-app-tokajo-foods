@@ -63,7 +63,6 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
           focusedField={flow.focusedField}
           showPassword={flow.showPassword}
           showConfirmPassword={flow.showConfirmPassword}
-          isLoading={flow.isLoading}
           emailOtp={flow.emailOtpBlock}
           phoneOtp={flow.phoneOtpBlock}
           setFocusedField={flow.setFocusedField}

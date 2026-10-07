@@ -19,6 +19,8 @@ type OtpBlock = {
   timerKey: number;
   validitySeconds: number;
   cooldownSeconds: number;
+  isLoading: boolean;
+  busyMode: 'idle' | 'sending' | 'verifying' | 'resending';
   onSend: () => void;
   onVerify: () => void;
   onResend: () => void;
@@ -38,7 +40,6 @@ type Props = {
   focusedField: RegisterFocusField;
   showPassword: boolean;
   showConfirmPassword: boolean;
-  isLoading: boolean;
   emailOtp: OtpBlock;
   phoneOtp: OtpBlock;
   setFocusedField: (f: RegisterFocusField) => void;
@@ -63,7 +64,6 @@ export function RegisterFormFields(props: Props) {
     focusedField,
     showPassword,
     showConfirmPassword,
-    isLoading,
     emailOtp,
     phoneOtp,
     setFocusedField,
@@ -183,7 +183,8 @@ export function RegisterFormFields(props: Props) {
       })}
       <RegisterOtpSection
         channel="email"
-        isLoading={isLoading}
+        isLoading={emailOtp.isLoading}
+        busyMode={emailOtp.busyMode}
         verified={emailOtp.verified}
         otpSent={emailOtp.otpSent}
         otp={emailOtp.otp}
@@ -215,7 +216,8 @@ export function RegisterFormFields(props: Props) {
       ) : null}
       <RegisterOtpSection
         channel="phone"
-        isLoading={isLoading}
+        isLoading={phoneOtp.isLoading}
+        busyMode={phoneOtp.busyMode}
         verified={phoneOtp.verified}
         otpSent={phoneOtp.otpSent}
         otp={phoneOtp.otp}

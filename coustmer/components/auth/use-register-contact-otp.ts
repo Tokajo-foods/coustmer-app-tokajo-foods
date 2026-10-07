@@ -9,6 +9,7 @@ import {
 } from '@/utils/validation';
 
 type Banner = { message: string; type: 'error' | 'success' } | null;
+type ChannelBusy = 'idle' | 'sending' | 'verifying' | 'resending';
 
 const DEFAULT_VALIDITY = 600;
 const DEFAULT_COOLDOWN = 30;
@@ -39,12 +40,13 @@ export function useRegisterContactOtp(
   const [phoneValiditySeconds, setPhoneValiditySeconds] = useState(DEFAULT_VALIDITY);
   const [emailCooldownSeconds, setEmailCooldownSeconds] = useState(DEFAULT_COOLDOWN);
   const [phoneCooldownSeconds, setPhoneCooldownSeconds] = useState(DEFAULT_COOLDOWN);
+  const [emailBusy, setEmailBusy] = useState<ChannelBusy>('idle');
+  const [phoneBusy, setPhoneBusy] = useState<ChannelBusy>('idle');
 
   const applyTiming = (
     channel: 'email' | 'phone',
     timing?: { expiresInSeconds?: number; cooldownSeconds?: number },
   ) => {
-    // Always show a 10-minute validity window for signup OTPs.
     const validity = DEFAULT_VALIDITY;
     const cooldown = Math.max(1, Number(timing?.cooldownSeconds) || DEFAULT_COOLDOWN);
     if (channel === 'email') {
@@ -63,6 +65,7 @@ export function useRegisterContactOtp(
     setEmailOtpSent(false);
     setEmailOtp('');
     setEmailOtpError(null);
+    setEmailBusy('idle');
   };
 
   const resetPhoneOtp = () => {
@@ -70,6 +73,7 @@ export function useRegisterContactOtp(
     setPhoneOtpSent(false);
     setPhoneOtp('');
     setPhoneOtpError(null);
+    setPhoneBusy('idle');
   };
 
   const sendEmailCode = async () => {
@@ -78,6 +82,7 @@ export function useRegisterContactOtp(
     setEmailOtpError(null);
     setBanner(null);
     if (err) return;
+    setEmailBusy('sending');
     try {
       const timing = await sendRegisterOtp(email.trim());
       setEmailOtp('');
@@ -89,6 +94,8 @@ export function useRegisterContactOtp(
         message: e instanceof Error ? e.message : 'Failed to send email OTP',
         type: 'error',
       });
+    } finally {
+      setEmailBusy('idle');
     }
   };
 
@@ -97,12 +104,15 @@ export function useRegisterContactOtp(
     setEmailOtpError(err);
     setBanner(null);
     if (err) return;
+    setEmailBusy('verifying');
     try {
       await confirmRegisterOtp(email.trim(), emailOtp.trim());
       setEmailVerified(true);
       setBanner({ message: 'Email verified.', type: 'success' });
     } catch (e) {
       setEmailOtpError(e instanceof Error ? e.message : 'Invalid code');
+    } finally {
+      setEmailBusy('idle');
     }
   };
 
@@ -114,6 +124,7 @@ export function useRegisterContactOtp(
     setBanner(null);
     if (err) return;
     setPhone(normalized);
+    setPhoneBusy('sending');
     try {
       const timing = await sendRegisterOtp(normalized);
       setPhoneOtp('');
@@ -125,6 +136,8 @@ export function useRegisterContactOtp(
         message: e instanceof Error ? e.message : 'Failed to send phone OTP',
         type: 'error',
       });
+    } finally {
+      setPhoneBusy('idle');
     }
   };
 
@@ -133,17 +146,21 @@ export function useRegisterContactOtp(
     setPhoneOtpError(err);
     setBanner(null);
     if (err) return;
+    setPhoneBusy('verifying');
     try {
       await confirmRegisterOtp(phone.trim(), phoneOtp.trim());
       setPhoneVerified(true);
       setBanner({ message: 'Phone verified.', type: 'success' });
     } catch (e) {
       setPhoneOtpError(e instanceof Error ? e.message : 'Invalid code');
+    } finally {
+      setPhoneBusy('idle');
     }
   };
 
   const resendEmail = async () => {
     setBanner(null);
+    setEmailBusy('resending');
     try {
       const timing = await sendRegisterOtp(email.trim());
       setEmailOtp('');
@@ -151,11 +168,14 @@ export function useRegisterContactOtp(
       setBanner({ message: 'A new email OTP was sent.', type: 'success' });
     } catch (e) {
       setBanner({ message: e instanceof Error ? e.message : 'Could not resend', type: 'error' });
+    } finally {
+      setEmailBusy('idle');
     }
   };
 
   const resendPhone = async () => {
     setBanner(null);
+    setPhoneBusy('resending');
     try {
       const timing = await sendRegisterOtp(phone.trim());
       setPhoneOtp('');
@@ -163,6 +183,8 @@ export function useRegisterContactOtp(
       setBanner({ message: 'A new phone OTP was sent.', type: 'success' });
     } catch (e) {
       setBanner({ message: e instanceof Error ? e.message : 'Could not resend', type: 'error' });
+    } finally {
+      setPhoneBusy('idle');
     }
   };
 
@@ -185,6 +207,8 @@ export function useRegisterContactOtp(
       timerKey: emailTimerKey,
       validitySeconds: emailValiditySeconds,
       cooldownSeconds: emailCooldownSeconds,
+      isLoading: emailBusy !== 'idle',
+      busyMode: emailBusy,
       onSend: () => void sendEmailCode(),
       onVerify: () => void verifyEmailCode(),
       onResend: () => void resendEmail(),
@@ -203,6 +227,8 @@ export function useRegisterContactOtp(
       timerKey: phoneTimerKey,
       validitySeconds: phoneValiditySeconds,
       cooldownSeconds: phoneCooldownSeconds,
+      isLoading: phoneBusy !== 'idle',
+      busyMode: phoneBusy,
       onSend: () => void sendPhoneCode(),
       onVerify: () => void verifyPhoneCode(),
       onResend: () => void resendPhone(),

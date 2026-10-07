@@ -22,6 +22,7 @@ type Props = {
   focused: boolean;
   setFocused: (v: boolean) => void;
   isLoading: boolean;
+  busyMode?: 'idle' | 'sending' | 'verifying' | 'resending';
   /** Bumps on each successful send/resend to restart timers */
   timerKey: number;
   validitySeconds?: number;
@@ -41,6 +42,7 @@ export function RegisterOtpSection({
   focused,
   setFocused,
   isLoading,
+  busyMode = 'idle',
   timerKey,
   validitySeconds = DEFAULT_VALIDITY_SECONDS,
   cooldownSeconds = DEFAULT_COOLDOWN_SECONDS,
@@ -52,6 +54,12 @@ export function RegisterOtpSection({
   const cooldownLeft = useOtpCountdown(otpSent && !verified, cooldownSeconds, timerKey);
   const expired = otpSent && !verified && validityLeft <= 0;
   const canResend = cooldownLeft <= 0 && !isLoading;
+  const sendLabel =
+    busyMode === 'sending'
+      ? 'Sending…'
+      : channel === 'email'
+        ? 'Send email OTP'
+        : 'Send phone OTP';
 
   if (verified) {
     return (
@@ -71,13 +79,7 @@ export function RegisterOtpSection({
         onPress={onSend}
         disabled={isLoading}
       >
-        <Text style={styles.otpSendBtnText}>
-          {isLoading
-            ? 'Sending…'
-            : channel === 'email'
-              ? 'Send email OTP'
-              : 'Send phone OTP'}
-        </Text>
+        <Text style={styles.otpSendBtnText}>{sendLabel}</Text>
       </Pressable>
     );
   }
@@ -143,7 +145,7 @@ export function RegisterOtpSection({
           disabled={isLoading}
         >
           <Text style={styles.submitBtnTextCalm}>
-            {isLoading ? 'Verifying…' : 'Verify code'}
+            {busyMode === 'verifying' ? 'Verifying…' : 'Verify code'}
           </Text>
         </Pressable>
       ) : null}
@@ -153,7 +155,7 @@ export function RegisterOtpSection({
           <Text style={styles.resendMuted}>
             Didn’t get it?{' '}
             <Text style={styles.resendLink} onPress={onResend}>
-              Resend code
+              {busyMode === 'resending' ? 'Sending…' : 'Resend code'}
             </Text>
           </Text>
         ) : (

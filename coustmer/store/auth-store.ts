@@ -177,25 +177,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  /** Does not toggle global isLoading — signup uses per-channel busy state. */
   sendRegisterOtp: async (identifier) => {
-    set({ isLoading: true });
     try {
       return await authApi.sendRegisterOtp(identifier.trim());
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
-    } finally {
-      set({ isLoading: false });
     }
   },
 
+  /** Does not toggle global isLoading — signup uses per-channel busy state. */
   confirmRegisterOtp: async (identifier, otp) => {
-    set({ isLoading: true });
     try {
       await authApi.confirmRegisterOtp({ identifier, otp });
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
-    } finally {
-      set({ isLoading: false });
     }
   },
 
