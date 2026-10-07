@@ -22,19 +22,24 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
   const rows = viewer === 'customer'
     ? calls.rows.filter((row) => row.role !== 'restaurant')
     : calls.rows;
-  const incoming = calls.live?.direction === 'in' && calls.live.state === 'ringing';
+  // Customer incoming internet calls use the system notification + full-screen host.
+  const live =
+    viewer === 'customer' && calls.live?.direction === 'in'
+      ? null
+      : calls.live;
+  const incoming = live?.direction === 'in' && live.state === 'ringing';
   const titleFor = (role: CallRole) => names?.[role] || FALLBACK[role];
-  if (!calls.live && rows.length === 0) return null;
+  if (!live && rows.length === 0) return null;
 
   return (
     <View style={styles.card}>
       {calls.loadError ? <Text style={styles.error}>{calls.loadError}</Text> : null}
       {calls.notice ? <Text style={styles.notice}>{calls.notice}</Text> : null}
 
-      {calls.live ? (
+      {live ? (
         <View style={[styles.live, incoming && styles.liveIn]}>
-          <Text style={styles.liveKicker}>{incoming ? 'Incoming call' : liveKicker(calls.live.state)}</Text>
-          <Text style={styles.liveText}>{liveLine(incoming, calls.live.state, titleFor(calls.live.role))}</Text>
+          <Text style={styles.liveKicker}>{incoming ? 'Incoming call' : liveKicker(live.state)}</Text>
+          <Text style={styles.liveText}>{liveLine(incoming, live.state, titleFor(live.role))}</Text>
           {incoming ? (
             <View style={styles.actions}>
               <Pressable disabled={Boolean(calls.busy)} onPress={() => void calls.accept()} style={styles.primary}>
@@ -46,7 +51,7 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
             </View>
           ) : (
             <View style={styles.actions}>
-              {calls.live.state === 'accepted' ? (
+              {live.state === 'accepted' ? (
                 <Pressable disabled={Boolean(calls.busy)} onPress={() => void calls.toggleMute()} style={styles.ghost}>
                   {calls.muted ? <MicOff color="#111827" size={14} /> : <Mic color="#111827" size={14} />}
                   <Text style={styles.ghostText}>{calls.muted ? 'Unmute' : 'Mute'}</Text>

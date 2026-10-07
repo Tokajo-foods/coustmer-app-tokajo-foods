@@ -67,10 +67,13 @@ export function useLiveCall(
   useEffect(() => {
     if (liveRef.current) return;
     const open = (summaries ?? []).filter((row) => !closed.current.has(row.callId));
-    const next = open.find((row) => row.direction === 'in' && row.state === 'ringing') ?? open[0];
+    // Customer incoming rings are handled by CustomerInternetCallHost (notification UI).
+    const next = viewer === 'customer'
+      ? open.find((row) => row.direction === 'out' || row.state === 'accepted')
+      : open.find((row) => row.direction === 'in' && row.state === 'ringing') ?? open[0];
     const mapped = next ? fromSummary(next) : null;
     if (mapped) setLive(mapped);
-  }, [summaries]);
+  }, [summaries, viewer]);
 
   useEffect(() => {
     if (!orderId) return undefined;
@@ -92,6 +95,7 @@ export function useLiveCall(
       }
       const callerRole = String(row.callerRole ?? '');
       const calleeRole = String(row.calleeRole ?? '');
+      if (viewer === 'customer' && state === 'ringing' && calleeRole === 'customer') return;
       if (state === 'ringing' && calleeRole === viewer && isCallRole(callerRole) && !current) {
         setLive({ callId, state, direction: 'in', role: callerRole, callerRole, calleeRole });
       }

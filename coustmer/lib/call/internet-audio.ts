@@ -109,6 +109,29 @@ export async function setVoiceMuted(muted: boolean): Promise<void> {
   await active.localParticipant.setMicrophoneEnabled(!muted);
 }
 
+/** Prefer the phone speaker (or earpiece) during an in-app call. */
+export async function setVoiceSpeaker(on: boolean): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const native = await import('@livekit/react-native');
+    if (typeof native.AudioSession.setSpeakerphoneOn === 'function') {
+      await native.AudioSession.setSpeakerphoneOn(on);
+      return;
+    }
+    await native.AudioSession.configureAudio({
+      android: {
+        preferredOutputList: on
+          ? ['speaker', 'bluetooth', 'headset', 'earpiece']
+          : ['earpiece', 'bluetooth', 'headset', 'speaker'],
+        audioTypeOptions: native.AndroidAudioTypePresets.communication,
+      },
+      ios: { defaultOutput: on ? 'speaker' : 'earpiece' },
+    });
+  } catch {
+    // Speaker switch is best-effort on Expo Go / older builds.
+  }
+}
+
 export async function disconnectVoice(): Promise<void> {
   const room = active;
   active = null;
