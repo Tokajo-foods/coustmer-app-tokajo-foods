@@ -47,7 +47,11 @@ function CategoryTile({
       <View style={styles.circle}>
         <Image
           source={cat.image}
-          style={[styles.photo, cat.slug === 'rolls' && styles.photoRolls]}
+          style={[
+            styles.photo,
+            cat.slug === 'rolls' && styles.photoRolls,
+            cat.slug === 'burger' && styles.photoBurger,
+          ]}
           contentFit="cover"
           transition={120}
         />
@@ -204,6 +208,9 @@ const styles = StyleSheet.create({
   },
   photoRolls: {
     transform: [{ scale: 2.75 }, { translateY: -(CIRCLE * 0.02) }, { translateX: 0.5 }],
+  },
+  photoBurger: {
+    transform: [{ scale: 2.75 }, { translateY: 0 }, { translateX: 0.5 + CIRCLE * 0.05 }],
   },
   label: {
     fontFamily: fonts.uiSemi,
