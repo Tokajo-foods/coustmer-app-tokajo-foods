@@ -78,6 +78,10 @@ function isCartPath(pathname: string) {
   return pathname === '/cart' || pathname.endsWith('/cart');
 }
 
+function isOrderArrivalPath(pathname: string) {
+  return /\/orders\/[^/]+\/tracking\/?$/.test(pathname);
+}
+
 function isFavoritesPath(pathname: string) {
   return pathname === '/favorites' || pathname.endsWith('/favorites');
 }
@@ -88,7 +92,7 @@ function isRestaurantsPath(pathname: string) {
 
 export function isAppTabRoot(pathname: string): boolean {
   const path = pathname.split('?')[0] ?? pathname;
-  if (isCartPath(path)) return false;
+  if (isCartPath(path) || isOrderArrivalPath(path)) return false;
   return (
     isRestaurantsPath(path) ||
     isFavoritesPath(path) ||
