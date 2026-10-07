@@ -521,7 +521,6 @@ export const deliveryApi = {
   sendChat: async (orderId: string, payload: SendChatPayload): Promise<ChatMessage> => {
     const raw = await mutate<unknown>('POST', `${TRACKING}/${orderId}/chat`, {
       text: payload.text,
-      message: payload.text,
       ...(payload.to ? { to: payload.to } : {}),
     });
     return mapChat(asRecord(raw), orderId);
