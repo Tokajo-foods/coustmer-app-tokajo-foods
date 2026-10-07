@@ -110,21 +110,10 @@ export function LoginFormContent({
     else void handlePasswordLogin();
   };
 
-  const handleForgotPassword = () => {
-    if (onForgotPassword) {
-      onForgotPassword();
-      return;
-    }
-    router.replace('/?auth=forgot-password');
-  };
-
-  const handleSignUp = () => {
-    if (onSignUp) {
-      onSignUp();
-      return;
-    }
-    router.replace('/?auth=sign-up');
-  };
+  const handleForgotPassword = () =>
+    onForgotPassword ? onForgotPassword() : router.replace('/?auth=forgot-password');
+  const handleSignUp = () =>
+    onSignUp ? onSignUp() : router.replace('/?auth=sign-up');
 
   const onChangePref = (next: LoginModePref) => {
     setPref(next);
