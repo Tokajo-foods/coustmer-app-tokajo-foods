@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 
 import {
   acceptInternetCall,
@@ -9,7 +8,6 @@ import {
   getInternetCall,
 } from '@/lib/call/api';
 import {
-  ensureCallNotificationSetup,
   dismissIncomingCallNotification,
   presentIncomingCallNotification,
 } from '@/lib/call/incoming-call-notify';
@@ -24,28 +22,15 @@ import {
   bringAppToForeground,
   displayNativeIncomingCall,
   endNativeIncomingCall,
-  listenNativeIncomingCallActions,
   markNativeCallActive,
-  setupNativeIncomingCalls,
 } from '@/lib/call/native-incoming-call';
-import { getSocket } from '@/lib/socket/socket';
+import type { CustomerCallState, CustomerRingMeta } from '@/lib/call/customer-call-types';
+import { useCustomerCallListeners } from '@/lib/call/use-customer-call-listeners';
 import { useAuthStore } from '@/store/auth-store';
 
-type Phase = 'idle' | 'ringing' | 'active';
-
-export type CustomerCallState = {
-  phase: Phase;
-  orderId: string;
-  callId: string;
-  callerRole: string;
-  callerName: string;
-};
+export type { CustomerCallState } from '@/lib/call/customer-call-types';
 
 const TERMINAL = new Set(['ended', 'declined', 'timed_out']);
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-}
 
 function callerLabel(role: string) {
   if (role === 'restaurant') return 'Restaurant';
@@ -53,9 +38,13 @@ function callerLabel(role: string) {
   return 'Caller';
 }
 
+function resolveCallerName(role: string, name?: string | null) {
+  return name?.trim() || callerLabel(role);
+}
+
 /**
  * Global customer internet-call host.
- * Prefers native lock-screen UI (CallKeep) + ringtone; falls back to in-app overlay.
+ * Lock-screen CallKeep when possible; push when app is closed; restaurant name + logo.
  */
 export function useCustomerInternetCalls() {
   const token = useAuthStore((s) => s.token);
@@ -64,14 +53,12 @@ export function useCustomerInternetCalls() {
   const [muted, setMuted] = useState(false);
   const [speaker, setSpeaker] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
-  /** True when CallKeep is showing the system / lock-screen incoming UI. */
   const [nativeRinging, setNativeRinging] = useState(false);
   const callRef = useRef(call);
   const joined = useRef(false);
   const closed = useRef(new Set<string>());
-  /** Last ringing payload by callId — CallKeep answer can fire before React state settles. */
   const pendingByCallId = useRef(
-    new Map<string, { orderId: string; callerRole: string; callerName: string }>(),
+    new Map<string, { orderId: string; callerRole: string; callerName: string; callerLogoUrl: string | null }>(),
   );
   const acceptRef = useRef<(orderId: string, callId: string, callerRole: string) => Promise<void>>(
     async () => undefined,
@@ -95,182 +82,60 @@ export function useCustomerInternetCalls() {
     await disconnectVoice();
   }, []);
 
-  const ring = useCallback(async (orderId: string, callId: string, callerRole: string) => {
+  const ring = useCallback(async (meta: CustomerRingMeta) => {
+    const { orderId, callId, callerRole } = meta;
     if (!callId || closed.current.has(callId)) return;
     const current = callRef.current;
     if (current && current.callId !== callId) return;
+    const callerName = resolveCallerName(callerRole, meta.callerName);
+    const callerLogoUrl = meta.callerLogoUrl?.trim() || current?.callerLogoUrl || null;
     const next: CustomerCallState = {
       phase: 'ringing',
       orderId,
       callId,
       callerRole,
-      callerName: callerLabel(callerRole),
+      callerName,
+      callerLogoUrl,
     };
-    pendingByCallId.current.set(callId, {
-      orderId,
-      callerRole,
-      callerName: next.callerName,
-    });
+    pendingByCallId.current.set(callId, { orderId, callerRole, callerName, callerLogoUrl });
     setCall(next);
     setNotice(null);
 
-    const shownNative = await displayNativeIncomingCall({
-      callId,
-      callerName: next.callerName,
-    });
+    const shownNative = await displayNativeIncomingCall({ callId, callerName });
     setNativeRinging(shownNative);
 
-    // Always fire a high-priority notification with ringtone as backup
-    // (cold start / Expo Go / when CallKeep is unavailable).
     await presentIncomingCallNotification({
       orderId,
       callId,
       callerRole,
-      callerName: next.callerName,
+      callerName,
+      callerLogoUrl,
     });
   }, []);
 
-  useEffect(() => {
-    if (!token || Platform.OS === 'web') return;
-    void ensureCallNotificationSetup();
-    void setupNativeIncomingCalls();
-  }, [token]);
+  const onTerminalNotice = useCallback((message: string) => setNotice(message), []);
+  const onAccepted = useCallback((callId: string) => {
+    setCall((prev) => (prev?.callId === callId ? { ...prev, phase: 'active' } : prev));
+    setNativeRinging(false);
+  }, []);
 
-  useEffect(() => {
-    if (!token) return undefined;
-    let alive = true;
-    let socket: Awaited<ReturnType<typeof getSocket>> | null = null;
-    const onInternet = (payload: unknown) => {
-      const row = asRecord(payload);
-      const callId = String(row.callId ?? '');
-      const orderId = String(row.orderId ?? '');
-      const state = String(row.state ?? '');
-      const callerRole = String(row.callerRole ?? '');
-      const calleeRole = String(row.calleeRole ?? '');
-      if (!callId || !orderId) return;
-      if (TERMINAL.has(state)) {
-        if (callRef.current?.callId === callId) {
-          setNotice(state === 'declined' ? 'Call declined.' : 'Call ended.');
-          void clear(callId);
-        }
-        return;
-      }
-      if (state === 'ringing' && calleeRole === 'customer') {
-        void ring(orderId, callId, callerRole);
-        return;
-      }
-      if (state === 'accepted' && callRef.current?.callId === callId) {
-        setCall((prev) => (prev ? { ...prev, phase: 'active' } : prev));
-        setNativeRinging(false);
-        void dismissIncomingCallNotification();
-      }
-    };
-    void getSocket().then((next) => {
-      if (!alive) return;
-      socket = next;
-      next.on('call:internet', onInternet as never);
-    });
-    return () => {
-      alive = false;
-      socket?.off('call:internet', onInternet as never);
-    };
-  }, [clear, ring, token]);
-
-  useEffect(() => {
-    if (!token || Platform.OS === 'web') return undefined;
-    const cleanups: Array<() => void> = [];
-    void (async () => {
-      try {
-        const Notifications = await import('expo-notifications');
-        await ensureCallNotificationSetup();
-
-        const fromData = (raw: unknown) => {
-          const data = asRecord(raw);
-          if (String(data.kind ?? '') !== 'internet_call') return null;
-          const orderId = String(data.orderId ?? '');
-          const callId = String(data.callId ?? '');
-          const callerRole = String(data.callerRole ?? 'restaurant');
-          if (!orderId || !callId) return null;
-          return { orderId, callId, callerRole };
-        };
-
-        // Push delivered while JS is alive → show lock-screen CallKeep + ringtone.
-        const received = Notifications.addNotificationReceivedListener((notification) => {
-          const parsed = fromData(notification.request.content.data);
-          if (parsed) void ring(parsed.orderId, parsed.callId, parsed.callerRole);
-        });
-        cleanups.push(() => received.remove());
-
-        const response = Notifications.addNotificationResponseReceivedListener((res) => {
-          const parsed = fromData(res.notification.request.content.data);
-          if (!parsed) return;
-          const action = String(res.actionIdentifier ?? '');
-          if (action === 'DECLINE') {
-            void declineRef.current(parsed.callId);
-            return;
-          }
-          if (action === 'ACCEPT') {
-            void acceptRef.current(parsed.orderId, parsed.callId, parsed.callerRole);
-            return;
-          }
-          void ring(parsed.orderId, parsed.callId, parsed.callerRole);
-        });
-        cleanups.push(() => response.remove());
-
-        // Cold start after tapping a missed-call notification.
-        const last = await Notifications.getLastNotificationResponseAsync();
-        const cold = last ? fromData(last.notification.request.content.data) : null;
-        if (cold) void ring(cold.orderId, cold.callId, cold.callerRole);
-      } catch {
-        // Expo Go may not support categories / CallKeep.
-      }
-    })();
-    return () => {
-      cleanups.forEach((fn) => fn());
-    };
-  }, [ring, token]);
-
-  // Lock-screen Answer / Decline from CallKeep / ConnectionService.
-  useEffect(() => {
-    if (!token || Platform.OS === 'web') return undefined;
-    let remove = () => undefined;
-    void listenNativeIncomingCallActions({
-      onAnswer: (callId) => {
-        const current = callRef.current;
-        const pending = pendingByCallId.current.get(callId);
-        const orderId = current?.callId === callId ? current.orderId : pending?.orderId;
-        const callerRole =
-          current?.callId === callId ? current.callerRole : pending?.callerRole ?? 'restaurant';
-        if (!orderId) return;
-        void acceptRef.current(orderId, callId, callerRole);
-      },
-      onEnd: (callId) => {
-        const current = callRef.current;
-        const phase = current?.callId === callId ? current.phase : 'ringing';
-        if (phase === 'ringing') {
-          void declineRef.current(callId);
-        } else {
-          void (async () => {
-            try {
-              await disconnectInternetCall(callId);
-            } catch {
-              // Clear local UI anyway.
-            }
-            await clear(callId);
-          })();
-        }
-      },
-    }).then((cleanup) => {
-      remove = cleanup;
-    });
-    return () => remove();
-  }, [clear, token]);
+  useCustomerCallListeners({
+    token,
+    callRef,
+    pendingByCallId,
+    acceptRef,
+    declineRef,
+    ring,
+    clear,
+    onTerminalNotice,
+    onAccepted,
+  });
 
   async function acceptFromIds(orderId: string, callId: string, callerRole: string) {
     if (closed.current.has(callId)) return;
-    const name =
-      pendingByCallId.current.get(callId)?.callerName ?? callerLabel(callerRole);
-    // Show WhatsApp-style in-call UI immediately (mute / speaker / end) while audio connects.
+    const pending = pendingByCallId.current.get(callId);
+    const name = pending?.callerName ?? callRef.current?.callerName ?? callerLabel(callerRole);
+    const logo = pending?.callerLogoUrl ?? callRef.current?.callerLogoUrl ?? null;
     setNativeRinging(false);
     setBusy('accept');
     setNotice(null);
@@ -282,6 +147,7 @@ export function useCustomerInternetCalls() {
       callId,
       callerRole,
       callerName: name,
+      callerLogoUrl: logo,
     });
     void bringAppToForeground();
     try {
@@ -357,7 +223,6 @@ export function useCustomerInternetCalls() {
     }
   }
 
-  // Poll while ringing / active so timeout still ends the UI when sockets miss.
   useEffect(() => {
     if (!call) return undefined;
     let stop = false;
@@ -386,7 +251,6 @@ export function useCustomerInternetCalls() {
     muted,
     speaker,
     notice,
-    /** When true, skip in-app IncomingCallOverlay — system lock-screen UI is ringing. */
     nativeRinging,
     accept,
     decline,

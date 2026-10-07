@@ -2,19 +2,26 @@ import { Phone, PhoneOff } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CallAvatar } from '@/components/call/CallAvatar';
 import { fonts } from '@/constants/typography';
 
 type Props = {
   callerName: string;
+  callerLogoUrl?: string | null;
   busy: string | null;
   onAccept: () => void;
   onDecline: () => void;
 };
 
 /** In-app fallback when CallKeep / lock-screen UI is unavailable. */
-export function IncomingCallOverlay({ callerName, busy, onAccept, onDecline }: Props) {
+export function IncomingCallOverlay({
+  callerName,
+  callerLogoUrl,
+  busy,
+  onAccept,
+  onDecline,
+}: Props) {
   const insets = useSafeAreaInsets();
-  const initial = callerName.trim().charAt(0).toUpperCase() || 'T';
 
   return (
     <View
@@ -23,9 +30,7 @@ export function IncomingCallOverlay({ callerName, busy, onAccept, onDecline }: P
     >
       <View style={styles.head}>
         <Text style={styles.kicker}>Incoming call</Text>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
-        </View>
+        <CallAvatar name={callerName} logoUrl={callerLogoUrl} />
         <Text style={styles.name} numberOfLines={2}>
           {callerName}
         </Text>
@@ -84,19 +89,6 @@ const styles = StyleSheet.create({
     color: '#8696A0',
     letterSpacing: 0.4,
     marginBottom: 28,
-  },
-  avatar: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    backgroundColor: '#1F2C34',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: fonts.displayBold,
-    fontSize: 44,
-    color: '#E9EDEF',
   },
   name: {
     marginTop: 28,

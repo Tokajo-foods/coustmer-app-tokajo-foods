@@ -19,6 +19,7 @@ export function CustomerInternetCallHost() {
       {voice.call?.phase === 'ringing' && !voice.nativeRinging ? (
         <IncomingCallOverlay
           callerName={voice.call.callerName}
+          callerLogoUrl={voice.call.callerLogoUrl}
           busy={voice.busy}
           onAccept={() => void voice.accept()}
           onDecline={() => void voice.decline()}
@@ -27,6 +28,7 @@ export function CustomerInternetCallHost() {
       {voice.call?.phase === 'active' ? (
         <ActiveCallOverlay
           callerName={voice.call.callerName}
+          callerLogoUrl={voice.call.callerLogoUrl}
           muted={voice.muted}
           speaker={voice.speaker}
           busy={voice.busy}

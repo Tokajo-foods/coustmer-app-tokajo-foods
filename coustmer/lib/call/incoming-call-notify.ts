@@ -11,6 +11,7 @@ type IncomingPayload = {
   callId: string;
   callerRole: string;
   callerName?: string;
+  callerLogoUrl?: string | null;
 };
 
 async function loadNotifications() {
@@ -66,8 +67,8 @@ export async function presentIncomingCallNotification(input: IncomingPayload): P
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIF_ID,
     content: {
-      title: 'Incoming call',
-      body: `${who} is calling`,
+      title: `${who} is calling`,
+      body: 'Incoming Tokajo order call',
       sound: RINGTONE,
       categoryIdentifier: CATEGORY,
       interruptionLevel: 'timeSensitive',
@@ -76,6 +77,8 @@ export async function presentIncomingCallNotification(input: IncomingPayload): P
         orderId: input.orderId,
         callId: input.callId,
         callerRole: input.callerRole,
+        callerName: who,
+        callerLogoUrl: input.callerLogoUrl?.trim() || '',
         channelId: CHANNEL,
       },
       ...(Platform.OS === 'android'

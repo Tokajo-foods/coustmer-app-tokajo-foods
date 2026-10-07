@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CallAvatar } from '@/components/call/CallAvatar';
 import { fonts } from '@/constants/typography';
 
 type Props = {
   callerName: string;
+  callerLogoUrl?: string | null;
   muted: boolean;
   speaker: boolean;
   busy: string | null;
@@ -24,6 +26,7 @@ function formatDuration(totalSec: number) {
 /** WhatsApp-style in-call screen: mute, speaker, end. */
 export function ActiveCallOverlay({
   callerName,
+  callerLogoUrl,
   muted,
   speaker,
   busy,
@@ -33,7 +36,6 @@ export function ActiveCallOverlay({
 }: Props) {
   const insets = useSafeAreaInsets();
   const [seconds, setSeconds] = useState(0);
-  const initial = callerName.trim().charAt(0).toUpperCase() || 'T';
 
   useEffect(() => {
     const timer = setInterval(() => setSeconds((n) => n + 1), 1000);
@@ -46,9 +48,7 @@ export function ActiveCallOverlay({
       accessibilityViewIsModal
     >
       <View style={styles.head}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
-        </View>
+        <CallAvatar name={callerName} logoUrl={callerLogoUrl} />
         <Text style={styles.name} numberOfLines={2}>
           {callerName}
         </Text>
@@ -111,19 +111,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   head: { alignItems: 'center', width: '100%' },
-  avatar: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    backgroundColor: '#1F2C34',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: fonts.displayBold,
-    fontSize: 44,
-    color: '#E9EDEF',
-  },
   name: {
     marginTop: 28,
     fontFamily: fonts.displayBold,
