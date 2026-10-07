@@ -13,9 +13,9 @@ export function AuthRememberSwitch({ value, onValueChange }: Props) {
     <Pressable
       onPress={() => onValueChange(!value)}
       style={{
-        width: 40,
-        height: 22,
-        borderRadius: 12,
+        width: 32,
+        height: 18,
+        borderRadius: 10,
         backgroundColor: value ? authTheme.brand : authTheme.inputBorder,
         justifyContent: 'center',
         padding: 2,
@@ -23,16 +23,16 @@ export function AuthRememberSwitch({ value, onValueChange }: Props) {
     >
       <View
         style={{
-          width: 18,
-          height: 18,
-          borderRadius: 9,
+          width: 14,
+          height: 14,
+          borderRadius: 7,
           backgroundColor: '#FFFFFF',
-          transform: [{ translateX: value ? 18 : 0 }],
+          transform: [{ translateX: value ? 14 : 0 }],
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 2,
-          elevation: 2,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.18,
+          shadowRadius: 1.5,
+          elevation: 1,
         }}
       />
     </Pressable>

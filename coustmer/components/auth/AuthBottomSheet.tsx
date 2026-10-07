@@ -140,13 +140,6 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
   };
 
   const headerRight = () => {
-    if (view === 'login') {
-      return (
-        <Pressable onPress={() => changeViewWithSlide('forgot-password')} hitSlop={10}>
-          <Text style={styles.headerAction}>Forgot password?</Text>
-        </Pressable>
-      );
-    }
     if (view === 'register' || view === 'forgot-password') {
       return (
         <Pressable onPress={() => changeViewWithSlide('login')} hitSlop={10}>

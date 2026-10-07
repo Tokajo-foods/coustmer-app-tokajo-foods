@@ -129,12 +129,12 @@ export const loginFormStyles = StyleSheet.create({
     gap: 10,
   },
   rememberText: {
-    fontSize: 14,
+    fontSize: 12,
     color: authTheme.text,
     fontWeight: '500',
   },
   forgotLink: {
-    fontSize: 13,
+    fontSize: 12,
     color: authTheme.brand,
     fontWeight: '700',
   },
