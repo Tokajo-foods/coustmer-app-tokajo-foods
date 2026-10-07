@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 2.75 }, { translateY: -(CIRCLE * 0.02) }, { translateX: 0.5 }],
   },
   photoBurger: {
-    transform: [{ scale: 2.75 }, { translateY: 0 }, { translateX: 0.5 + CIRCLE * 0.05 }],
+    transform: [{ scale: 2.75 }, { translateY: 0 }, { translateX: 0.5 + CIRCLE * 0.02 }],
   },
   label: {
     fontFamily: fonts.uiSemi,
