@@ -1259,13 +1259,13 @@ export function OrderTrackingScreen() {
               <Text style={styles.restName} numberOfLines={1}>
                 {o?.restaurantName || 'Restaurant'}
               </Text>
+              {id ? (
+                <RestaurantChatEntry
+                  orderId={id}
+                  restaurantName={o?.restaurantName || 'Restaurant'}
+                />
+              ) : null}
             </View>
-            {id ? (
-              <RestaurantChatEntry
-                orderId={id}
-                restaurantName={o?.restaurantName || 'Restaurant'}
-              />
-            ) : null}
 
             {items.map((item, index) => (
               <View key={`${item.id ?? item.name}-${index}`}>

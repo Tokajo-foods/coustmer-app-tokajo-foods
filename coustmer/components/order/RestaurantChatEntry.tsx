@@ -1,8 +1,6 @@
 import { useRouter } from 'expo-router';
-import { ChevronRight, MessageCircle } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { fonts } from '@/constants/typography';
+import { MessageCircle } from 'lucide-react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 type Props = {
   orderId: string;
@@ -14,7 +12,9 @@ export function RestaurantChatEntry({ orderId, restaurantName }: Props) {
   const name = restaurantName.trim() || 'Restaurant';
   return (
     <Pressable
-      style={styles.row}
+      accessibilityLabel={`Message ${name}`}
+      hitSlop={10}
+      style={styles.btn}
       onPress={() =>
         router.push({
           pathname: '/orders/[orderId]/restaurant-chat',
@@ -22,40 +22,18 @@ export function RestaurantChatEntry({ orderId, restaurantName }: Props) {
         })
       }
     >
-      <View style={styles.icon}>
-        <MessageCircle color="#FF6A00" size={18} strokeWidth={2.4} />
-      </View>
-      <View style={styles.copy}>
-        <Text style={styles.title} numberOfLines={1}>Message {name}</Text>
-        <Text style={styles.sub}>Chat about this order</Text>
-      </View>
-      <ChevronRight color="#FF6A00" size={16} strokeWidth={2.5} />
+      <MessageCircle color="#FF6A00" size={13} strokeWidth={2.4} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0E6DE',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  btn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#FFF1E8',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  copy: { flex: 1 },
-  title: { fontFamily: fonts.uiBold, fontSize: 15, color: '#111827' },
-  sub: { marginTop: 2, fontFamily: fonts.ui, fontSize: 12, color: '#6B7280' },
 });
