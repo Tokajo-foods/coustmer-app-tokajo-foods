@@ -79,7 +79,7 @@ function isCartPath(pathname: string) {
 }
 
 function isOrderArrivalPath(pathname: string) {
-  return /\/orders\/[^/]+\/tracking\/?$/.test(pathname);
+  return /\/orders\/[^/]+\/(tracking|restaurant-chat)\/?$/.test(pathname);
 }
 
 function isFavoritesPath(pathname: string) {

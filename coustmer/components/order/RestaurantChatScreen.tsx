@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { ArrowLeft, Send } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -16,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fonts } from '@/constants/typography';
 import { deliveryApi } from '@/lib/delivery/api';
+import { useOrder } from '@/lib/order/hooks';
+import { restaurantApi } from '@/lib/restaurant/api';
 import type { ChatMessage } from '@/lib/delivery/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { getSocket, trackOrder } from '@/lib/socket/socket';
@@ -66,7 +70,19 @@ export function RestaurantChatScreen() {
     restaurantName?: string;
   }>();
   const id = String(orderId ?? '');
-  const title = String(restaurantName ?? '').trim() || 'Restaurant';
+  const order = useOrder(id);
+  const restaurantId = order.data?.restaurantId;
+  const restaurant = useQuery({
+    queryKey: ['restaurant-chat-logo', restaurantId],
+    queryFn: () => restaurantApi.getRestaurant(String(restaurantId)),
+    enabled: Boolean(restaurantId),
+  });
+  const title =
+    String(restaurantName ?? '').trim() ||
+    order.data?.restaurantName?.trim() ||
+    restaurant.data?.name?.trim() ||
+    'Restaurant';
+  const logo = restaurant.data?.logoUrl;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -174,7 +190,13 @@ export function RestaurantChatScreen() {
         <Pressable onPress={() => router.back()} style={styles.back} hitSlop={8}>
           <ArrowLeft color="#111827" size={22} strokeWidth={2.4} />
         </Pressable>
-        <View style={styles.avatar}><Text style={styles.avatarText}>{title.slice(0, 1).toUpperCase()}</Text></View>
+        <View style={styles.avatar}>
+          {logo ? (
+            <Image source={{ uri: logo }} style={styles.logo} contentFit="cover" />
+          ) : (
+            <Text style={styles.avatarText}>{title.slice(0, 1).toUpperCase()}</Text>
+          )}
+        </View>
         <View style={styles.headerCopy}>
           <Text style={styles.name} numberOfLines={1}>{title}</Text>
           <Text style={styles.presence}>{typing ? 'typing…' : 'Restaurant'}</Text>
@@ -237,8 +259,9 @@ const styles = StyleSheet.create({
   back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   avatar: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: '#FF6A00',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
+  logo: { width: 40, height: 40 },
   avatarText: { color: '#FFFFFF', fontFamily: fonts.uiBold, fontSize: 16 },
   headerCopy: { flex: 1 },
   name: { fontFamily: fonts.uiBold, fontSize: 16, color: '#111827' },
