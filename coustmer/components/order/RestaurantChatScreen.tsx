@@ -227,7 +227,7 @@ export function RestaurantChatScreen() {
         </ScrollView>
       )}
 
-      <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) + 14 }]}>
         <TextInput
           value={draft}
           onChangeText={setDraft}
