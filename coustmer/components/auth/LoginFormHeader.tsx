@@ -18,19 +18,19 @@ export function LoginFormHeader({ title, subtitle }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: 4,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: authTheme.text,
-    marginBottom: 4,
+    marginBottom: 6,
     letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: authTheme.textMuted,
-    marginBottom: 12,
-    lineHeight: 18,
+    marginBottom: 14,
+    lineHeight: 20,
   },
 });

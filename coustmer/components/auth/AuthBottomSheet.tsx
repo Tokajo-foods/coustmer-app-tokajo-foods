@@ -20,7 +20,7 @@ import { authTheme } from '@/constants/auth-theme';
 import { type AuthSheetView } from '@/store/auth-sheet-store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.68;
+export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.74;
 
 const OPEN_SPRING = { damping: 26, stiffness: 185, mass: 0.92 };
 const CLOSE_DURATION = 340;
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderColor: authTheme.brandMuted,
     shadowColor: authTheme.brandDark,
@@ -283,10 +283,10 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: authTheme.brandMuted,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   formWrap: {
     flex: 1,
-    paddingTop: 2,
+    paddingTop: 4,
   },
 });
