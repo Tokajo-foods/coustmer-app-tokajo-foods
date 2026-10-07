@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bike, Mic, MicOff, Phone, Store, Video } from 'lucide-react-native';
 
 import { useOrderCalls } from '@/lib/call/use-order-calls';
@@ -24,16 +24,10 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
     : calls.rows;
   const incoming = calls.live?.direction === 'in' && calls.live.state === 'ringing';
   const titleFor = (role: CallRole) => names?.[role] || FALLBACK[role];
+  if (!calls.live && rows.length === 0) return null;
 
   return (
     <View style={styles.card}>
-      <Text style={styles.kicker}>Call</Text>
-      <Text style={styles.title}>Reach them without sharing your number</Text>
-      <Text style={styles.disclosure}>{calls.disclosure}</Text>
-
-      {calls.loading && rows.length === 0 ? (
-        <ActivityIndicator color="#FF6A00" style={styles.spinner} />
-      ) : null}
       {calls.loadError ? <Text style={styles.error}>{calls.loadError}</Text> : null}
       {calls.notice ? <Text style={styles.notice}>{calls.notice}</Text> : null}
 
@@ -66,19 +60,10 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
         </View>
       ) : null}
 
-      {!calls.loading && rows.length === 0 && !calls.loadError ? (
-        <Text style={styles.empty}>
-          {viewer === 'customer'
-            ? 'The delivery partner call shows after they accept the trip.'
-            : 'The customer call shows after the order is placed. The delivery partner call shows after they accept.'}
-        </Text>
-      ) : null}
-
       {rows.map((row) => (
         <PersonRow
           key={row.role}
           row={row}
-          title={titleFor(row.role)}
           busy={calls.busy}
           onPhone={() => void calls.dial(row.role)}
           onInternet={() => void calls.startInternet(row.role)}
@@ -103,13 +88,11 @@ function liveLine(incoming: boolean, state: string, title: string): string {
 
 function PersonRow({
   row,
-  title,
   busy,
   onPhone,
   onInternet,
 }: {
   row: CallRow;
-  title: string;
   busy: string | null;
   onPhone: () => void;
   onInternet: () => void;
@@ -122,12 +105,6 @@ function PersonRow({
       <View style={styles.personHead}>
         <View style={styles.iconWrap}>
           <Icon color="#FF6A00" size={18} strokeWidth={2.3} />
-        </View>
-        <View style={styles.copy}>
-          <Text style={styles.label} numberOfLines={1}>{title}</Text>
-          <Text style={styles.number} numberOfLines={1}>
-            {row.virtualNumber ?? 'Phone number is not ready yet'}
-          </Text>
         </View>
       </View>
       <View style={styles.actions}>
@@ -161,19 +138,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#F3F4F6',
   },
-  kicker: {
-    color: '#FF6A00',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  title: { color: '#111827', fontSize: 16, fontWeight: '700' },
-  disclosure: { color: '#6B7280', fontSize: 12, lineHeight: 17 },
-  spinner: { alignSelf: 'flex-start' },
   error: { color: '#B91C1C', fontSize: 13, lineHeight: 18 },
   notice: { color: '#9A3412', fontSize: 13, lineHeight: 18 },
-  empty: { color: '#6B7280', fontSize: 13, lineHeight: 18 },
   live: { gap: 8, backgroundColor: '#FFF4EC', borderRadius: 14, padding: 12 },
   liveIn: { backgroundColor: '#ECFDF5' },
   liveKicker: { color: '#EA580C', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
@@ -184,7 +150,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#F3F4F6',
   },
-  personHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  personHead: { flexDirection: 'row', alignItems: 'center' },
   iconWrap: {
     width: 36,
     height: 36,
@@ -193,9 +159,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  copy: { flex: 1, gap: 2 },
-  label: { color: '#111827', fontSize: 15, fontWeight: '700' },
-  number: { color: '#6B7280', fontSize: 13 },
   actions: { flexDirection: 'row', gap: 8 },
   primary: {
     flex: 1,
