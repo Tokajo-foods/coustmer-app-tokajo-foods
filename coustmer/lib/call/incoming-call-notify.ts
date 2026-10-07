@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 const CHANNEL = 'tokajo-calls';
 const CATEGORY = 'internet_call';
 const NOTIF_ID = 'tokajo-incoming-internet-call';
+/** Must match the file registered under expo-notifications `sounds`. */
+const RINGTONE = 'incoming-call.wav';
 
 type IncomingPayload = {
   orderId: string;
@@ -20,19 +22,25 @@ async function loadNotifications() {
   }
 }
 
-/** Call channel + Accept / Decline actions (Android + iOS notification actions). */
+/** High-priority call channel with custom ringtone + Accept / Decline. */
 export async function ensureCallNotificationSetup(): Promise<void> {
   const Notifications = await loadNotifications();
   if (!Notifications) return;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
-      name: 'Calls',
+      name: 'Incoming calls',
       importance: Notifications.AndroidImportance.MAX,
-      sound: 'default',
-      vibrationPattern: [0, 400, 200, 400],
+      sound: RINGTONE,
+      vibrationPattern: [0, 500, 250, 500, 250, 500],
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       bypassDnd: true,
       enableVibrate: true,
+      enableLights: true,
+      lightColor: '#FF6A00',
+      audioAttributes: {
+        usage: Notifications.AndroidAudioUsage.NOTIFICATION_RINGTONE,
+        contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+      },
     });
   }
   await Notifications.setNotificationCategoryAsync(CATEGORY, [
@@ -60,8 +68,9 @@ export async function presentIncomingCallNotification(input: IncomingPayload): P
     content: {
       title: 'Incoming call',
       body: `${who} is calling`,
-      sound: true,
+      sound: RINGTONE,
       categoryIdentifier: CATEGORY,
+      interruptionLevel: 'timeSensitive',
       data: {
         kind: 'internet_call',
         orderId: input.orderId,
@@ -70,7 +79,12 @@ export async function presentIncomingCallNotification(input: IncomingPayload): P
         channelId: CHANNEL,
       },
       ...(Platform.OS === 'android'
-        ? { channelId: CHANNEL, priority: Notifications.AndroidNotificationPriority.MAX }
+        ? {
+            channelId: CHANNEL,
+            priority: Notifications.AndroidNotificationPriority.MAX,
+            sticky: true,
+            autoDismiss: false,
+          }
         : {}),
     },
     trigger: null,

@@ -47,8 +47,11 @@ const config = {
       {
         icon: './assets/icon.png',
         color: '#FF6A00',
+        sounds: ['./assets/sounds/incoming-call.wav'],
+        mode: 'production',
       },
     ],
+    '@config-plugins/react-native-callkeep',
   ],
   ios: {
     supportsTablet: true,
@@ -61,6 +64,7 @@ const config = {
         'Allow Food Delivery to access your location to set your delivery address and find restaurants near you.',
       NSMicrophoneUsageDescription:
         'Allow TOKAJO FOODS to use the microphone for in-app calls on an order. Your mobile number stays hidden.',
+      UIBackgroundModes: ['audio', 'voip', 'remote-notification', 'fetch'],
       NSAppTransportSecurity: {
         NSAllowsArbitraryLoads: true,
       },
@@ -85,6 +89,14 @@ const config = {
       'android.permission.MODIFY_AUDIO_SETTINGS',
       'android.permission.BLUETOOTH_CONNECT',
       'android.permission.WAKE_LOCK',
+      'android.permission.USE_FULL_SCREEN_INTENT',
+      'android.permission.MANAGE_OWN_CALLS',
+      'android.permission.READ_PHONE_STATE',
+      'android.permission.CALL_PHONE',
+      'android.permission.FOREGROUND_SERVICE',
+      'android.permission.FOREGROUND_SERVICE_PHONE_CALL',
+      'android.permission.POST_NOTIFICATIONS',
+      'android.permission.VIBRATE',
     ],
     config: {
       googleMaps: {

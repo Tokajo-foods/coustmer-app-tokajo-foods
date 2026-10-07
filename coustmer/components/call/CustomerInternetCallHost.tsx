@@ -16,7 +16,7 @@ export function CustomerInternetCallHost() {
           <Text style={styles.toastText}>{voice.notice}</Text>
         </View>
       ) : null}
-      {voice.call?.phase === 'ringing' ? (
+      {voice.call?.phase === 'ringing' && !voice.nativeRinging ? (
         <IncomingCallOverlay
           callerName={voice.call.callerName}
           busy={voice.busy}
