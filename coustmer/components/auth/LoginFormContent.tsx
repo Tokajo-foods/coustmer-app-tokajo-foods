@@ -1,12 +1,14 @@
 import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
-import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { Eye, EyeOff, Lock, Mail, Phone, ShieldCheck } from 'lucide-react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { AuthRememberSwitch } from '@/components/auth/AuthRememberSwitch';
+import { LoginFormHeader } from '@/components/auth/LoginFormHeader';
+import { LoginModeTabs, type LoginModePref } from '@/components/auth/LoginModeTabs';
 import { loginFormStyles } from '@/components/auth/login-form-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { useAuthStore } from '@/store/auth-store';
@@ -38,6 +40,7 @@ export function LoginFormContent({
   const sendOtp = useAuthStore((s) => s.sendOtp);
   const isLoading = useAuthStore((s) => s.isLoading);
 
+  const [pref, setPref] = useState<LoginModePref>('email');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -48,9 +51,15 @@ export function LoginFormContent({
     null,
   );
 
-  const mode = useMemo(() => detectLoginIdentifierMode(identifier), [identifier]);
-  const isEmail = mode === 'email';
-  const isPhone = mode === 'phone';
+  const detected = useMemo(() => detectLoginIdentifierMode(identifier), [identifier]);
+
+  useEffect(() => {
+    if (detected === 'email') setPref('email');
+    if (detected === 'phone') setPref('phone');
+  }, [detected]);
+
+  const isEmail = pref === 'email';
+  const isPhone = pref === 'phone';
 
   const handlePasswordLogin = async () => {
     const nextErrors = {
@@ -117,6 +126,13 @@ export function LoginFormContent({
     router.replace('/?auth=sign-up');
   };
 
+  const onChangePref = (next: LoginModePref) => {
+    setPref(next);
+    setErrors({});
+    setBanner(null);
+    if (next === 'phone') setPassword('');
+  };
+
   const inputStyle = (field: FocusField, hasError: boolean) => [
     styles.inputContainer,
     focusedField === field && styles.inputFocused,
@@ -129,12 +145,6 @@ export function LoginFormContent({
     return authTheme.textDim;
   };
 
-  const primaryLabel = isLoading
-    ? '...'
-    : isPhone
-      ? 'SEND OTP'
-      : 'SIGN IN';
-
   return (
     <View style={{ flex: 1 }}>
       <KeyboardAwareScrollView
@@ -144,14 +154,16 @@ export function LoginFormContent({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Text style={styles.title}>Let's get something</Text>
-        <Text style={styles.subtitle}>
-          {isPhone
-            ? 'Enter your phone number to get an OTP.'
-            : isEmail
-              ? 'Enter your email and password to sign in.'
-              : 'Use email + password, or phone number for OTP.'}
-        </Text>
+        <LoginFormHeader
+          title={isPhone ? 'Sign in with phone' : 'Welcome back'}
+          subtitle={
+            isPhone
+              ? 'We’ll text a one-time code. No password needed.'
+              : 'Sign in with your Gmail and password.'
+          }
+        />
+
+        <LoginModeTabs value={pref} onChange={onChangePref} />
 
         {banner ? (
           <View style={{ marginBottom: 16 }}>
@@ -160,6 +172,7 @@ export function LoginFormContent({
         ) : null}
 
         <View style={styles.fieldWrap}>
+          <Text style={styles.fieldLabel}>{isPhone ? 'Phone number' : 'Email'}</Text>
           <View style={inputStyle('identifier', Boolean(errors.identifier))}>
             <View
               style={[
@@ -183,15 +196,12 @@ export function LoginFormContent({
             </View>
             <TextInput
               style={styles.input}
-              placeholder="Email or phone (+91…)"
+              placeholder={isPhone ? '+91 98765 43210' : 'you@gmail.com'}
               placeholderTextColor={authTheme.textDim}
               value={identifier}
               onChangeText={(text) => {
                 setIdentifier(text);
                 if (errors.identifier) setErrors((prev) => ({ ...prev, identifier: null }));
-                if (detectLoginIdentifierMode(text) !== 'email' && password) {
-                  setPassword('');
-                }
               }}
               keyboardType={isPhone ? 'phone-pad' : 'email-address'}
               autoCapitalize="none"
@@ -206,6 +216,7 @@ export function LoginFormContent({
 
         {isEmail ? (
           <View style={styles.fieldWrap}>
+            <Text style={styles.fieldLabel}>Password</Text>
             <View style={inputStyle('password', Boolean(errors.password))}>
               <View
                 style={[
@@ -221,7 +232,7 @@ export function LoginFormContent({
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Enter your password"
                 placeholderTextColor={authTheme.textDim}
                 value={password}
                 onChangeText={(text) => {
@@ -247,14 +258,26 @@ export function LoginFormContent({
             </View>
             {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
           </View>
-        ) : null}
+        ) : (
+          <View style={styles.hintCard}>
+            <View style={styles.hintIcon}>
+              <ShieldCheck color={authTheme.brand} size={20} strokeWidth={2.4} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.hintTitle}>OTP login</Text>
+              <Text style={styles.hintBody}>
+                Tap Send OTP, enter the code we text you, and you’re in.
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.rowBetween}>
           <View style={styles.rememberInline}>
             <Text style={styles.rememberText}>Remember me</Text>
             <AuthRememberSwitch value={rememberMe} onValueChange={setRememberMe} />
           </View>
-          {isEmail || mode === 'unknown' ? (
+          {isEmail ? (
             <Pressable onPress={handleForgotPassword} hitSlop={8}>
               <Text style={styles.forgotLink}>Forgot password?</Text>
             </Pressable>
@@ -266,10 +289,12 @@ export function LoginFormContent({
         <TouchableOpacity
           style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
           onPress={handlePrimary}
-          disabled={isLoading || mode === 'unknown'}
+          disabled={isLoading}
           activeOpacity={0.8}
         >
-          <Text style={styles.submitBtnText}>{primaryLabel}</Text>
+          <Text style={styles.submitBtnText}>
+            {isLoading ? '...' : isPhone ? 'SEND OTP' : 'SIGN IN'}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.bottomLinks}>

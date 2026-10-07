@@ -4,20 +4,48 @@ import { authTheme } from '@/constants/auth-theme';
 
 export const loginFormStyles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 28,
+    flexGrow: 1,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
     color: authTheme.text,
-    marginBottom: 6,
-    letterSpacing: -0.3,
+    marginBottom: 8,
+    marginLeft: 2,
   },
-  subtitle: {
+  hintCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: authTheme.brandSoft,
+    borderWidth: 1,
+    borderColor: authTheme.brandMuted,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 8,
+    minHeight: 84,
+  },
+  hintIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hintTitle: {
     fontSize: 14,
+    fontWeight: '800',
+    color: authTheme.brandDark,
+    marginBottom: 4,
+  },
+  hintBody: {
+    fontSize: 13,
+    lineHeight: 18,
     color: authTheme.textMuted,
-    marginBottom: 24,
-    lineHeight: 20,
+    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',
