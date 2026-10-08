@@ -130,7 +130,7 @@ export function TokajoTopBar({
 const styles = StyleSheet.create({
   root: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
   logoRow: {
     height: 52,

@@ -47,7 +47,7 @@ export function TokajoSearchDock() {
 const styles = StyleSheet.create({
   row: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
   search: {
     flexDirection: 'row',
