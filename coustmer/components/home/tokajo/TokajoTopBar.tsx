@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     height: 50,
   },
   bottomRow: {
-    marginTop: 14,
+    marginTop: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
