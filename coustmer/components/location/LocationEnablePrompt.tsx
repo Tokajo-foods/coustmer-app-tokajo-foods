@@ -15,6 +15,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { captureGpsPlace } from '@/lib/location/capture-gps-place';
+import { restorePreviousDeliveryLocation } from '@/lib/location/restore-previous-location';
+import { useAuthStore } from '@/store/auth-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 
 async function ensureLocationReady(): Promise<'ready' | 'off' | 'denied'> {
@@ -42,6 +44,7 @@ export function LocationEnablePrompt() {
   const setLocation = useDeliveryLocationStore((s) => s.setLocation);
   const setDetecting = useDeliveryLocationStore((s) => s.setDetecting);
   const dismiss = useDeliveryLocationStore((s) => s.dismissLocationPrompt);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
   const setGate = useDeliveryLocationStore((s) => s.setLocationGate);
   const [phase, setPhase] = useState<'ask' | 'locking' | 'done'>('ask');
   const pulse = useSharedValue(0.72);
@@ -125,6 +128,11 @@ export function LocationEnablePrompt() {
 
   const buttonLabel = gate === 'denied' ? 'Allow location' : 'Turn on location';
 
+  const onNotNow = () => {
+    dismiss();
+    void restorePreviousDeliveryLocation(userId).catch(() => undefined);
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <View style={styles.backdrop}>
@@ -148,7 +156,7 @@ export function LocationEnablePrompt() {
               <Pressable style={styles.primary} onPress={() => void lockOn()}>
                 <Text style={styles.primaryText}>{buttonLabel}</Text>
               </Pressable>
-              <Pressable style={styles.later} onPress={dismiss} hitSlop={8}>
+              <Pressable style={styles.later} onPress={onNotNow} hitSlop={8}>
                 <Text style={styles.laterText}>Not now</Text>
               </Pressable>
             </>
