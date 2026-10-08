@@ -62,7 +62,7 @@ export async function setupNativeIncomingCalls(): Promise<boolean> {
         supportsVideo: false,
         maximumCallGroups: '1',
         maximumCallsPerCallGroup: '1',
-        ringtoneSound: 'incoming-call.wav',
+        ringtoneSound: 'incoming_call.wav',
         includesCallsInRecents: false,
       },
       android: {

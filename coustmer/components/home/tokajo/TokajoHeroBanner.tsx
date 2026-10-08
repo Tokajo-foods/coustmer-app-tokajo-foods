@@ -165,7 +165,7 @@ export const TokajoHeroBanner = memo(function TokajoHeroBanner({
 const styles = StyleSheet.create({
   wrap: {
     marginHorizontal: H_MARGIN,
-    marginTop: -Math.round(HEIGHT * 0.07),
+    marginTop: -Math.round(HEIGHT * 0.11),
     marginBottom: 16,
     borderRadius: 18,
     overflow: 'hidden',
