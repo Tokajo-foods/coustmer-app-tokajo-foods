@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import type { AddressSuggestion, GeocodeResult } from '@/lib/address/api';
+import { isPlusCodeToken } from '@/lib/location/format';
 import {
   assertGoogleMapsApiKey,
   GOOGLE_MAPS_API_KEY,
@@ -24,6 +25,7 @@ type GoogleGeocodeResponse = {
   status: string;
   results?: Array<{
     formatted_address: string;
+    types?: string[];
     geometry: { location: { lat: number; lng: number } };
   }>;
   error_message?: string;
@@ -389,7 +391,13 @@ export const googlePlacesApi = {
             `Google reverse geocode failed (${data.status}). Enable Geocoding API for this key.`
         );
       }
-      return data.results[0].formatted_address;
+      const results = data.results;
+      const street = results.find((row) => {
+        const first = row.formatted_address.split(',')[0]?.trim() ?? '';
+        const types = row.types ?? [];
+        return !isPlusCodeToken(first) && !types.includes('plus_code');
+      });
+      return (street ?? results[0]).formatted_address;
     } catch (err) {
       throw new Error(
         googleMapsErrorMessage(

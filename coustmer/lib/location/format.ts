@@ -12,6 +12,22 @@ export function normalizeLat(lat: number): number {
   return Math.max(-90, Math.min(90, lat));
 }
 
+/** Google Open Location Code, e.g. FH2M+7VW — not a street address. */
+export function isPlusCodeToken(value?: string | null): boolean {
+  if (!value?.trim()) return false;
+  return /^[2-9CFGHJMPQRVWX]{4,8}\+[2-9CFGHJMPQRVWX]{2,3}$/i.test(value.trim());
+}
+
+/** Drop a leading Plus Code so the header can show the street or area. */
+export function withoutPlusCode(formatted?: string | null): string {
+  if (!formatted?.trim()) return '';
+  return formatted
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part && !isPlusCodeToken(part))
+    .join(', ');
+}
+
 export function isCoordinateFallbackAddress(value?: string | null): boolean {
   if (!value) return false;
   return /^lat\s*-?\d/i.test(value.trim()) || /\blng\s*-?\d/i.test(value);
@@ -19,11 +35,12 @@ export function isCoordinateFallbackAddress(value?: string | null): boolean {
 
 /** Short label shown in the header (e.g. "Koramangala" or "Home"). */
 export function shortAddressLabel(formattedAddress: string, source?: string): string {
-  if (!formattedAddress.trim() || isCoordinateFallbackAddress(formattedAddress)) {
+  const cleaned = withoutPlusCode(formattedAddress);
+  if (!cleaned || isCoordinateFallbackAddress(cleaned)) {
     return source === 'gps' ? 'Current location' : 'Selected location';
   }
 
-  const parts = formattedAddress
+  const parts = cleaned
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
@@ -120,6 +137,7 @@ export function formatFullDeliveryAddress(formattedAddress?: string | null): str
     .filter((part) => {
       const lower = part.toLowerCase();
       if (lower === 'india' || lower === 'in') return false;
+      if (isPlusCodeToken(part)) return false;
       if (/^lat\b/i.test(part) || /^lng\b/i.test(part)) return false;
       return true;
     });
@@ -132,7 +150,12 @@ export function deliveryHeaderTitle(
   label?: string | null,
   formattedAddress?: string | null
 ): string {
-  if (label && !isCoordinateFallbackAddress(label) && label !== 'Selected location') {
+  if (
+    label &&
+    !isCoordinateFallbackAddress(label) &&
+    !isPlusCodeToken(label.split(',')[0]) &&
+    label !== 'Selected location'
+  ) {
     // Prefer a concise label when it's not already the entire address
     if (
       !formattedAddress ||

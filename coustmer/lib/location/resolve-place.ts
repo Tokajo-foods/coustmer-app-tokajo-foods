@@ -5,6 +5,7 @@ import {
   normalizeCityName,
   normalizeLat,
   normalizeLng,
+  isPlusCodeToken,
   shortAddressLabel,
 } from '@/lib/location/format';
 import type { DeliveryLocation } from '@/store/delivery-location-store';
@@ -65,6 +66,8 @@ export function isBadStoredLocation(location: DeliveryLocation | null): boolean 
   if (!location) return false;
   if (isCoordinateFallbackAddress(location.formattedAddress)) return true;
   if (isCoordinateFallbackAddress(location.label)) return true;
+  if (isPlusCodeToken(location.label.split(',')[0])) return true;
+  if (isPlusCodeToken(location.formattedAddress.split(',')[0])) return true;
   if (location.city && isCoordinateFallbackAddress(location.city)) return true;
   if (location.city && /^lng\b/i.test(location.city)) return true;
   if (Math.abs(location.lng) > 180) return true;
