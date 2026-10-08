@@ -1,8 +1,9 @@
 import { Pressable } from '@/components/common/Pressable';
+import { locationPromptStyles as styles } from '@/components/location/location-enable-prompt-styles';
 import * as Location from 'expo-location';
-import { MapPin } from 'lucide-react-native';
+import { Check, MapPin, Navigation, Store } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { AppState, Linking, Modal, Platform, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Modal, Platform, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -11,12 +12,11 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { fonts } from '@/constants/typography';
+import { authTheme } from '@/constants/auth-theme';
 import { captureGpsPlace } from '@/lib/location/capture-gps-place';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
-
-const ORANGE = '#F97316';
 
 async function ensureLocationReady(): Promise<'ready' | 'off' | 'denied'> {
   let perm = await Location.getForegroundPermissionsAsync();
@@ -37,14 +37,21 @@ async function ensureLocationReady(): Promise<'ready' | 'off' | 'denied'> {
   return servicesOn ? 'ready' : 'off';
 }
 
+const POINTS = [
+  { icon: Navigation, label: 'Drops your address on the top bar' },
+  { icon: Store, label: 'Shows restaurants that can deliver to you' },
+  { icon: MapPin, label: 'Uses a precise pin, not a city guess' },
+] as const;
+
 export function LocationEnablePrompt() {
+  const insets = useSafeAreaInsets();
   const gate = useDeliveryLocationStore((s) => s.locationGate);
   const setLocation = useDeliveryLocationStore((s) => s.setLocation);
   const setDetecting = useDeliveryLocationStore((s) => s.setDetecting);
   const dismiss = useDeliveryLocationStore((s) => s.dismissLocationPrompt);
   const setGate = useDeliveryLocationStore((s) => s.setLocationGate);
   const [phase, setPhase] = useState<'ask' | 'locking' | 'done'>('ask');
-  const pulse = useSharedValue(0.6);
+  const pulse = useSharedValue(0.72);
   const pop = useSharedValue(1);
 
   const visible = gate !== 'idle';
@@ -55,31 +62,11 @@ export function LocationEnablePrompt() {
       return;
     }
     pulse.value = withRepeat(
-      withTiming(1, { duration: 900, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad) }),
       -1,
       true,
     );
   }, [visible, pulse]);
-
-  useEffect(() => {
-    if (!visible) return;
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active' || phase !== 'ask') return;
-      void Location.hasServicesEnabledAsync().then(async (on) => {
-        const perm = await Location.getForegroundPermissionsAsync();
-        if (on && perm.status === 'granted') void lockOn();
-      });
-    });
-    return () => sub.remove();
-  }, [visible, phase]);
-
-  const ring = useAnimatedStyle(() => ({
-    transform: [{ scale: 0.7 + pulse.value * 0.55 }],
-    opacity: 1.15 - pulse.value,
-  }));
-  const pin = useAnimatedStyle(() => ({
-    transform: [{ scale: pop.value }],
-  }));
 
   const lockOn = async () => {
     setPhase('locking');
@@ -96,10 +83,10 @@ export function LocationEnablePrompt() {
       if (precise) setLocation(precise);
       setPhase('done');
       pop.value = withSequence(
-        withTiming(1.18, { duration: 180 }),
+        withTiming(1.12, { duration: 180 }),
         withTiming(1, { duration: 180 }),
       );
-      setTimeout(() => setGate('idle'), 700);
+      setTimeout(() => setGate('idle'), 800);
     } catch {
       setPhase('ask');
     } finally {
@@ -107,43 +94,85 @@ export function LocationEnablePrompt() {
     }
   };
 
+  useEffect(() => {
+    if (!visible) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || phase !== 'ask') return;
+      void Location.hasServicesEnabledAsync().then(async (on) => {
+        const perm = await Location.getForegroundPermissionsAsync();
+        if (on && perm.status === 'granted') void lockOn();
+      });
+    });
+    return () => sub.remove();
+  }, [visible, phase]);
+
+  const ring = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.86 + pulse.value * 0.22 }],
+    opacity: 0.35 + (1 - pulse.value) * 0.45,
+  }));
+  const pin = useAnimatedStyle(() => ({
+    transform: [{ scale: pop.value }],
+  }));
+
   const title =
     phase === 'done'
-      ? 'Location set'
+      ? 'You are set'
       : phase === 'locking'
-        ? 'Finding you'
+        ? 'Finding your spot'
         : gate === 'denied'
           ? 'Allow location'
           : 'Turn on location';
 
   const body =
     phase === 'done'
-      ? 'Your delivery address is on the top bar.'
+      ? 'Your address is now on the top of the home screen.'
       : phase === 'locking'
-        ? 'Locking an accurate pin…'
-        : 'We use it once to show where you are, at the top of the app.';
+        ? 'Hold on — we are locking an accurate pin.'
+        : 'Location is off. Turn it on so we can show where you are.';
+
+  const buttonLabel = gate === 'denied' ? 'Allow location' : 'Turn on location';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <View style={styles.backdrop}>
-        <View style={styles.card}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.handle} />
           <View style={styles.stage}>
+            <View style={styles.halo} />
             <Animated.View style={[styles.ring, ring]} />
-            <Animated.View style={pin}>
-              <MapPin color={ORANGE} size={36} strokeWidth={2.4} />
+            <Animated.View style={[styles.pinBadge, pin]}>
+              {phase === 'done' ? (
+                <Check color="#FFFFFF" size={30} strokeWidth={2.6} />
+              ) : (
+                <MapPin color="#FFFFFF" size={30} strokeWidth={2.3} />
+              )}
             </Animated.View>
           </View>
+          <Text style={styles.eyebrow}>DELIVERY PIN</Text>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           {phase === 'ask' ? (
+            <View style={styles.points}>
+              {POINTS.map((point) => {
+                const Icon = point.icon;
+                return (
+                  <View key={point.label} style={styles.point}>
+                    <View style={styles.pointIcon}>
+                      <Icon color={authTheme.brand} size={16} strokeWidth={2.3} />
+                    </View>
+                    <Text style={styles.pointText}>{point.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+          {phase === 'ask' ? (
             <>
               <Pressable style={styles.primary} onPress={() => void lockOn()}>
-                <Text style={styles.primaryText}>
-                  {gate === 'denied' ? 'Allow location' : 'Turn on location'}
-                </Text>
+                <Text style={styles.primaryText}>{buttonLabel}</Text>
               </Pressable>
-              <Pressable onPress={dismiss} hitSlop={8}>
-                <Text style={styles.later}>Not now</Text>
+              <Pressable style={styles.later} onPress={dismiss} hitSlop={8}>
+                <Text style={styles.laterText}>Not now</Text>
               </Pressable>
             </>
           ) : null}
@@ -152,70 +181,3 @@ export function LocationEnablePrompt() {
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(20,12,8,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingHorizontal: 22,
-    paddingTop: 28,
-    paddingBottom: 22,
-    alignItems: 'center',
-  },
-  stage: {
-    width: 108,
-    height: 108,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  ring: {
-    position: 'absolute',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(249,115,22,0.18)',
-  },
-  title: {
-    fontFamily: fonts.displayBold,
-    fontSize: 22,
-    color: '#1C1917',
-    textAlign: 'center',
-  },
-  body: {
-    fontFamily: fonts.ui,
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#78716C',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 18,
-  },
-  primary: {
-    alignSelf: 'stretch',
-    backgroundColor: ORANGE,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  primaryText: {
-    fontFamily: fonts.uiBold,
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-  later: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 14,
-    color: '#A8A29E',
-    marginTop: 14,
-  },
-});
