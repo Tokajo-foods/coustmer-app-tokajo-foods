@@ -50,6 +50,7 @@ const config = {
     ],
     '@react-native-community/datetimepicker',
     './withMinSdkVersion.js',
+    './plugins/with-eas-autolinking-cache.js',
     ['@livekit/react-native-expo-plugin', { android: { audioType: 'communication' } }],
     '@config-plugins/react-native-webrtc',
     [
