@@ -43,6 +43,7 @@ import {
   DEFAULT_HOME_FILTERS,
   type HomeFilterState,
 } from '@/lib/home/filters';
+import { useHomeDishRails } from '@/lib/home/use-home-dish-rails';
 import {
   deliveryHeaderSubtitle,
   deliveryHeaderTitle,
@@ -202,8 +203,6 @@ export default function HomeScreen() {
     restaurantLimit: 40,
   });
 
-  const feedRails = home.data;
-
   const baseRestaurants = useMemo(() => {
     const nearbyRows = nearby.data?.restaurants ?? [];
 
@@ -223,6 +222,13 @@ export default function HomeScreen() {
     const matched = rows.filter((r) => restaurantMatchesCity(r, city));
     return matched;
   }, [feed.data?.pages, nearby.data?.restaurants, hasPin, city]);
+
+  const { feedRails, homeLoading: dishRailsLoading } = useHomeDishRails({
+    feed: home.data,
+    feedLoading: home.isLoading,
+    restaurants: baseRestaurants,
+    loggedIn: Boolean(user),
+  });
 
   const restaurants = useMemo(
     () =>
@@ -572,7 +578,7 @@ export default function HomeScreen() {
           restaurants={restaurants}
           topRestaurants={topRestaurants}
           feedRails={feedRails}
-          homeLoading={home.isLoading}
+          homeLoading={dishRailsLoading}
           userLoggedIn={Boolean(user)}
           favoriteIds={favoriteIds}
           onToggleFavorite={onToggleFavorite}
@@ -600,7 +606,7 @@ export default function HomeScreen() {
       restaurants,
       topRestaurants,
       feedRails,
-      home.isLoading,
+      dishRailsLoading,
       user,
       favoriteIds,
       onToggleFavorite,

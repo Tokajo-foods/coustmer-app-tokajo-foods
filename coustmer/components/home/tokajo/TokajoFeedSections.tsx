@@ -91,7 +91,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
         </View>
       ) : null}
 
-      {suggested.length > 0 ? (
+      {suggested.length > 0 || railsBusy ? (
         <View style={[styles.section, styles.bandFull]}>
           <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
           <TokajoDishRail
