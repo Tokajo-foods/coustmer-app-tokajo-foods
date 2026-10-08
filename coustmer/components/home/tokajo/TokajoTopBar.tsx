@@ -99,7 +99,7 @@ export function TokajoTopBar({
               <Animated.Text style={[styles.locationTitle, titleStyle]} numberOfLines={2}>
                 {headline}
               </Animated.Text>
-              <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
+              <ChevronDown color="#6B6B6B" size={15} strokeWidth={2.8} />
             </View>
             {deliverySubtitle ? (
               <Text style={styles.locationSub} numberOfLines={1}>
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontSize: 13.5,
     lineHeight: 18,
-    color: '#0B0B0B',
+    color: '#6B6B6B',
     letterSpacing: -0.2,
     flexShrink: 1,
   },
