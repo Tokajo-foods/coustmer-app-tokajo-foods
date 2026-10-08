@@ -28,12 +28,17 @@ function resolveAuthParam(auth?: string | string[]): AuthSheetView | null {
  * over the painted "Get Started" pill so any tap on that button continues.
  */
 export function WelcomeScreen({ openAuthOnMount }: Props) {
-  const { auth, identifier } = useLocalSearchParams<{ auth?: string; identifier?: string }>();
+  const { auth, identifier, verificationId } = useLocalSearchParams<{
+    auth?: string;
+    identifier?: string;
+    verificationId?: string;
+  }>();
   const { height: screenH, width: screenW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const visible = useAuthSheetStore((s) => s.visible);
   const view = useAuthSheetStore((s) => s.view);
   const otpIdentifier = useAuthSheetStore((s) => s.otpIdentifier);
+  const otpVerificationId = useAuthSheetStore((s) => s.otpVerificationId);
   const open = useAuthSheetStore((s) => s.open);
   const close = useAuthSheetStore((s) => s.close);
   const setView = useAuthSheetStore((s) => s.setView);
@@ -46,11 +51,15 @@ export function WelcomeScreen({ openAuthOnMount }: Props) {
     const resolved = resolveAuthParam(auth);
     if (!resolved) return;
     if (resolved === 'verify-otp' && identifier) {
-      open('verify-otp', { otpIdentifier: String(identifier) });
+      const vid = Array.isArray(verificationId) ? verificationId[0] : verificationId;
+      open('verify-otp', {
+        otpIdentifier: String(identifier),
+        ...(vid ? { otpVerificationId: String(vid) } : {}),
+      });
       return;
     }
     open(resolved);
-  }, [auth, identifier, open]);
+  }, [auth, identifier, verificationId, open]);
 
   const handleGetStarted = () => {
     void completeOnboarding().finally(() => {
@@ -94,6 +103,7 @@ export function WelcomeScreen({ openAuthOnMount }: Props) {
         visible={visible}
         view={view}
         otpIdentifier={otpIdentifier}
+        otpVerificationId={otpVerificationId}
         onClose={close}
         onViewChange={setView}
       />

@@ -1,7 +1,10 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function VerifyOtpPage() {
-  const { identifier } = useLocalSearchParams<{ identifier?: string }>();
+  const { identifier, verificationId } = useLocalSearchParams<{
+    identifier?: string;
+    verificationId?: string;
+  }>();
 
   return (
     <Redirect
@@ -10,6 +13,7 @@ export default function VerifyOtpPage() {
         params: {
           auth: 'verify-otp',
           ...(identifier ? { identifier: String(identifier) } : {}),
+          ...(verificationId ? { verificationId: String(verificationId) } : {}),
         },
       }}
     />

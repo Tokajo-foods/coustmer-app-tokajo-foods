@@ -307,6 +307,27 @@ export const authApi = {
     return ensureCustomerAuth(normalizeAuthResponse(data));
   },
 
+  /** After Firebase Phone Auth — stamps phone for POST /auth/register. */
+  confirmFirebasePhone: async (idToken: string) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-firebase-phone`, {
+      method: 'POST',
+      body: {
+        idToken,
+        role: 'customer',
+      },
+    });
+    return data;
+  },
+
+  /** After Firebase Phone Auth — creates `_sid` session (phone login). */
+  loginWithFirebasePhone: async (idToken: string) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/login-firebase`, {
+      method: 'POST',
+      body: { idToken },
+    });
+    return ensureCustomerAuth(normalizeAuthResponse(data));
+  },
+
   forgotPassword: async (payload: ForgotPasswordPayload) => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/forgot-password`, {
       method: 'POST',

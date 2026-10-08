@@ -1,6 +1,12 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
+import { useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 
 import { useAuthStore } from '@/store/auth-store';
+import {
+  confirmFirebasePhoneOtp,
+  isFirebasePhoneConfigured,
+  startFirebasePhoneOtp,
+} from '@/lib/auth/firebase-phone';
 import {
   normalizeIndianPhoneInput,
   validateEmail,
@@ -13,6 +19,7 @@ type ChannelBusy = 'idle' | 'sending' | 'verifying' | 'resending';
 
 const DEFAULT_VALIDITY = 600;
 const DEFAULT_COOLDOWN = 30;
+const FIREBASE_VALIDITY = 300;
 
 export function useRegisterContactOtp(
   email: string,
@@ -20,10 +27,12 @@ export function useRegisterContactOtp(
   setPhone: (v: string) => void,
   setErrors: Dispatch<SetStateAction<Record<string, string | null>>>,
   setBanner: (b: Banner) => void,
+  recaptchaRef: RefObject<FirebaseRecaptchaVerifierModal | null>,
 ) {
   const sendRegisterOtp = useAuthStore((s) => s.sendRegisterOtp);
   const resendRegisterOtp = useAuthStore((s) => s.resendRegisterOtp);
   const confirmRegisterOtp = useAuthStore((s) => s.confirmRegisterOtp);
+  const confirmFirebasePhone = useAuthStore((s) => s.confirmFirebasePhone);
 
   const [emailOtp, setEmailOtp] = useState('');
   const [phoneOtp, setPhoneOtp] = useState('');
@@ -43,12 +52,16 @@ export function useRegisterContactOtp(
   const [phoneCooldownSeconds, setPhoneCooldownSeconds] = useState(DEFAULT_COOLDOWN);
   const [emailBusy, setEmailBusy] = useState<ChannelBusy>('idle');
   const [phoneBusy, setPhoneBusy] = useState<ChannelBusy>('idle');
+  const [phoneVerificationId, setPhoneVerificationId] = useState<string | null>(null);
 
   const applyTiming = (
     channel: 'email' | 'phone',
     timing?: { expiresInSeconds?: number; cooldownSeconds?: number },
   ) => {
-    const validity = DEFAULT_VALIDITY;
+    const validity =
+      channel === 'phone'
+        ? FIREBASE_VALIDITY
+        : Math.max(1, Number(timing?.expiresInSeconds) || DEFAULT_VALIDITY);
     const cooldown = Math.max(1, Number(timing?.cooldownSeconds) || DEFAULT_COOLDOWN);
     if (channel === 'email') {
       setEmailValiditySeconds(validity);
@@ -75,6 +88,7 @@ export function useRegisterContactOtp(
     setPhoneOtp('');
     setPhoneOtpError(null);
     setPhoneBusy('idle');
+    setPhoneVerificationId(null);
   };
 
   const sendEmailCode = async () => {
@@ -125,13 +139,29 @@ export function useRegisterContactOtp(
     setBanner(null);
     if (err) return;
     setPhone(normalized);
+
+    if (!isFirebasePhoneConfigured()) {
+      setBanner({
+        message:
+          'Firebase Phone Auth is not configured. Add EXPO_PUBLIC_FIREBASE_* keys to .env.',
+        type: 'error',
+      });
+      return;
+    }
+    const verifier = recaptchaRef.current;
+    if (!verifier) {
+      setBanner({ message: 'reCAPTCHA is not ready. Try again.', type: 'error' });
+      return;
+    }
+
     setPhoneBusy('sending');
     try {
-      const timing = await sendRegisterOtp(normalized);
+      const verificationId = await startFirebasePhoneOtp(normalized, verifier);
+      setPhoneVerificationId(verificationId);
       setPhoneOtp('');
       setPhoneOtpSent(true);
-      applyTiming('phone', timing);
-      setBanner({ message: 'Phone OTP sent by SMS.', type: 'success' });
+      applyTiming('phone', { expiresInSeconds: FIREBASE_VALIDITY, cooldownSeconds: DEFAULT_COOLDOWN });
+      setBanner({ message: 'Phone OTP sent via Firebase.', type: 'success' });
     } catch (e) {
       setBanner({
         message: e instanceof Error ? e.message : 'Failed to send phone OTP',
@@ -147,10 +177,14 @@ export function useRegisterContactOtp(
     setPhoneOtpError(err);
     setBanner(null);
     if (err) return;
-    const normalized = normalizeIndianPhoneInput(phone);
+    if (!phoneVerificationId) {
+      setPhoneOtpError('Request a phone OTP first.');
+      return;
+    }
     setPhoneBusy('verifying');
     try {
-      await confirmRegisterOtp(normalized, phoneOtp.trim());
+      const idToken = await confirmFirebasePhoneOtp(phoneVerificationId, phoneOtp.trim());
+      await confirmFirebasePhone(idToken);
       setPhoneVerified(true);
       setBanner({ message: 'Phone verified.', type: 'success' });
     } catch (e) {
@@ -177,17 +211,7 @@ export function useRegisterContactOtp(
 
   const resendPhone = async () => {
     setBanner(null);
-    setPhoneBusy('resending');
-    try {
-      const timing = await resendRegisterOtp(normalizeIndianPhoneInput(phone));
-      setPhoneOtp('');
-      applyTiming('phone', timing);
-      setBanner({ message: 'A new phone OTP was sent.', type: 'success' });
-    } catch (e) {
-      setBanner({ message: e instanceof Error ? e.message : 'Could not resend', type: 'error' });
-    } finally {
-      setPhoneBusy('idle');
-    }
+    await sendPhoneCode();
   };
 
   return {

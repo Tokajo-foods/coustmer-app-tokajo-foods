@@ -1,6 +1,16 @@
 const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
 const apiUrl =
   process.env.EXPO_PUBLIC_API_URL?.trim() || 'http://api.viharfood.in';
+const firebaseApiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim() || '';
+const firebaseAuthDomain =
+  process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() || '';
+const firebaseProjectId =
+  process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID?.trim() || '';
+const firebaseAppId = process.env.EXPO_PUBLIC_FIREBASE_APP_ID?.trim() || '';
+const firebaseMessagingSenderId =
+  process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() || '';
+const firebaseStorageBucket =
+  process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() || '';
 
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
@@ -47,7 +57,7 @@ const config = {
       {
         icon: './assets/icon.png',
         color: '#FF6A00',
-        sounds: ['./assets/sounds/incoming-call.wav'],
+        sounds: ['./assets/sounds/incoming_call.wav'],
         mode: 'production',
       },
     ],
@@ -118,6 +128,12 @@ const config = {
     },
     apiUrl,
     googleMapsApiKey: mapsKey,
+    firebaseApiKey,
+    firebaseAuthDomain,
+    firebaseProjectId,
+    firebaseAppId,
+    firebaseMessagingSenderId,
+    firebaseStorageBucket,
   },
 };
 

@@ -31,15 +31,28 @@ function sheetHeightFor(view: AuthSheetView) {
   return view === 'register' ? AUTH_SHEET_HEIGHT_REGISTER : AUTH_SHEET_HEIGHT;
 }
 
+type OtpNavOptions = {
+  otpIdentifier?: string;
+  otpVerificationId?: string;
+};
+
 type Props = {
   visible: boolean;
   view: AuthSheetView;
   otpIdentifier?: string;
+  otpVerificationId?: string;
   onClose: () => void;
-  onViewChange: (view: AuthSheetView, options?: { otpIdentifier?: string }) => void;
+  onViewChange: (view: AuthSheetView, options?: OtpNavOptions) => void;
 };
 
-export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewChange }: Props) {
+export function AuthBottomSheet({
+  visible,
+  view,
+  otpIdentifier,
+  otpVerificationId,
+  onClose,
+  onViewChange,
+}: Props) {
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(false);
   const prevViewRef = useRef<AuthSheetView | null>(null);
@@ -134,7 +147,7 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
     transform: [{ translateY: translateY.value }],
   }));
 
-  const changeViewWithSlide = (next: AuthSheetView, options?: { otpIdentifier?: string }) => {
+  const changeViewWithSlide = (next: AuthSheetView, options?: OtpNavOptions) => {
     onViewChange(next, options);
   };
 
@@ -172,6 +185,7 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
         return (
           <VerifyOtpFormContent
             identifier={otpIdentifier}
+            verificationId={otpVerificationId}
             onBackToLogin={() => changeViewWithSlide('login')}
             onVerifySuccess={onClose}
           />
@@ -181,8 +195,11 @@ export function AuthBottomSheet({ visible, view, otpIdentifier, onClose, onViewC
           <LoginFormContent
             onForgotPassword={() => changeViewWithSlide('forgot-password')}
             onSignUp={() => changeViewWithSlide('register')}
-            onOtpSent={(identifier) =>
-              changeViewWithSlide('verify-otp', { otpIdentifier: identifier })
+            onOtpSent={(payload) =>
+              changeViewWithSlide('verify-otp', {
+                otpIdentifier: payload.identifier,
+                otpVerificationId: payload.verificationId,
+              })
             }
             onLoginSuccess={onClose}
           />

@@ -1,4 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
+import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { ArrowRight, Sparkles } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -20,6 +21,13 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
 
   return (
     <View style={{ flex: 1 }}>
+      {flow.firebaseReady ? (
+        <FirebaseRecaptchaVerifierModal
+          ref={flow.recaptchaRef}
+          firebaseConfig={flow.firebaseConfig}
+          attemptInvisibleVerification
+        />
+      ) : null}
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={24}

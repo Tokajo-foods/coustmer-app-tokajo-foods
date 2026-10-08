@@ -36,9 +36,11 @@ type AuthState = {
   login: (payload: LoginPayload) => Promise<void>;
   sendOtp: (payload: OtpSendPayload) => Promise<string>;
   verifyOtp: (payload: OtpVerifyPayload) => Promise<void>;
+  loginWithFirebasePhone: (idToken: string) => Promise<void>;
   sendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
   resendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
   confirmRegisterOtp: (identifier: string, otp: string) => Promise<void>;
+  confirmFirebasePhone: (idToken: string) => Promise<void>;
   forgotPassword: (payload: ForgotPasswordPayload) => Promise<string>;
   sendForgotPasswordOtp: (email: string) => Promise<string>;
   confirmForgotPasswordOtp: (identifier: string, otp: string) => Promise<void>;
@@ -178,6 +180,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  loginWithFirebasePhone: async (idToken) => {
+    set({ isLoading: true });
+    try {
+      const response = await authApi.loginWithFirebasePhone(idToken);
+      await get().setSession(response.token, response.user);
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   /** Does not toggle global isLoading — signup uses per-channel busy state. */
   sendRegisterOtp: async (identifier) => {
     try {
@@ -201,6 +215,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authApi.confirmRegisterOtp({ identifier, otp });
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
+    }
+  },
+
+  confirmFirebasePhone: async (idToken) => {
+    try {
+      await authApi.confirmFirebasePhone(idToken);
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Phone verification failed'));
     }
   },
 

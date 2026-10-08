@@ -1,6 +1,7 @@
 import { Pressable } from '@/components/common/Pressable';
+import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useRouter } from 'expo-router';
-import { Eye, EyeOff, Lock, Mail, Phone, ShieldCheck } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -9,24 +10,28 @@ import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { AuthRememberSwitch } from '@/components/auth/AuthRememberSwitch';
 import { LoginFormHeader } from '@/components/auth/LoginFormHeader';
 import { LoginModeTabs, type LoginModePref } from '@/components/auth/LoginModeTabs';
+import { useLoginFirebaseOtp } from '@/components/auth/use-login-firebase-otp';
 import { loginFormStyles } from '@/components/auth/login-form-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { useAuthStore } from '@/store/auth-store';
 import {
   detectLoginIdentifierMode,
-  normalizeIndianPhoneInput,
   validateEmail,
-  validateIndianPhone,
   validateLoginPassword,
 } from '@/utils/validation';
 
 type FocusField = 'identifier' | 'password' | null;
 
+export type LoginOtpSentPayload = {
+  identifier: string;
+  verificationId: string;
+};
+
 type Props = {
   onSignUp?: () => void;
   onForgotPassword?: () => void;
   onLoginSuccess?: () => void;
-  onOtpSent?: (identifier: string) => void;
+  onOtpSent?: (payload: LoginOtpSentPayload) => void;
 };
 
 export function LoginFormContent({
@@ -37,7 +42,6 @@ export function LoginFormContent({
 }: Props) {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
-  const sendOtp = useAuthStore((s) => s.sendOtp);
   const isLoading = useAuthStore((s) => s.isLoading);
 
   const [pref, setPref] = useState<LoginModePref>('email');
@@ -50,6 +54,7 @@ export function LoginFormContent({
   const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(
     null,
   );
+  const phoneOtp = useLoginFirebaseOtp(identifier, setErrors, setBanner);
 
   const detected = useMemo(() => detectLoginIdentifierMode(identifier), [identifier]);
 
@@ -60,6 +65,7 @@ export function LoginFormContent({
 
   const isEmail = pref === 'email';
   const isPhone = pref === 'phone';
+  const busy = isLoading || phoneOtp.sending;
 
   const handlePasswordLogin = async () => {
     const nextErrors = {
@@ -83,26 +89,17 @@ export function LoginFormContent({
   };
 
   const handleSendOtp = async () => {
-    const phone = normalizeIndianPhoneInput(identifier);
-    const phoneError = validateIndianPhone(phone, true);
-    setErrors({ identifier: phoneError });
-    setBanner(null);
-    if (phoneError) return;
-
-    try {
-      await sendOtp({ emailOrPhone: phone });
-      if (onOtpSent) {
-        onOtpSent(phone);
-        return;
-      }
-      onLoginSuccess?.();
-      router.push({ pathname: '/verify-otp', params: { identifier: phone } });
-    } catch (error) {
-      setBanner({
-        message: error instanceof Error ? error.message : 'Failed to send OTP',
-        type: 'error',
-      });
+    const sent = await phoneOtp.send();
+    if (!sent) return;
+    if (onOtpSent) {
+      onOtpSent(sent);
+      return;
     }
+    onLoginSuccess?.();
+    router.push({
+      pathname: '/verify-otp',
+      params: { identifier: sent.identifier, verificationId: sent.verificationId },
+    });
   };
 
   const handlePrimary = () => {
@@ -136,6 +133,14 @@ export function LoginFormContent({
 
   return (
     <View style={{ flex: 1 }}>
+      {phoneOtp.firebaseReady ? (
+        <FirebaseRecaptchaVerifierModal
+          ref={phoneOtp.recaptchaRef}
+          firebaseConfig={phoneOtp.firebaseConfig}
+          attemptInvisibleVerification
+        />
+      ) : null}
+
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={20}
@@ -145,11 +150,7 @@ export function LoginFormContent({
       >
         <LoginFormHeader
           title={isPhone ? 'Sign in with phone' : 'Welcome back'}
-          subtitle={
-            isPhone
-              ? 'We’ll text a one-time code. No password needed.'
-              : 'Sign in with your Gmail and password.'
-          }
+          subtitle={isPhone ? 'We’ll text a Firebase one-time code.' : 'Sign in with your Gmail and password.'}
         />
 
         <LoginModeTabs value={pref} onChange={onChangePref} />
@@ -249,15 +250,10 @@ export function LoginFormContent({
           </View>
         ) : (
           <View style={styles.hintCard}>
-            <View style={styles.hintIcon}>
-              <ShieldCheck color={authTheme.brand} size={20} strokeWidth={2.4} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.hintTitle}>OTP login</Text>
-              <Text style={styles.hintBody}>
-                Tap Send OTP, enter the code we text you, and you’re in.
-              </Text>
-            </View>
+            <Text style={styles.hintTitle}>Firebase OTP login</Text>
+            <Text style={styles.hintBody}>
+              Tap Send OTP, enter the code Firebase texts you, and you’re in.
+            </Text>
           </View>
         )}
 
@@ -276,13 +272,13 @@ export function LoginFormContent({
         </View>
 
         <TouchableOpacity
-          style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
+          style={[styles.submitBtn, busy && styles.submitBtnDisabled]}
           onPress={handlePrimary}
-          disabled={isLoading}
+          disabled={busy}
           activeOpacity={0.8}
         >
           <Text style={styles.submitBtnText}>
-            {isLoading ? '...' : isPhone ? 'SEND OTP' : 'SIGN IN'}
+            {busy ? '...' : isPhone ? 'SEND OTP' : 'SIGN IN'}
           </Text>
         </TouchableOpacity>
 

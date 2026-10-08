@@ -1,5 +1,6 @@
+import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import {
   mapRegisterApiError,
@@ -7,6 +8,7 @@ import {
   type RegisterFocusField,
 } from '@/components/auth/register-form-helpers';
 import { useRegisterContactOtp } from '@/components/auth/use-register-contact-otp';
+import { getFirebaseWebConfig, isFirebasePhoneConfigured } from '@/lib/auth/firebase-phone';
 import { useAuthStore } from '@/store/auth-store';
 import {
   normalizeIndianPhoneInput,
@@ -43,7 +45,15 @@ export function useRegisterSignupFlow({ onSignIn, onRegisterSuccess }: Options) 
     null,
   );
 
-  const contactOtp = useRegisterContactOtp(email, phone, setPhone, setErrors, setBanner);
+  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
+  const contactOtp = useRegisterContactOtp(
+    email,
+    phone,
+    setPhone,
+    setErrors,
+    setBanner,
+    recaptchaRef,
+  );
 
   const clearFieldError = (field: RegisterFieldKey) => {
     setErrors((prev) => (prev[field] ? { ...prev, [field]: null } : prev));
@@ -145,5 +155,8 @@ export function useRegisterSignupFlow({ onSignIn, onRegisterSuccess }: Options) 
     onChangePhone,
     emailOtpBlock: contactOtp.emailOtpBlock,
     phoneOtpBlock: contactOtp.phoneOtpBlock,
+    recaptchaRef,
+    firebaseConfig: getFirebaseWebConfig(),
+    firebaseReady: isFirebasePhoneConfigured(),
   };
 }
