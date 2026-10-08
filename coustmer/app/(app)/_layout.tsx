@@ -3,8 +3,10 @@ import { View } from 'react-native';
 
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
+import { LocationEnablePrompt } from '@/components/location/LocationEnablePrompt';
 import { ReplaceCartModal } from '@/components/order/ReplaceCartModal';
 import { authTheme } from '@/constants/auth-theme';
+import { useDeliveryLocationInit } from '@/lib/location/use-delivery-location-init';
 import {
   PREMIUM_FADE_OPTIONS,
   PREMIUM_STACK_OPTIONS,
@@ -12,6 +14,7 @@ import {
 import { useAuthStore } from '@/store/auth-store';
 
 export default function AppLayout() {
+  useDeliveryLocationInit();
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
@@ -42,6 +45,7 @@ export default function AppLayout() {
       </Stack>
       <AppBottomNav />
       <ReplaceCartModal />
+      <LocationEnablePrompt />
     </View>
   );
 }

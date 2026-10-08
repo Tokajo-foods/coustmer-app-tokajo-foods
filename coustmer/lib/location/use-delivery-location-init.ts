@@ -8,6 +8,7 @@ import {
   normalizeCityName,
 } from '@/lib/location/format';
 import { alignDeliveryPin } from '@/lib/location/align-delivery-pin';
+import { captureGpsPlace } from '@/lib/location/capture-gps-place';
 import {
   isBadStoredLocation,
   resolvePlaceFromCoords,
@@ -31,6 +32,8 @@ export function useDeliveryLocationInit() {
   const isDetecting = useDeliveryLocationStore((s) => s.isDetecting);
   const setLocation = useDeliveryLocationStore((s) => s.setLocation);
   const setDetecting = useDeliveryLocationStore((s) => s.setDetecting);
+  const setLocationGate = useDeliveryLocationStore((s) => s.setLocationGate);
+  const promptDismissed = useDeliveryLocationStore((s) => s.locationPromptDismissed);
 
   const repaired = useRef(false);
   const bootstrapDone = useRef(false);
@@ -40,6 +43,7 @@ export function useDeliveryLocationInit() {
     repaired.current = false;
     bootstrapDone.current = false;
     gpsStarted.current = false;
+    useDeliveryLocationStore.setState({ locationPromptDismissed: false, locationGate: 'idle' });
   }, [userId]);
 
   // 1 + 2: After auth + store hydrate, prefer account saved address if pin empty.
@@ -183,58 +187,56 @@ export function useDeliveryLocationInit() {
     })();
   }, [hasHydrated, authHydrated, location, isDetecting, setDetecting, setLocation]);
 
-  // 3: GPS only when still no pin after bootstrap.
-  // Logged-in users: try GPS quietly if permission already granted (don't force the
-  // "permission off" sheet when the phone location toggle is already on).
+  // GPS on entry when location is already on. Otherwise ask to turn it on.
   useEffect(() => {
-    if (!hasHydrated || !authHydrated) return;
-    if (!bootstrapDone.current) return;
-    if (location || isDetecting || gpsStarted.current) return;
-
+    if (!hasHydrated || !authHydrated || promptDismissed) return;
+    if (gpsStarted.current) return;
     gpsStarted.current = true;
 
+    let cancelled = false;
+
     void (async () => {
-      setDetecting(true);
       try {
-        const perm = await Location.getForegroundPermissionsAsync();
-        // Don't pop the system permission dialog on cold start for logged-in users
-        // who may already have a saved address path; only use GPS if already allowed.
-        if (perm.status !== 'granted') return;
+        const [perm, servicesOn] = await Promise.all([
+          Location.getForegroundPermissionsAsync(),
+          Location.hasServicesEnabledAsync(),
+        ]);
+        if (cancelled) return;
 
-        const enabled = await Location.hasServicesEnabledAsync();
-        if (!enabled) return;
+        if (perm.status !== 'granted') {
+          setLocationGate('denied');
+          return;
+        }
+        if (!servicesOn) {
+          setLocationGate('off');
+          return;
+        }
 
-        if (useDeliveryLocationStore.getState().location) return;
-
-        const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+        setLocationGate('idle');
+        setDetecting(true);
+        const precise = await captureGpsPlace((quick) => {
+          if (!cancelled) setLocation(quick);
         });
-
-        if (useDeliveryLocationStore.getState().location) return;
-
-        const resolved = await resolvePlaceFromCoords({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          source: 'gps',
-        });
-
-        setLocation({
-          ...resolved,
-          source: 'gps',
-          updatedAt: Date.now(),
-        });
+        if (!cancelled) setLocation(precise);
       } catch {
-        // user can pick manually
+        if (!cancelled && !useDeliveryLocationStore.getState().location) {
+          setLocationGate('off');
+        }
       } finally {
-        setDetecting(false);
+        if (!cancelled) setDetecting(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     hasHydrated,
     authHydrated,
-    location,
-    isDetecting,
+    promptDismissed,
+    userId,
     setDetecting,
     setLocation,
+    setLocationGate,
   ]);
 }

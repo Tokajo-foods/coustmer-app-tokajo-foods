@@ -26,12 +26,17 @@ type DeliveryLocationState = {
   locationsByUserId: Record<string, DeliveryLocation>;
   boundUserId: string | null;
   isDetecting: boolean;
+  /** Shown when device location or app permission is off. */
+  locationGate: 'idle' | 'off' | 'denied';
+  locationPromptDismissed: boolean;
   hasHydrated: boolean;
   /** Nearby/home queries wait until the pin matches the selected address. */
   pinReady: boolean;
   setLocation: (location: DeliveryLocation) => void;
   setPinReady: (ready: boolean) => void;
   setDetecting: (detecting: boolean) => void;
+  setLocationGate: (gate: 'idle' | 'off' | 'denied') => void;
+  dismissLocationPrompt: () => void;
   setHasHydrated: (value: boolean) => void;
   clearLocation: () => void;
   /** Restore (or claim) this user's saved delivery pin after login / session hydrate. */
@@ -47,6 +52,8 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
       locationsByUserId: {},
       boundUserId: null,
       isDetecting: false,
+      locationGate: 'idle',
+      locationPromptDismissed: false,
       hasHydrated: false,
       pinReady: false,
       setLocation: (location) =>
@@ -67,6 +74,9 @@ export const useDeliveryLocationStore = create<DeliveryLocationState>()(
         }),
       setPinReady: (pinReady) => set({ pinReady }),
       setDetecting: (isDetecting) => set({ isDetecting }),
+      setLocationGate: (locationGate) => set({ locationGate }),
+      dismissLocationPrompt: () =>
+        set({ locationGate: 'idle', locationPromptDismissed: true }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
       clearLocation: () => set({ location: null, isDetecting: false, pinReady: true }),
       bindUser: (userId) =>

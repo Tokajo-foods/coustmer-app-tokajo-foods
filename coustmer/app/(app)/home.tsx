@@ -51,7 +51,6 @@ import {
   normalizeCityName,
   restaurantMatchesCity,
 } from '@/lib/location/format';
-import { useDeliveryLocationInit } from '@/lib/location/use-delivery-location-init';
 import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import {
   useHomeCategories,
@@ -108,9 +107,8 @@ export default function HomeScreen() {
   const vegMode = useVegPreferenceStore((s) => s.mode);
   const setVegMode = useVegPreferenceStore((s) => s.setMode);
 
-  useDeliveryLocationInit();
-
   const deliveryLocation = useDeliveryLocationStore((s) => s.location);
+  const locationGate = useDeliveryLocationStore((s) => s.locationGate);
   const isDetectingLocation = useDeliveryLocationStore((s) => s.isDetecting);
   const pinReady = useDeliveryLocationStore((s) => s.pinReady);
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
@@ -508,7 +506,8 @@ export default function HomeScreen() {
     !deliveryLocation &&
     !hasPromptedLocation &&
     !isDetectingLocation &&
-    !pickerOpen;
+    !pickerOpen &&
+    locationGate === 'idle';
 
   const initialSheet = (
     <InitialLocationSheet
