@@ -105,7 +105,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
         </View>
       ) : null}
 
-      {userLoggedIn && (orderAgain.length > 0 || railsBusy) ? (
+      {(orderAgain.length > 0 || (userLoggedIn && railsBusy)) ? (
         <View style={styles.section}>
           <TokajoSectionHeader
             Icon={Clock}

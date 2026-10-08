@@ -90,6 +90,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const loggedIn = Boolean(user || token);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [vegModalOpen, setVegModalOpen] = useState(false);
@@ -227,7 +229,7 @@ export default function HomeScreen() {
     feed: home.data,
     feedLoading: home.isLoading,
     restaurants: baseRestaurants,
-    loggedIn: Boolean(user),
+    loggedIn,
   });
 
   const restaurants = useMemo(
@@ -579,7 +581,7 @@ export default function HomeScreen() {
           topRestaurants={topRestaurants}
           feedRails={feedRails}
           homeLoading={dishRailsLoading}
-          userLoggedIn={Boolean(user)}
+          userLoggedIn={loggedIn}
           favoriteIds={favoriteIds}
           onToggleFavorite={onToggleFavorite}
           onPressRestaurant={openRestaurant}
@@ -607,7 +609,7 @@ export default function HomeScreen() {
       topRestaurants,
       feedRails,
       dishRailsLoading,
-      user,
+      loggedIn,
       favoriteIds,
       onToggleFavorite,
       openRestaurant,

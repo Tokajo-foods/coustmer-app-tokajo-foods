@@ -80,17 +80,26 @@ async function orderAgainFromHistory(): Promise<HomeOrderAgainDish[]> {
   const seen = new Set<string>();
   const out: HomeOrderAgainDish[] = [];
   for (const order of result.orders) {
-    if (order.status === 'cancelled' || !order.restaurantId) continue;
+    if (
+      order.status === 'cancelled' ||
+      order.status === 'rejected' ||
+      order.status === 'pending_payment' ||
+      !order.restaurantId
+    ) {
+      continue;
+    }
     for (const item of order.items) {
-      const id = item.menuItemId || item.id;
-      if (!id || !item.name || item.price <= 0) continue;
+      const id = (item.menuItemId || item.id || '').trim();
+      if (!id || id === 'undefined' || id === 'null' || !item.name) continue;
+      const price = item.price > 0 ? item.price : 0;
+      if (price <= 0) continue;
       const key = `${order.restaurantId}:${id}`;
       if (seen.has(key)) continue;
       seen.add(key);
       out.push({
         id,
         name: item.name,
-        price: item.price,
+        price,
         imageUrl: item.imageUrl ?? null,
         isVeg: item.isVeg,
         restaurantId: order.restaurantId,

@@ -151,11 +151,15 @@ function extractList(data: unknown): Record<string, unknown>[] {
 }
 
 function mapOrderItem(raw: Record<string, unknown>) {
+  const quantity = Number(raw.quantity ?? raw.qty ?? 1) || 1;
+  const unit = Number(raw.price ?? raw.unitPrice ?? raw.basePrice ?? 0);
+  const line = Number(raw.itemTotal ?? raw.lineTotal ?? 0);
+  const price = unit > 0 ? unit : line > 0 ? line / quantity : 0;
   return {
     id: String(raw._id ?? raw.id ?? raw.menuItemId ?? ''),
     menuItemId: String(raw.menuItemId ?? raw.itemId ?? raw._id ?? raw.id ?? ''),
     name: String(raw.name ?? raw.itemName ?? raw.title ?? 'Item'),
-    price: Number(raw.price ?? raw.unitPrice ?? raw.basePrice ?? 0),
+    price,
     quantity: Number(raw.quantity ?? raw.qty ?? 1),
     isVeg: raw.isVeg !== undefined ? Boolean(raw.isVeg) : undefined,
     imageUrl: (raw.imageUrl as string) || (raw.image as string) || undefined,
