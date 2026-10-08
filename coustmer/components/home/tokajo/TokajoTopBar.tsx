@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
     color: '#6B6B6B',
     letterSpacing: -0.2,
     flexShrink: 1,
+    maxWidth: 210,
   },
   locationSub: {
     marginTop: 1,
