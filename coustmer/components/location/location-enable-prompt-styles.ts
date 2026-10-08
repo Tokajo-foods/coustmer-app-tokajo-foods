@@ -6,13 +6,15 @@ import { fonts } from '@/constants/typography';
 export const locationPromptStyles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 10, 8, 0.48)',
+    backgroundColor: 'rgba(15, 10, 8, 0.28)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.86)',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
     paddingHorizontal: 22,
     paddingTop: 10,
   },

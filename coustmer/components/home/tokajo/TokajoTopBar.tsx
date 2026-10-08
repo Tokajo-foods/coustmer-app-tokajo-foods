@@ -1,7 +1,16 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bell, ChevronDown, MapPin } from 'lucide-react-native';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { TOKAJO_LOGO } from '@/components/home/tokajo/assets';
@@ -34,8 +43,39 @@ export function TokajoTopBar({
   const unreadCount = unread.data ?? 0;
 
   const headline = isDetectingLocation
-    ? 'Detecting location…'
+    ? 'Locating you'
     : deliveryTitle || 'Select location';
+
+  const pinPulse = useSharedValue(1);
+  const titleIn = useSharedValue(1);
+
+  useEffect(() => {
+    if (!isDetectingLocation) {
+      pinPulse.value = withTiming(1, { duration: 180 });
+      return;
+    }
+    pinPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.22, { duration: 420, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 420 }),
+      ),
+      -1,
+      false,
+    );
+  }, [isDetectingLocation, pinPulse]);
+
+  useEffect(() => {
+    titleIn.value = 0.2;
+    titleIn.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) });
+  }, [headline, titleIn]);
+
+  const pinStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pinPulse.value }],
+  }));
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: titleIn.value,
+    transform: [{ translateY: (1 - titleIn.value) * 6 }],
+  }));
 
   return (
     <View style={styles.root}>
@@ -50,13 +90,15 @@ export function TokajoTopBar({
           pressScale={0.98}
           accessibilityLabel="Change delivery location"
         >
-          <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
+          <Animated.View style={pinStyle}>
+            <MapPin color={ORANGE} size={18} strokeWidth={2.6} />
+          </Animated.View>
           <View style={styles.locationText}>
             <Text style={styles.deliverTo}>Deliver to</Text>
             <View style={styles.deliverToRow}>
-              <Text style={styles.locationTitle} numberOfLines={1}>
+              <Animated.Text style={[styles.locationTitle, titleStyle]} numberOfLines={1}>
                 {headline}
-              </Text>
+              </Animated.Text>
               <ChevronDown color="#1C1C1C" size={15} strokeWidth={2.8} />
             </View>
             {deliverySubtitle ? (
