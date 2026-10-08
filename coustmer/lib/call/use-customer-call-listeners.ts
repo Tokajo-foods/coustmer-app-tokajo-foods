@@ -5,6 +5,7 @@ import {
   ensureCallNotificationSetup,
   dismissIncomingCallNotification,
 } from '@/lib/call/incoming-call-notify';
+import { loadNotifications } from '@/lib/notification/load-notifications';
 import {
   listenNativeIncomingCallActions,
   setupNativeIncomingCalls,
@@ -115,7 +116,8 @@ export function useCustomerCallListeners(input: {
     const cleanups: Array<() => void> = [];
     void (async () => {
       try {
-        const Notifications = await import('expo-notifications');
+        const Notifications = await loadNotifications();
+        if (!Notifications) return;
         await ensureCallNotificationSetup();
 
         const received = Notifications.addNotificationReceivedListener((notification) => {

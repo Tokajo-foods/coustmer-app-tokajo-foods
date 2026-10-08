@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { notificationApi } from '@/lib/notification/api';
+import { loadNotifications } from '@/lib/notification/load-notifications';
 import { useAuthStore } from '@/store/auth-store';
 
 /** Registers the customer push token and opens restaurant chat from a tap. */
@@ -18,7 +19,8 @@ export function CustomerPushSync() {
 
     void (async () => {
       try {
-        const Notifications = await import('expo-notifications');
+        const Notifications = await loadNotifications();
+        if (!Notifications) return;
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
