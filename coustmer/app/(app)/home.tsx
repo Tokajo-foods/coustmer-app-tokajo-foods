@@ -46,6 +46,7 @@ import {
 import {
   deliveryHeaderSubtitle,
   deliveryHeaderTitle,
+  formatFullDeliveryAddress,
   extractCityFromAddress,
   isCoordinateFallbackAddress,
   normalizeCityName,
@@ -134,6 +135,12 @@ export default function HomeScreen() {
     ) {
       return isDetectingLocation ? 'Detecting your location…' : 'Current location';
     }
+    if (deliveryLocation.source === 'gps') {
+      return (
+        formatFullDeliveryAddress(deliveryLocation.formattedAddress) ||
+        'Current location'
+      );
+    }
     return deliveryHeaderTitle(
       deliveryLocation.label,
       deliveryLocation.formattedAddress
@@ -148,6 +155,7 @@ export default function HomeScreen() {
     ) {
       return '';
     }
+    if (deliveryLocation.source === 'gps') return '';
     return deliveryHeaderSubtitle(
       deliveryTitle,
       deliveryLocation.formattedAddress
