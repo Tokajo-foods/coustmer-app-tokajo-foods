@@ -1,7 +1,7 @@
 import { Pressable } from '@/components/common/Pressable';
 import { locationPromptStyles as styles } from '@/components/location/location-enable-prompt-styles';
 import * as Location from 'expo-location';
-import { Check, MapPin, Navigation, Store } from 'lucide-react-native';
+import { Check, MapPin } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, Modal, Platform, Text, View } from 'react-native';
 import Animated, {
@@ -14,7 +14,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { authTheme } from '@/constants/auth-theme';
 import { captureGpsPlace } from '@/lib/location/capture-gps-place';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 
@@ -36,12 +35,6 @@ async function ensureLocationReady(): Promise<'ready' | 'off' | 'denied'> {
   }
   return servicesOn ? 'ready' : 'off';
 }
-
-const POINTS = [
-  { icon: Navigation, label: 'Drops your address on the top bar' },
-  { icon: Store, label: 'Shows restaurants that can deliver to you' },
-  { icon: MapPin, label: 'Uses a precise pin, not a city guess' },
-] as const;
 
 export function LocationEnablePrompt() {
   const insets = useSafeAreaInsets();
@@ -125,10 +118,10 @@ export function LocationEnablePrompt() {
 
   const body =
     phase === 'done'
-      ? 'Your address is now on the top of the home screen.'
+      ? 'Your address is on the top bar.'
       : phase === 'locking'
-        ? 'Hold on — we are locking an accurate pin.'
-        : 'Location is off. Turn it on so we can show where you are.';
+        ? 'Setting your delivery pin.'
+        : 'Used only to set your delivery address.';
 
   const buttonLabel = gate === 'denied' ? 'Allow location' : 'Turn on location';
 
@@ -148,24 +141,8 @@ export function LocationEnablePrompt() {
               )}
             </Animated.View>
           </View>
-          <Text style={styles.eyebrow}>DELIVERY PIN</Text>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
-          {phase === 'ask' ? (
-            <View style={styles.points}>
-              {POINTS.map((point) => {
-                const Icon = point.icon;
-                return (
-                  <View key={point.label} style={styles.point}>
-                    <View style={styles.pointIcon}>
-                      <Icon color={authTheme.brand} size={16} strokeWidth={2.3} />
-                    </View>
-                    <Text style={styles.pointText}>{point.label}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
           {phase === 'ask' ? (
             <>
               <Pressable style={styles.primary} onPress={() => void lockOn()}>
