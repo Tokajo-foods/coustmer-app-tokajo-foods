@@ -229,7 +229,6 @@ export default function HomeScreen() {
     feed: home.data,
     feedLoading: home.isLoading,
     restaurants: baseRestaurants,
-    loggedIn,
   });
 
   const restaurants = useMemo(
