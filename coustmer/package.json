@@ -72,7 +72,7 @@
     "typescript": "~5.9.2"
   },
   "scripts": {
-    "postinstall": "node scripts/fix-lightningcss.js && node scripts/verify-css-interop.js",
+    "postinstall": "node scripts/fix-lightningcss.js && node scripts/verify-css-interop.js && node scripts/fix-callkeep-android.js",
     "build": "expo export",
     "start": "expo start",
     "start:clear": "adb reverse tcp:8081 tcp:8081 && expo start --clear",

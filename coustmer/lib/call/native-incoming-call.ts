@@ -37,7 +37,12 @@ async function loadCallKeep(): Promise<CallKeepModule | null> {
   }
   try {
     const loaded = await import('react-native-callkeep');
-    module = (loaded.default ?? loaded) as CallKeepModule;
+    const api = (loaded.default ?? loaded) as CallKeepModule;
+    if (typeof api?.setup !== 'function' || typeof api.addEventListener !== 'function') {
+      module = null;
+      return null;
+    }
+    module = api;
     return module;
   } catch {
     module = null;
@@ -160,7 +165,7 @@ export async function listenNativeIncomingCallActions(handlers: {
   onEnd: (callId: string) => void;
 }): Promise<() => void> {
   const keep = await loadCallKeep();
-  if (!keep) return () => undefined;
+  if (!keep || typeof keep.addEventListener !== 'function') return () => undefined;
   await setupNativeIncomingCalls();
   const answer = (event: { callUUID?: string }) => {
     const callId = resolveCallIdFromUuid(event.callUUID);
