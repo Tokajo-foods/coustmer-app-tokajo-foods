@@ -31,6 +31,13 @@ import {
 } from '@/components/order/OrderPlacementModal';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { PaymentGatewayWebView } from '@/components/payment/PaymentGatewayWebView';
+import {
+  RazorpayCheckoutModal,
+  type RazorpayResult,
+  type RazorpaySession,
+} from '@/components/payment/RazorpayCheckoutModal';
+import { PaymentFailedRefundModal } from '@/components/payment/PaymentFailedRefundModal';
+import Constants from 'expo-constants';
 import { fonts } from '@/constants/typography';
 import {
   paymentMethodHint,
@@ -57,6 +64,9 @@ import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
+
+const RAZORPAY_KEY_FALLBACK =
+  (Constants.expoConfig?.extra as { razorpayKeyId?: string } | undefined)?.razorpayKeyId || '';
 
 const BG = '#F4F5F7';
 const WHITE = '#FFFFFF';
@@ -123,6 +133,10 @@ export function OrderSummaryScreen() {
     useState<PlacementPhase>('none');
   const [paymentGatewayOpen, setPaymentGatewayOpen] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
+  const [razorpayOpen, setRazorpayOpen] = useState(false);
+  const [razorpaySession, setRazorpaySession] = useState<RazorpaySession | null>(null);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [failedPaymentId, setFailedPaymentId] = useState<string | null>(null);
   const [currentOrder, setCurrentOrder] = useState<{
     id: string;
     total?: number;
@@ -209,7 +223,11 @@ export function OrderSummaryScreen() {
       let mappedMethod = paymentMethod;
       let mappedMethodId: string | undefined;
 
-      if (paymentMethod === 'paytm_upi' || paymentMethod === 'gpay') {
+      if (
+        paymentMethod === 'paytm_upi' ||
+        paymentMethod === 'gpay' ||
+        paymentMethod === 'phonepe'
+      ) {
         mappedMethod = 'upi';
       } else if (paymentMethods.data?.some((m) => m.id === paymentMethod)) {
         const saved = paymentMethods.data.find((m) => m.id === paymentMethod);
@@ -275,19 +293,18 @@ export function OrderSummaryScreen() {
         return;
       }
 
-      let paymentUrlToOpen: string | undefined;
-      const raw = order.raw as Record<string, unknown> | undefined;
-      if (raw && typeof raw.paymentUrl === 'string') {
-        paymentUrlToOpen = raw.paymentUrl;
-      } else if (raw) {
-        paymentUrlToOpen =
-          (raw.checkoutUrl as string | undefined) ||
-          (raw.redirectUrl as string | undefined) ||
-          (raw.gatewayUrl as string | undefined) ||
-          (raw.url as string | undefined);
-      }
+      // Online payment — open Razorpay checkout. Goes live automatically once the
+      // Razorpay keys are present in the backend env (no app change needed).
+      try {
+        const raw = order.raw as Record<string, unknown> | undefined;
+        const hostedUrl = raw
+          ? ((raw.paymentUrl as string | undefined) ||
+            (raw.checkoutUrl as string | undefined) ||
+            (raw.redirectUrl as string | undefined) ||
+            (raw.gatewayUrl as string | undefined) ||
+            (raw.url as string | undefined))
+          : undefined;
 
-      if (!paymentUrlToOpen) {
         const payment = await initiatePayment.mutateAsync({
           orderId: order.id,
           amount,
@@ -296,26 +313,54 @@ export function OrderSummaryScreen() {
           methodId: mappedMethodId,
           description: `Order ${order.orderNumber || order.id}`,
         });
-        paymentUrlToOpen =
+
+        const key = payment.razorpayKey || RAZORPAY_KEY_FALLBACK;
+        const rzpOrderId = payment.gatewayOrderId || payment.razorpayOrderId;
+
+        if (key && rzpOrderId) {
+          setRazorpaySession({
+            keyId: key,
+            orderId: rzpOrderId,
+            amount,
+            currency: 'INR',
+            paymentId: payment.id,
+            customerName: displayName,
+            contact: phone,
+            description: `Order ${order.orderNumber || order.id}`,
+          });
+          setRazorpayOpen(true);
+          setOrderPlacementPhase('none');
+          return;
+        }
+
+        const url =
           payment.paymentUrl ||
-          payment.checkoutUrl ||
-          payment.redirectUrl ||
-          payment.gatewayUrl ||
-          payment.url;
-      }
+          (payment.checkoutUrl as string | undefined) ||
+          (payment.redirectUrl as string | undefined) ||
+          (payment.gatewayUrl as string | undefined) ||
+          (payment.url as string | undefined) ||
+          hostedUrl;
+        if (url?.startsWith('http')) {
+          setPaymentUrl(url);
+          setPaymentGatewayOpen(true);
+          setOrderPlacementPhase('none');
+          return;
+        }
 
-      if (paymentUrlToOpen?.startsWith('http')) {
-        setPaymentUrl(paymentUrlToOpen);
-        setPaymentGatewayOpen(true);
+        Alert.alert(
+          'Online payment unavailable',
+          'Online payment isn\u2019t available right now. Please choose Pay on Delivery.'
+        );
         setOrderPlacementPhase('none');
-        return;
+      } catch (payErr) {
+        Alert.alert(
+          'Online payment unavailable',
+          payErr instanceof Error
+            ? payErr.message
+            : 'Online payment is temporarily unavailable. Please choose Pay on Delivery.'
+        );
+        setOrderPlacementPhase('none');
       }
-
-      Alert.alert(
-        'Payment unavailable',
-        'Could not open the payment gateway. Try Pay on Delivery or contact support.'
-      );
-      setOrderPlacementPhase('none');
     } catch (err) {
       Alert.alert(
         'Could not place order',
@@ -324,6 +369,48 @@ export function OrderSummaryScreen() {
       setOrderPlacementPhase('none');
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleRazorpayResult = async (success: boolean, data: RazorpayResult) => {
+    setRazorpayOpen(false);
+    const paymentId = razorpaySession?.paymentId ?? '';
+    const amountPaid = currentOrder?.total ?? payable;
+
+    if (!success) {
+      // Nothing was charged (user dismissed, or the gateway rejected). Order is saved.
+      Alert.alert(
+        data.reason === 'dismissed' ? 'Payment cancelled' : 'Payment failed',
+        'Your order is saved. You can try paying again from your orders.'
+      );
+      setOrderPlacementPhase('none');
+      return;
+    }
+
+    // Payment captured — confirm with the backend (places + marks the order paid).
+    setOrderPlacementPhase('placed');
+    try {
+      await verifyPayment.mutateAsync({
+        paymentId,
+        orderId: currentOrder?.id,
+        gatewayPaymentId: data.gatewayPaymentId,
+        gatewayOrderId: data.gatewayOrderId,
+        gatewaySignature: data.gatewaySignature,
+        status: 'success',
+      });
+      await new Promise((r) => setTimeout(r, 900));
+      if (currentOrder) {
+        router.replace({
+          pathname: '/orders/[orderId]/tracking',
+          params: { orderId: currentOrder.id, newOrder: 'true' },
+        });
+      }
+      setOrderPlacementPhase('none');
+    } catch {
+      // Money was captured but we couldn't confirm the order → promise a refund + collect UPI.
+      setOrderPlacementPhase('none');
+      setFailedPaymentId(paymentId);
+      setRefundModalOpen(true);
     }
   };
 
@@ -580,6 +667,32 @@ export function OrderSummaryScreen() {
         onPaymentComplete={handlePaymentComplete}
         orderAmount={currentOrder?.total ?? payable}
         orderNumber={currentOrder?.orderNumber}
+      />
+
+      <RazorpayCheckoutModal
+        visible={razorpayOpen}
+        session={razorpaySession}
+        onClose={() => {
+          setRazorpayOpen(false);
+          setOrderPlacementPhase('none');
+        }}
+        onResult={handleRazorpayResult}
+      />
+
+      <PaymentFailedRefundModal
+        visible={refundModalOpen}
+        paymentId={failedPaymentId}
+        amount={currentOrder?.total ?? payable}
+        onClose={() => setRefundModalOpen(false)}
+        onDone={() => {
+          setRefundModalOpen(false);
+          if (currentOrder) {
+            router.replace({
+              pathname: '/orders/[orderId]/tracking',
+              params: { orderId: currentOrder.id },
+            });
+          }
+        }}
       />
     </View>
   );

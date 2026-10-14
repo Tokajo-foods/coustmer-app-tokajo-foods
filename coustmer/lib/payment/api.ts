@@ -533,6 +533,40 @@ export const paymentApi = {
     throw lastError ?? new Error('Failed to request refund');
   },
 
+  /** GET /payments/gateway/status — is online payment live (keys present)? */
+  getGatewayStatus: async (): Promise<{
+    configured: boolean;
+    keyId: string | null;
+    provider: string;
+  }> => {
+    const res = await request<Record<string, unknown>>(
+      `${PAYMENTS_BASE}/gateway/status`
+    );
+    const data = asRecord(res.data ?? res);
+    return {
+      configured: Boolean(data.configured),
+      keyId: (data.keyId as string) || null,
+      provider: String(data.provider ?? 'razorpay'),
+    };
+  },
+
+  /** POST /payments/:paymentId/refund-upi — failed payment, where to send the refund */
+  submitFailedRefundUpi: async (
+    paymentId: string,
+    upiId: string
+  ): Promise<{ paymentId: string; orderId: string; refundUpiId: string }> => {
+    const res = await request<Record<string, unknown>>(
+      `${PAYMENTS_BASE}/${paymentId}/refund-upi`,
+      { method: 'POST', body: { upiId } }
+    );
+    const data = asRecord(res.data ?? res);
+    return {
+      paymentId: String(data.paymentId ?? paymentId),
+      orderId: String(data.orderId ?? ''),
+      refundUpiId: String(data.refundUpiId ?? upiId),
+    };
+  },
+
   /** GET /payments/refunds/:refundId */
   getRefund: async (refundId: string): Promise<Refund> => {
     const res = await request<Record<string, unknown>>(

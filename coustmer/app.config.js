@@ -11,6 +11,9 @@ const firebaseMessagingSenderId =
   process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() || '';
 const firebaseStorageBucket =
   process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() || '';
+// Razorpay publishable key id. The backend returns the live key on `initiate`,
+// so this is only a fallback — set it once credentials are available.
+const razorpayKeyId = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID?.trim() || '';
 
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
@@ -135,6 +138,7 @@ const config = {
     firebaseAppId,
     firebaseMessagingSenderId,
     firebaseStorageBucket,
+    razorpayKeyId,
   },
 };
 

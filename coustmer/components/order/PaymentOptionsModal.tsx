@@ -316,6 +316,19 @@ export function PaymentOptionsModal({
                   <SelectMark selected={selectedMethod === 'gpay'} />
                 </View>
               </Pressable>
+              <View style={styles.divider} />
+              <Pressable
+                style={styles.cardItem}
+                onPress={() => onSelectMethod('phonepe')}
+              >
+                <View style={styles.cardRow}>
+                  <View style={styles.phonepeIconBox}>
+                    <Text style={styles.phonepeMark}>Pe</Text>
+                  </View>
+                  <Text style={styles.cardItemText}>PhonePe</Text>
+                  <SelectMark selected={selectedMethod === 'phonepe'} />
+                </View>
+              </Pressable>
             </View>
 
             <Text style={styles.sectionTitle}>Credit & Debit Cards</Text>
@@ -633,6 +646,20 @@ const styles = StyleSheet.create({
   gpayImage: {
     width: 28,
     height: 28,
+  },
+  phonepeIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    marginRight: 12,
+    backgroundColor: '#5F259F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phonepeMark: {
+    color: WHITE,
+    fontSize: 16,
+    fontFamily: fonts.uiBold,
   },
   sectionTitle: {
     fontSize: 15,
