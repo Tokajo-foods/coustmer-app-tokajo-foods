@@ -208,7 +208,15 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
         ? feed.suggestedItems
         : sampled.filter((_, index) => index % 2 === 1);
 
-    if (!feed && !trendingCapped.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
+    const trendingFromFeed = (feed?.trending ?? []).filter((card) => !topRatedIds.has(card.id));
+    const trending = (showDiscovery
+      ? trendingFromFeed.length
+        ? trendingFromFeed
+        : restaurants.filter((r) => !topRatedIds.has(r.id)).map(restaurantCard)
+      : []
+    ).slice(0, 10);
+
+    if (!feed && !trending.length && !trendingCapped.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
       return undefined;
     }
 
@@ -216,9 +224,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       banners: feed?.banners ?? [],
       radiusKm: feed?.radiusKm ?? 0,
       vegOnly: feed?.vegOnly ?? false,
-      trending: showDiscovery
-        ? (feed?.trending ?? []).filter((card) => !topRatedIds.has(card.id)).slice(0, 10)
-        : [],
+      trending,
       newlyAdded: showDiscovery ? (feed?.newlyAdded ?? []) : [],
       topRated,
       pureVeg: showDiscovery ? (feed?.pureVeg ?? []) : [],

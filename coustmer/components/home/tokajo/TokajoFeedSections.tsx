@@ -65,10 +65,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
   const showRails = restaurants.length >= DISCOVERY_MIN_RESTAURANTS;
   const railsBusy = showRails && homeLoading && !feedRails;
 
-  const trending =
-    (feedRails?.trendingDishes?.length
-      ? feedRails.trendingDishes
-      : feedRails?.dishesToTry) ?? [];
+  const trending = (feedRails?.trending ?? []).map(mapHomeCardToRestaurant);
   const suggested = feedRails?.suggestedItems ?? [];
   const orderAgain = feedRails?.orderAgain ?? [];
   const topRated = (feedRails?.topRated ?? []).map(mapHomeCardToRestaurant);
@@ -82,13 +79,12 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
             title="Trending Near You"
             onSeeAll={() => router.push('/search')}
           />
-          <TokajoDishRail
-            dishes={trending}
-            variant="trending"
+          <TokajoRestaurantRail
+            restaurants={trending}
             favoriteIds={favoriteIds}
             loading={railsBusy}
             onToggleFavorite={onToggleFavorite}
-            onPressDish={openDish}
+            onPressRestaurant={onPressRestaurant}
           />
         </View>
       ) : null}
