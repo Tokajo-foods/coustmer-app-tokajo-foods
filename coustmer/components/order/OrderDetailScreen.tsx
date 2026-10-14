@@ -34,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingView, ErrorView } from '@/components/common/StateViews';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
+import { RetryOnlinePayment } from '@/components/payment/RetryOnlinePayment';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
 import {
@@ -690,9 +691,18 @@ export function OrderDetailScreen() {
           {data.paymentMethod ? (
             <Text style={styles.payNote}>
               {paymentMethodLabel(data.paymentMethod)}
+              {data.paymentStatus ? ` · ${data.paymentStatus.replace(/_/g, ' ')}` : ''}
             </Text>
           ) : null}
         </View>
+
+        <RetryOnlinePayment
+          orderId={data.id}
+          amount={total}
+          paymentMethod={data.paymentMethod}
+          paymentStatus={data.paymentStatus}
+          orderStatus={data.status}
+        />
 
         {!isActive ? (
           <Pressable

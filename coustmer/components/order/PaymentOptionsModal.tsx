@@ -381,17 +381,31 @@ export function PaymentOptionsModal({
 
             <Text style={styles.sectionTitle}>More Payment Options</Text>
             <View style={styles.cardGroup}>
-              <Pressable style={styles.cardItem}>
+              <Pressable
+                style={styles.cardItem}
+                onPress={() =>
+                  Alert.alert(
+                    'Pay later',
+                    'Pay later is not available yet. Use UPI, card, netbanking, or pay on delivery.'
+                  )
+                }
+              >
                 <View style={styles.cardRow}>
                   <View style={[styles.iconBox, styles.iconBoxBorder]}>
                     <Receipt color="#555" size={18} />
                   </View>
-                  <Text style={styles.cardItemText}>Pay Later</Text>
+                  <View style={styles.cardItemBody}>
+                    <Text style={styles.cardItemText}>Pay Later</Text>
+                    <Text style={styles.cardItemSubtext}>Not available yet</Text>
+                  </View>
                   <ChevronRight color="#A0A0A0" size={20} />
                 </View>
               </Pressable>
               <View style={styles.divider} />
-              <Pressable style={styles.cardItem}>
+              <Pressable
+                style={styles.cardItem}
+                onPress={() => onSelectMethod('netbanking')}
+              >
                 <View style={styles.cardRow}>
                   <View style={[styles.iconBox, styles.iconBoxBorder]}>
                     <Landmark color="#555" size={18} />
@@ -399,10 +413,10 @@ export function PaymentOptionsModal({
                   <View style={styles.cardItemBody}>
                     <Text style={styles.cardItemText}>Netbanking</Text>
                     <Text style={styles.cardItemSubtext}>
-                      Select from a list of banks
+                      Opens Razorpay — pick your bank there
                     </Text>
                   </View>
-                  <ChevronRight color="#A0A0A0" size={20} />
+                  <SelectMark selected={selectedMethod === 'netbanking'} />
                 </View>
               </Pressable>
             </View>

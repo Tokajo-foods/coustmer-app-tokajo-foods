@@ -17,6 +17,12 @@ export function paymentMethodLabel(
       return 'Paytm UPI';
     case 'gpay':
       return 'Google Pay';
+    case 'phonepe':
+      return 'PhonePe';
+    case 'netbanking':
+      return 'Netbanking';
+    case 'upi':
+      return 'UPI';
     case 'wallet':
       return 'Tokajo Foods Wallet';
     case 'card':
@@ -39,7 +45,11 @@ export function paymentMethodHint(method: string): string {
       return 'Cash or UPI at delivery';
     case 'paytm_upi':
     case 'gpay':
-      return 'Pay instantly via UPI';
+    case 'phonepe':
+    case 'upi':
+      return 'Opens a secure Razorpay window';
+    case 'netbanking':
+      return 'Pay from your bank in Razorpay';
     case 'wallet':
       return 'Pay from Tokajo Foods Wallet';
     case 'card':

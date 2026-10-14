@@ -314,6 +314,17 @@ export function OrderSummaryScreen() {
           description: `Order ${order.orderNumber || order.id}`,
         });
 
+        if (payment.status === 'success' || payment.status === 'paid') {
+          setOrderPlacementPhase('placed');
+          await new Promise((r) => setTimeout(r, 800));
+          router.replace({
+            pathname: '/orders/[orderId]/tracking',
+            params: { orderId: order.id, newOrder: 'true' },
+          });
+          setOrderPlacementPhase('none');
+          return;
+        }
+
         const key = payment.razorpayKey || RAZORPAY_KEY_FALLBACK;
         const rzpOrderId = payment.gatewayOrderId || payment.razorpayOrderId;
 
