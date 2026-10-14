@@ -169,24 +169,27 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
         ? feed.orderAgain
         : (again.data ?? []);
     const sampled = showDiscovery ? (sample.data ?? []) : [];
-    const trendingDishes = !showDiscovery
-      ? []
-      : feed?.trendingDishes?.length
-        ? feed.trendingDishes
-        : feed?.dishesToTry?.length
-          ? feed.dishesToTry
-          : sampled.filter((_, index) => index % 2 === 0);
-    const suggestedItems = !showDiscovery
-      ? []
-      : feed?.suggestedItems?.length
-        ? feed.suggestedItems
-        : sampled.filter((_, index) => index % 2 === 1);
     const rated = (feed?.topRated ?? []).filter((card) => (card.rating ?? 0) > 0);
     const topRated = !showDiscovery
       ? []
       : rated.length
         ? rated
         : restaurants.filter((r) => (r.rating ?? 0) > 0).slice(0, 12).map(restaurantCard);
+    const topRatedIds = new Set(topRated.map((card) => card.id));
+    const apartFromTopRated = (dish: { restaurantId: string }) => !topRatedIds.has(dish.restaurantId);
+    const trendingDishes = (!showDiscovery
+      ? []
+      : feed?.trendingDishes?.length
+        ? feed.trendingDishes
+        : feed?.dishesToTry?.length
+          ? feed.dishesToTry
+          : sampled.filter((_, index) => index % 2 === 0)
+    ).filter(apartFromTopRated);
+    const suggestedItems = !showDiscovery
+      ? []
+      : feed?.suggestedItems?.length
+        ? feed.suggestedItems
+        : sampled.filter((_, index) => index % 2 === 1);
 
     if (!feed && !trendingDishes.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
       return undefined;
@@ -196,14 +199,16 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       banners: feed?.banners ?? [],
       radiusKm: feed?.radiusKm ?? 0,
       vegOnly: feed?.vegOnly ?? false,
-      trending: showDiscovery ? (feed?.trending ?? []) : [],
+      trending: showDiscovery
+        ? (feed?.trending ?? []).filter((card) => !topRatedIds.has(card.id))
+        : [],
       newlyAdded: showDiscovery ? (feed?.newlyAdded ?? []) : [],
       topRated,
       pureVeg: showDiscovery ? (feed?.pureVeg ?? []) : [],
       forYou: showDiscovery ? (feed?.forYou ?? []) : [],
       orderAgain,
       dishesToTry: showDiscovery
-        ? (feed?.dishesToTry?.length ? feed.dishesToTry : trendingDishes)
+        ? (feed?.dishesToTry?.length ? feed.dishesToTry : trendingDishes).filter(apartFromTopRated)
         : [],
       suggestedItems,
       trendingDishes,
