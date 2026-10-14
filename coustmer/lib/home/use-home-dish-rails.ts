@@ -77,16 +77,30 @@ async function sampleNearbyDishes(restaurants: Restaurant[]): Promise<HomeTrendi
   return out;
 }
 
-async function orderAgainFromHistory(): Promise<HomeOrderAgainDish[]> {
-  const result = await orderApi.getOrders({ page: 1, limit: 8 });
+function onePerRestaurant<T extends { restaurantId: string }>(rows: T[], limit = 10): T[] {
   const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    if (!row.restaurantId || seen.has(row.restaurantId)) continue;
+    seen.add(row.restaurantId);
+    out.push(row);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+async function orderAgainFromHistory(): Promise<HomeOrderAgainDish[]> {
+  const result = await orderApi.getOrders({ page: 1, limit: 10 });
+  const seenRestaurants = new Set<string>();
   const out: HomeOrderAgainDish[] = [];
   for (const order of result.orders) {
+    if (out.length >= 10) break;
     if (
       order.status === 'cancelled' ||
       order.status === 'rejected' ||
       order.status === 'pending_payment' ||
-      !order.restaurantId
+      !order.restaurantId ||
+      seenRestaurants.has(order.restaurantId)
     ) {
       continue;
     }
@@ -95,9 +109,7 @@ async function orderAgainFromHistory(): Promise<HomeOrderAgainDish[]> {
       if (!id || id === 'undefined' || id === 'null' || !item.name) continue;
       const price = item.price > 0 ? item.price : 0;
       if (price <= 0) continue;
-      const key = `${order.restaurantId}:${id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
+      seenRestaurants.add(order.restaurantId);
       out.push({
         id,
         name: item.name,
@@ -108,7 +120,7 @@ async function orderAgainFromHistory(): Promise<HomeOrderAgainDish[]> {
         restaurantName: order.restaurantName || 'Restaurant',
         badge: 'Order again',
       });
-      if (out.length >= 12) return out;
+      break;
     }
   }
   return out;
@@ -163,18 +175,22 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
   });
 
   const feedRails = useMemo(() => {
-    const orderAgain = !showDiscovery
-      ? []
-      : feed?.orderAgain?.length
-        ? feed.orderAgain
-        : (again.data ?? []);
+    const orderAgain = onePerRestaurant(
+      !showDiscovery
+        ? []
+        : feed?.orderAgain?.length
+          ? feed.orderAgain
+          : (again.data ?? []),
+      10,
+    );
     const sampled = showDiscovery ? (sample.data ?? []) : [];
     const rated = (feed?.topRated ?? []).filter((card) => (card.rating ?? 0) > 0);
-    const topRated = !showDiscovery
+    const topRated = (!showDiscovery
       ? []
       : rated.length
         ? rated
-        : restaurants.filter((r) => (r.rating ?? 0) > 0).slice(0, 12).map(restaurantCard);
+        : restaurants.filter((r) => (r.rating ?? 0) > 0).map(restaurantCard)
+    ).slice(0, 10);
     const topRatedIds = new Set(topRated.map((card) => card.id));
     const apartFromTopRated = (dish: { restaurantId: string }) => !topRatedIds.has(dish.restaurantId);
     const trendingDishes = (!showDiscovery
@@ -185,13 +201,14 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
           ? feed.dishesToTry
           : sampled.filter((_, index) => index % 2 === 0)
     ).filter(apartFromTopRated);
+    const trendingCapped = onePerRestaurant(trendingDishes, 10);
     const suggestedItems = !showDiscovery
       ? []
       : feed?.suggestedItems?.length
         ? feed.suggestedItems
         : sampled.filter((_, index) => index % 2 === 1);
 
-    if (!feed && !trendingDishes.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
+    if (!feed && !trendingCapped.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
       return undefined;
     }
 
@@ -200,7 +217,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       radiusKm: feed?.radiusKm ?? 0,
       vegOnly: feed?.vegOnly ?? false,
       trending: showDiscovery
-        ? (feed?.trending ?? []).filter((card) => !topRatedIds.has(card.id))
+        ? (feed?.trending ?? []).filter((card) => !topRatedIds.has(card.id)).slice(0, 10)
         : [],
       newlyAdded: showDiscovery ? (feed?.newlyAdded ?? []) : [],
       topRated,
@@ -208,10 +225,13 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       forYou: showDiscovery ? (feed?.forYou ?? []) : [],
       orderAgain,
       dishesToTry: showDiscovery
-        ? (feed?.dishesToTry?.length ? feed.dishesToTry : trendingDishes).filter(apartFromTopRated)
+        ? onePerRestaurant(
+          (feed?.dishesToTry?.length ? feed.dishesToTry : trendingCapped).filter(apartFromTopRated),
+          10,
+        )
         : [],
       suggestedItems,
-      trendingDishes,
+      trendingDishes: trendingCapped,
     } satisfies HomeFeed;
   }, [again.data, feed, restaurants, sample.data, showDiscovery]);
 
