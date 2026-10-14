@@ -8,6 +8,8 @@ import { orderApi } from '@/lib/order/api';
 import type { Restaurant } from '@/lib/restaurant/types';
 
 const ITEMS = '/api/v1/restaurant-service/restaurants';
+/** Trending, Suggested, and Top rated are useful only once the area has a real list. */
+const DISCOVERY_MIN_RESTAURANTS = 10;
 
 function asDish(raw: unknown, restaurant: Restaurant): HomeTrendingDish | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -135,7 +137,8 @@ type Input = {
 
 /** Home rails, filled from nearby menus when the feed has no dish cards. */
 export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: Input) {
-  const feedHasDishes = Boolean(
+  const showDiscovery = restaurants.length >= DISCOVERY_MIN_RESTAURANTS;
+  const feedHasDishes = showDiscovery && Boolean(
     feed?.trendingDishes?.length ||
       feed?.dishesToTry?.length ||
       feed?.suggestedItems?.length,
@@ -148,7 +151,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
   const sample = useQuery({
     queryKey: ['home', 'dish-sample', restaurantKey],
     queryFn: () => sampleNearbyDishes(restaurants),
-    enabled: !feedLoading && !feedHasDishes && restaurants.length > 0,
+    enabled: showDiscovery && !feedLoading && !feedHasDishes && restaurants.length > 0,
     staleTime: 60_000,
   });
 
@@ -160,19 +163,26 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
   });
 
   const feedRails = useMemo(() => {
-    const sampled = sample.data ?? [];
-    const trendingDishes = feed?.trendingDishes?.length
-      ? feed.trendingDishes
-      : feed?.dishesToTry?.length
-        ? feed.dishesToTry
-        : sampled.filter((_, index) => index % 2 === 0);
-    const suggestedItems = feed?.suggestedItems?.length
-      ? feed.suggestedItems
-      : sampled.filter((_, index) => index % 2 === 1);
     const orderAgain = feed?.orderAgain?.length ? feed.orderAgain : (again.data ?? []);
-    const topRated = feed?.topRated?.length
-      ? feed.topRated
-      : restaurants.slice(0, 10).map(restaurantCard);
+    const sampled = showDiscovery ? (sample.data ?? []) : [];
+    const trendingDishes = !showDiscovery
+      ? []
+      : feed?.trendingDishes?.length
+        ? feed.trendingDishes
+        : feed?.dishesToTry?.length
+          ? feed.dishesToTry
+          : sampled.filter((_, index) => index % 2 === 0);
+    const suggestedItems = !showDiscovery
+      ? []
+      : feed?.suggestedItems?.length
+        ? feed.suggestedItems
+        : sampled.filter((_, index) => index % 2 === 1);
+    const rated = (feed?.topRated ?? []).filter((card) => (card.rating ?? 0) > 0);
+    const topRated = !showDiscovery
+      ? []
+      : rated.length
+        ? rated
+        : restaurants.filter((r) => (r.rating ?? 0) > 0).slice(0, 12).map(restaurantCard);
 
     if (!feed && !trendingDishes.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
       return undefined;
@@ -182,21 +192,23 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       banners: feed?.banners ?? [],
       radiusKm: feed?.radiusKm ?? 0,
       vegOnly: feed?.vegOnly ?? false,
-      trending: feed?.trending ?? [],
+      trending: showDiscovery ? (feed?.trending ?? []) : [],
       newlyAdded: feed?.newlyAdded ?? [],
       topRated,
       pureVeg: feed?.pureVeg ?? [],
       forYou: feed?.forYou ?? [],
       orderAgain,
-      dishesToTry: feed?.dishesToTry?.length ? feed.dishesToTry : trendingDishes,
+      dishesToTry: showDiscovery
+        ? (feed?.dishesToTry?.length ? feed.dishesToTry : trendingDishes)
+        : [],
       suggestedItems,
       trendingDishes,
     } satisfies HomeFeed;
-  }, [again.data, feed, restaurants, sample.data]);
+  }, [again.data, feed, restaurants, sample.data, showDiscovery]);
 
   const homeLoading =
     feedLoading ||
-    (!feedHasDishes && sample.isLoading) ||
+    (showDiscovery && !feedHasDishes && sample.isLoading) ||
     (loggedIn && !(feed?.orderAgain?.length) && again.isLoading);
 
   return { feedRails, homeLoading };
