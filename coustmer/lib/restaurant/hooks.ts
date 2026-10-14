@@ -8,7 +8,6 @@ import {
 } from '@/lib/restaurant/categories';
 import { enrichMenuItems } from '@/lib/restaurant/mappers';
 import { buildHomeCategories } from '@/lib/restaurant/home-categories';
-import { findSeedMenuItem } from '@/lib/restaurant/seed-menu';
 import type {
   CuisineChip,
   MenuItem,
@@ -21,11 +20,6 @@ import type { HomeCategory } from '@/lib/home/types';
 import { useMemo } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
-
-export type SeedMenuOptions = {
-  name?: string;
-  cuisines?: string[];
-};
 
 export const restaurantKeys = {
   all: ['restaurant'] as const,
@@ -574,27 +568,10 @@ export function prefetchRestaurantMenu(restaurantId: string) {
 }
 
 export function useMenuItem(restaurantId: string, itemId: string) {
-  const isSeed = itemId.startsWith('seed-');
-  const restaurant = useRestaurant(restaurantId);
-
   return useQuery({
     queryKey: restaurantKeys.item(restaurantId, itemId),
-    queryFn: async () => {
-      if (isSeed) {
-        const found = findSeedMenuItem(restaurantId, itemId, {
-          name: restaurant.data?.name,
-          cuisines: restaurant.data?.cuisines,
-        });
-        if (!found) throw new Error('Item not found');
-        return found;
-      }
-      return restaurantApi.getItem(restaurantId, itemId);
-    },
-    enabled: Boolean(
-      restaurantId &&
-        itemId &&
-        (!isSeed || restaurant.isSuccess || restaurant.isError)
-    ),
+    queryFn: () => restaurantApi.getItem(restaurantId, itemId),
+    enabled: Boolean(restaurantId && itemId),
   });
 }
 
@@ -649,11 +626,8 @@ export function useTrendingDishes(
   });
 }
 
-/** Merges menu + categories + items; falls back to cuisine-specific seed menu. */
-export function useFullMenu(
-  restaurantId: string,
-  seedOptions?: SeedMenuOptions
-) {
+/** Merges the live menu, categories, and items for one restaurant. */
+export function useFullMenu(restaurantId: string) {
   const menu = useRestaurantMenu(restaurantId);
   const categories = useRestaurantCategories(restaurantId);
   const items = useRestaurantItems(restaurantId);
@@ -701,7 +675,6 @@ export function useFullMenu(
 
   const isLoading = menu.isLoading || categories.isLoading || items.isLoading;
   const isError = menu.isError && categories.isError && items.isError;
-  const isSeeded = false;
 
   return {
     categories: mergedCategories,
@@ -710,7 +683,6 @@ export function useFullMenu(
     unavailableIds: [...unavailableIds],
     isLoading,
     isError,
-    isSeeded,
     refetch: () => {
       menu.refetch();
       categories.refetch();

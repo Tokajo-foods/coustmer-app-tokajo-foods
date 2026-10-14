@@ -153,10 +153,7 @@ export function RestaurantDetailScreen() {
   const reviewStats = useRestaurantReviewStats(id, {
     enabled: Boolean(id),
   });
-  const menu = useFullMenu(id, {
-    name: restaurant.data?.name,
-    cuisines: restaurant.data?.cuisines,
-  });
+  const menu = useFullMenu(id);
   const offers = useRestaurantOffers(id);
   const timings = useRestaurantTimings(id);
   const holidays = useRestaurantHolidays(id);
