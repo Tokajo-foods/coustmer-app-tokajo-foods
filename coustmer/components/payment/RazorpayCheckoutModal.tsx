@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -43,6 +44,34 @@ type Props = {
 
 function esc(value: string | undefined): string {
   return String(value ?? '').replace(/[\\"'<>]/g, '');
+}
+
+const MOBILE_UA =
+  'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+/** UPI apps leave the WebView via upi:// or intent://. Open those outside the page. */
+function openUpiApp(url: string): boolean {
+  const lower = url.toLowerCase();
+  const external =
+    lower.startsWith('upi:') ||
+    lower.startsWith('intent:') ||
+    lower.startsWith('tez:') ||
+    lower.startsWith('gpay:') ||
+    lower.startsWith('phonepe:') ||
+    lower.startsWith('paytmmp:') ||
+    lower.startsWith('paytm:') ||
+    lower.startsWith('bhim:');
+  if (!external) return false;
+  let target = url;
+  if (lower.startsWith('intent:')) {
+    const scheme = url.match(/scheme=([^;]+)/)?.[1];
+    const path = url.replace(/^intent:\/\//, '').split('#')[0];
+    target = scheme ? `${scheme}://${path}` : url;
+  }
+  void Linking.openURL(target).catch(() => {
+    Alert.alert('UPI app', 'That UPI app did not open. Choose UPI and enter the UPI id instead.');
+  });
+  return true;
 }
 
 /**
@@ -91,6 +120,19 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
         },
         theme: { color: "#F97316" },
         retry: { enabled: true },
+        method: { upi: true, card: true, netbanking: true, wallet: true },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "UPI",
+                instruments: [{ method: "upi", flows: ["collect", "intent", "qr"] }]
+              }
+            },
+            sequence: ["block.upi"],
+            preferences: { show_default_blocks: true }
+          }
+        },
         handler: function(resp){
           post({
             type:'PAYMENT_COMPLETE',
@@ -152,7 +194,9 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Secure Payment</Text>
             <Text style={styles.headerSubtitle}>
-              ₹{Number(session?.amount ?? 0).toFixed(0)} • Razorpay
+              {session?.keyId.startsWith('rzp_test_')
+                ? 'Test: open UPI, enter success@razorpay'
+                : `₹${Number(session?.amount ?? 0).toFixed(0)} • Razorpay`}
             </Text>
           </View>
           <Pressable
@@ -180,6 +224,9 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
             source={{ html, baseUrl: 'https://checkout.razorpay.com' }}
             style={styles.webView}
             originWhitelist={['*']}
+            userAgent={MOBILE_UA}
+            setSupportMultipleWindows={false}
+            onShouldStartLoadWithRequest={(request) => !openUpiApp(request.url)}
             onLoadEnd={() => setLoading(false)}
             onMessage={handleMessage}
             javaScriptEnabled
