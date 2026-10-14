@@ -10,6 +10,7 @@ import { TokajoRestaurantRail } from '@/components/home/tokajo/TokajoRestaurantR
 import { TokajoSectionHeader } from '@/components/home/tokajo/TokajoSectionHeader';
 import { fonts } from '@/constants/typography';
 import type { HomeFeed } from '@/lib/customer/types';
+import { DISCOVERY_MIN_RESTAURANTS } from '@/lib/home/use-home-dish-rails';
 import { mapHomeCardToRestaurant } from '@/lib/home/feed-mappers';
 import type { Restaurant } from '@/lib/restaurant/types';
 
@@ -61,7 +62,8 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
   }
 
   const openDish = (restaurantId: string) => onPressRestaurant(restaurantId);
-  const railsBusy = homeLoading && !feedRails;
+  const showRails = restaurants.length >= DISCOVERY_MIN_RESTAURANTS;
+  const railsBusy = showRails && homeLoading && !feedRails;
 
   const trending =
     (feedRails?.trendingDishes?.length
@@ -73,7 +75,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
 
   return (
     <View style={styles.wrap}>
-      {trending.length > 0 || railsBusy ? (
+      {showRails && (trending.length > 0 || railsBusy) ? (
         <View style={styles.section}>
           <TokajoSectionHeader
             Icon={Flame}
@@ -91,7 +93,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
         </View>
       ) : null}
 
-      {suggested.length > 0 || railsBusy ? (
+      {showRails && (suggested.length > 0 || railsBusy) ? (
         <View style={[styles.section, styles.bandFull]}>
           <TokajoSectionHeader Icon={Sparkles} title="Suggested for You" />
           <TokajoDishRail
@@ -105,7 +107,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
         </View>
       ) : null}
 
-      {(orderAgain.length > 0 || (userLoggedIn && railsBusy)) ? (
+      {showRails && (orderAgain.length > 0 || (userLoggedIn && railsBusy)) ? (
         <View style={styles.section}>
           <TokajoSectionHeader
             Icon={Clock}
@@ -123,7 +125,7 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
         </View>
       ) : null}
 
-      {topRated.length > 0 ? (
+      {showRails && topRated.length > 0 ? (
         <View style={[styles.section, styles.bandFull]}>
           <TokajoSectionHeader
             Icon={Trophy}

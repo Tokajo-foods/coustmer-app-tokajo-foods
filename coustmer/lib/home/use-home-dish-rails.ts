@@ -8,8 +8,8 @@ import { orderApi } from '@/lib/order/api';
 import type { Restaurant } from '@/lib/restaurant/types';
 
 const ITEMS = '/api/v1/restaurant-service/restaurants';
-/** Trending, Suggested, and Top rated are useful only once the area has a real list. */
-const DISCOVERY_MIN_RESTAURANTS = 10;
+/** Every home rail waits until this many restaurants are listed around the pin. */
+export const DISCOVERY_MIN_RESTAURANTS = 10;
 
 function asDish(raw: unknown, restaurant: Restaurant): HomeTrendingDish | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -158,12 +158,16 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
   const again = useQuery({
     queryKey: ['home', 'order-again-fallback'],
     queryFn: orderAgainFromHistory,
-    enabled: loggedIn && !feedLoading && !(feed?.orderAgain?.length),
+    enabled: showDiscovery && loggedIn && !feedLoading && !(feed?.orderAgain?.length),
     staleTime: 60_000,
   });
 
   const feedRails = useMemo(() => {
-    const orderAgain = feed?.orderAgain?.length ? feed.orderAgain : (again.data ?? []);
+    const orderAgain = !showDiscovery
+      ? []
+      : feed?.orderAgain?.length
+        ? feed.orderAgain
+        : (again.data ?? []);
     const sampled = showDiscovery ? (sample.data ?? []) : [];
     const trendingDishes = !showDiscovery
       ? []
@@ -193,10 +197,10 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       radiusKm: feed?.radiusKm ?? 0,
       vegOnly: feed?.vegOnly ?? false,
       trending: showDiscovery ? (feed?.trending ?? []) : [],
-      newlyAdded: feed?.newlyAdded ?? [],
+      newlyAdded: showDiscovery ? (feed?.newlyAdded ?? []) : [],
       topRated,
-      pureVeg: feed?.pureVeg ?? [],
-      forYou: feed?.forYou ?? [],
+      pureVeg: showDiscovery ? (feed?.pureVeg ?? []) : [],
+      forYou: showDiscovery ? (feed?.forYou ?? []) : [],
       orderAgain,
       dishesToTry: showDiscovery
         ? (feed?.dishesToTry?.length ? feed.dishesToTry : trendingDishes)
@@ -209,7 +213,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
   const homeLoading =
     feedLoading ||
     (showDiscovery && !feedHasDishes && sample.isLoading) ||
-    (loggedIn && !(feed?.orderAgain?.length) && again.isLoading);
+    (showDiscovery && loggedIn && !(feed?.orderAgain?.length) && again.isLoading);
 
   return { feedRails, homeLoading };
 }
