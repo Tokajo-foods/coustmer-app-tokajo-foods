@@ -8,8 +8,10 @@ import { orderApi } from '@/lib/order/api';
 import type { Restaurant } from '@/lib/restaurant/types';
 
 const ITEMS = '/api/v1/restaurant-service/restaurants';
-/** Every home rail waits until this many restaurants are listed around the pin. */
+/** Rails stay hidden until this many restaurants are listed around the pin. */
 export const DISCOVERY_MIN_RESTAURANTS = 5;
+/** Cards shown on each rail once the area qualifies. */
+export const HOME_RAIL_CARDS = 10;
 
 function asDish(raw: unknown, restaurant: Restaurant): HomeTrendingDish | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -77,7 +79,7 @@ async function sampleNearbyDishes(restaurants: Restaurant[]): Promise<HomeTrendi
   return out;
 }
 
-function onePerRestaurant<T extends { restaurantId: string }>(rows: T[], limit = 5): T[] {
+function onePerRestaurant<T extends { restaurantId: string }>(rows: T[], limit = HOME_RAIL_CARDS): T[] {
   const seen = new Set<string>();
   const out: T[] = [];
   for (const row of rows) {
@@ -90,11 +92,11 @@ function onePerRestaurant<T extends { restaurantId: string }>(rows: T[], limit =
 }
 
 async function orderAgainFromHistory(): Promise<HomeOrderAgainDish[]> {
-  const result = await orderApi.getOrders({ page: 1, limit: 5 });
+  const result = await orderApi.getOrders({ page: 1, limit: HOME_RAIL_CARDS });
   const seenRestaurants = new Set<string>();
   const out: HomeOrderAgainDish[] = [];
   for (const order of result.orders) {
-    if (out.length >= 5) break;
+    if (out.length >= HOME_RAIL_CARDS) break;
     if (
       order.status === 'cancelled' ||
       order.status === 'rejected' ||
@@ -181,7 +183,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
         : feed?.orderAgain?.length
           ? feed.orderAgain
           : (again.data ?? []),
-      5,
+      HOME_RAIL_CARDS,
     );
     const sampled = showDiscovery ? (sample.data ?? []) : [];
     const rated = (feed?.topRated ?? []).filter((card) => (card.rating ?? 0) > 0);
@@ -190,7 +192,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       : rated.length
         ? rated
         : restaurants.filter((r) => (r.rating ?? 0) > 0).map(restaurantCard)
-    ).slice(0, 5);
+    ).slice(0, HOME_RAIL_CARDS);
     const topRatedIds = new Set(topRated.map((card) => card.id));
     const apartFromTopRated = (dish: { restaurantId: string }) => !topRatedIds.has(dish.restaurantId);
     const trendingDishes = (!showDiscovery
@@ -201,12 +203,13 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
           ? feed.dishesToTry
           : sampled.filter((_, index) => index % 2 === 0)
     ).filter(apartFromTopRated);
-    const trendingCapped = onePerRestaurant(trendingDishes, 5);
-    const suggestedItems = !showDiscovery
+    const trendingCapped = onePerRestaurant(trendingDishes, HOME_RAIL_CARDS);
+    const suggestedItems = (!showDiscovery
       ? []
       : feed?.suggestedItems?.length
         ? feed.suggestedItems
-        : sampled.filter((_, index) => index % 2 === 1);
+        : sampled.filter((_, index) => index % 2 === 1)
+    ).slice(0, HOME_RAIL_CARDS);
 
     const trendingFromFeed = (feed?.trending ?? []).filter((card) => !topRatedIds.has(card.id));
     const trending = (showDiscovery
@@ -214,7 +217,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
         ? trendingFromFeed
         : restaurants.filter((r) => !topRatedIds.has(r.id)).map(restaurantCard)
       : []
-    ).slice(0, 5);
+    ).slice(0, HOME_RAIL_CARDS);
 
     if (!feed && !trending.length && !trendingCapped.length && !suggestedItems.length && !orderAgain.length && !topRated.length) {
       return undefined;
@@ -233,7 +236,7 @@ export function useHomeDishRails({ feed, feedLoading, restaurants, loggedIn }: I
       dishesToTry: showDiscovery
         ? onePerRestaurant(
           (feed?.dishesToTry?.length ? feed.dishesToTry : trendingCapped).filter(apartFromTopRated),
-          5,
+          HOME_RAIL_CARDS,
         )
         : [],
       suggestedItems,
