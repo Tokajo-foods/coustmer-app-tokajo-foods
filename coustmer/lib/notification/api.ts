@@ -263,6 +263,7 @@ export const notificationApi = {
     token: string;
     platform: 'android' | 'ios' | 'web';
     app?: 'customer';
+    appVersion?: string;
   }): Promise<NotificationDevice | null> => {
     const res = await request<Record<string, unknown>>(
       `${NOTIFICATION_SERVICE}/devices/register`,
@@ -272,6 +273,7 @@ export const notificationApi = {
           token: payload.token,
           app: payload.app ?? 'customer',
           platform: payload.platform,
+          ...(payload.appVersion ? { appVersion: payload.appVersion } : {}),
         },
       }
     );

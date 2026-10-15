@@ -1,27 +1,55 @@
-import Constants from 'expo-constants';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { notificationApi } from '@/lib/notification/api';
+import { notificationKeys } from '@/lib/notification/hooks';
 import { loadNotifications } from '@/lib/notification/load-notifications';
+import { ensureOrderUpdatesChannel } from '@/lib/notification/push-channel';
+import { registerCustomerPushDevice } from '@/lib/notification/push-device';
+import { routeForNotificationData } from '@/lib/notification/push-route';
+import { useSocketEvent } from '@/lib/socket/hooks';
 import { useAuthStore } from '@/store/auth-store';
 
-/** Registers the customer push token and opens restaurant chat from a tap. */
+type NotificationResponse = import('expo-notifications').NotificationResponse;
+
+/** Survives re-mounts so a cold-start tap is not replayed when auth state changes. */
+const handledResponses = new Set<string>();
+
+/** Registers the customer push token, keeps the inbox live, and opens the right screen on tap. */
 export function CustomerPushSync() {
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  useSocketEvent('notification:new', () => {
+    void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+  });
 
   useEffect(() => {
     if (!token || Platform.OS === 'web') return;
     let cancelled = false;
-    let remove = () => undefined;
+    const cleanups: Array<() => void> = [];
+    const track = (sub: { remove: () => void }) => {
+      if (cancelled) sub.remove();
+      else cleanups.push(() => sub.remove());
+    };
+
+    const open = (response: NotificationResponse): boolean => {
+      const id = response.notification.request.identifier;
+      if (handledResponses.has(id)) return false;
+      const route = routeForNotificationData(response.notification.request.content.data);
+      if (!route) return false;
+      handledResponses.add(id);
+      router.push(route as never);
+      return true;
+    };
 
     void (async () => {
       try {
-        const Notifications = await loadNotifications();
-        if (!Notifications) return;
-        Notifications.setNotificationHandler({
+        const N = await loadNotifications();
+        if (!N || cancelled) return;
+        N.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
             shouldPlaySound: true,
@@ -30,37 +58,25 @@ export function CustomerPushSync() {
             shouldShowList: true,
           }),
         });
-        const current = await Notifications.getPermissionsAsync();
-        let status = current.status;
-        if (status !== 'granted') {
-          status = (await Notifications.requestPermissionsAsync()).status;
+        await ensureOrderUpdatesChannel(N);
+
+        track(N.addNotificationResponseReceivedListener((res) => { open(res); }));
+        track(N.addNotificationReceivedListener(() => {
+          void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+        }));
+        const last = await N.getLastNotificationResponseAsync().catch(() => null);
+        if (last && !cancelled && open(last)) {
+          await N.clearLastNotificationResponseAsync?.().catch(() => undefined);
         }
+
+        let status = (await N.getPermissionsAsync()).status;
+        if (status !== 'granted') status = (await N.requestPermissionsAsync()).status;
         if (status !== 'granted' || cancelled) return;
-        const extra = Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined;
-        const projectId = extra?.eas?.projectId;
-        const expoToken = await Notifications.getExpoPushTokenAsync(
-          projectId ? { projectId } : undefined,
-        );
-        const pushToken = expoToken.data?.trim();
-        if (!pushToken || cancelled) return;
-        await notificationApi.registerDevice({
-          token: pushToken,
-          platform: Platform.OS === 'ios' ? 'ios' : 'android',
-          app: 'customer',
-        });
-        if (cancelled) return;
-        const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-          const raw = response.notification.request.content.data;
-          const data = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
-          if (String(data.kind ?? '') !== 'restaurant_chat') return;
-          const orderId = String(data.orderId ?? '').trim();
-          if (!orderId) return;
-          router.push({
-            pathname: '/orders/[orderId]/restaurant-chat',
-            params: { orderId, restaurantName: 'Restaurant' },
-          });
-        });
-        remove = () => sub.remove();
+
+        await registerCustomerPushDevice(N);
+        track(N.addPushTokenListener(() => {
+          void registerCustomerPushDevice(N).catch(() => undefined);
+        }));
       } catch {
         // Expo Go on Android cannot receive remote push. A dev build can.
       }
@@ -68,9 +84,9 @@ export function CustomerPushSync() {
 
     return () => {
       cancelled = true;
-      remove();
+      cleanups.forEach((fn) => fn());
     };
-  }, [router, token]);
+  }, [queryClient, router, token]);
 
   return null;
 }
