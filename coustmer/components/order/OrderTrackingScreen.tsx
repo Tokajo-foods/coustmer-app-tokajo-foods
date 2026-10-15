@@ -65,7 +65,7 @@ import {
   useTrackingEta,
   useTrackingRoute,
 } from '@/lib/delivery/hooks';
-import { isFixStale, routeLeg, trackingMapVisible } from '@/lib/delivery/rider-fix';
+import { fresherRiderPoint, isFixStale, routeLeg, trackingMapVisible } from '@/lib/delivery/rider-fix';
 import { OrderCallPanel } from '@/components/call/OrderCallPanel';
 import { useOrder, useReorder } from '@/lib/order/hooks';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
@@ -389,7 +389,7 @@ export function OrderTrackingScreen() {
         updatedAt: liveLocQuery.data.updatedAt,
       }
     : null;
-  const riderFix = riderOnTrip ? (socketLocation.fix ?? polledFix) : null;
+  const riderFix = riderOnTrip ? fresherRiderPoint(socketLocation.fix, polledFix) : null;
   const riderStale = Boolean(riderFix) && (socketLocation.stale || isFixStale(riderFix?.updatedAt));
 
   const mapPins = resolveTrackingPins({

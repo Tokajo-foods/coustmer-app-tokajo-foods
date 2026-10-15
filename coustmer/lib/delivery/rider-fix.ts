@@ -44,6 +44,20 @@ export function riderLocationVisible(status: string | null | undefined): boolean
   return trackingMapVisible(status);
 }
 
+/** Prefer the GPS point recorded most recently. */
+export function fresherRiderPoint(
+  socketFix: RiderPoint | null,
+  polledFix: RiderPoint | null,
+): RiderPoint | null {
+  if (!socketFix) return polledFix;
+  if (!polledFix) return socketFix;
+  const socketAge = fixAgeMs(socketFix.updatedAt);
+  const polledAge = fixAgeMs(polledFix.updatedAt);
+  if (socketAge == null) return polledAge == null ? socketFix : polledFix;
+  if (polledAge == null) return socketFix;
+  return polledAge < socketAge ? polledFix : socketFix;
+}
+
 export function readLatLng(source: object | null | undefined): { lat: number; lng: number } | null {
   if (!source) return null;
   const raw = source as Record<string, unknown>;
