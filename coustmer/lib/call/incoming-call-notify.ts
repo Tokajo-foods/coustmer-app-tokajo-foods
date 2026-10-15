@@ -14,6 +14,7 @@ type IncomingPayload = {
   callerRole: string;
   callerName?: string;
   callerLogoUrl?: string | null;
+  orderNumber?: string | null;
 };
 
 /** High-priority call channel with custom ringtone + Accept / Decline. */
@@ -71,7 +72,9 @@ export async function presentIncomingCallNotification(input: IncomingPayload): P
       identifier: NOTIF_ID,
       content: {
         title: `${who} is calling`,
-        body: 'Incoming Tokajo order call',
+        body: input.orderNumber
+          ? `Tokajo call · Order #${input.orderNumber}`
+          : 'Incoming Tokajo order call',
         sound: RINGTONE,
         categoryIdentifier: CATEGORY,
         interruptionLevel: 'timeSensitive',
@@ -105,4 +108,29 @@ export async function dismissIncomingCallNotification(): Promise<void> {
   if (!Notifications) return;
   await Notifications.dismissNotificationAsync(NOTIF_ID).catch(() => undefined);
   await Notifications.cancelScheduledNotificationAsync(NOTIF_ID).catch(() => undefined);
+}
+
+export async function presentMissedCallNotification(input: {
+  orderId: string;
+  callId: string;
+  callerName: string;
+  orderNumber?: string | null;
+}): Promise<void> {
+  try {
+    const Notifications = await loadNotifications();
+    if (!Notifications?.scheduleNotificationAsync) return;
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `Missed call from ${input.callerName}`,
+        body: input.orderNumber
+          ? `Order #${input.orderNumber} · open the order to call back`
+          : 'Open the order to call back',
+        data: { kind: 'internet_call_missed', orderId: input.orderId, callId: input.callId },
+        sound: false,
+      },
+      trigger: null,
+    });
+  } catch {
+    // Notifications are blocked.
+  }
 }

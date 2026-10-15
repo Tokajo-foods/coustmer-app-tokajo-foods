@@ -71,7 +71,7 @@ export function OrderCallPanel({ orderId, viewer, names }: Props) {
           row={row}
           busy={calls.busy}
           onPhone={() => void calls.dial(row.role)}
-          onInternet={() => void calls.startInternet(row.role)}
+          onInternet={() => void calls.startInternet(row.role, titleFor(row.role))}
         />
       ))}
     </View>

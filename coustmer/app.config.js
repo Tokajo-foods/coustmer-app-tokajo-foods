@@ -56,6 +56,7 @@ const config = {
     './plugins/with-eas-autolinking-cache.js',
     ['@livekit/react-native-expo-plugin', { android: { audioType: 'communication' } }],
     '@config-plugins/react-native-webrtc',
+    'expo-audio',
     [
       'expo-notifications',
       {
@@ -65,7 +66,16 @@ const config = {
         mode: 'production',
       },
     ],
-    '@config-plugins/react-native-callkeep',
+    [
+      '@config-plugins/react-native-callkeep',
+      {
+        ios: {
+          appName: 'TOKAJO FOODS',
+          supportsVideo: false,
+          includesCallsInRecents: false,
+        },
+      },
+    ],
   ],
   ios: {
     supportsTablet: true,

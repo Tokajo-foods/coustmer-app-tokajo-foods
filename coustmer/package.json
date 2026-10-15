@@ -1,7 +1,7 @@
 {
   "name": "TOKAJO FOODS",
   "version": "1.0.1",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "dependencies": {
     "@config-plugins/react-native-callkeep": "^14.0.2",
     "@config-plugins/react-native-webrtc": "^13.0.0",
@@ -22,6 +22,7 @@
     "@tanstack/react-query-persist-client": "^5.101.4",
     "axios": "^1.18.0",
     "expo": "~54.0.33",
+    "expo-audio": "~1.0.16",
     "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.21",
@@ -38,6 +39,7 @@
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
+    "expo-task-manager": "~14.0.9",
     "firebase": "^12.19.0",
     "livekit-client": "^2.22.3",
     "lucide-react-native": "^1.21.0",

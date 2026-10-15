@@ -1,5 +1,8 @@
 import { Platform } from 'react-native';
 
+type KeepEvent = { callUUID?: string; muted?: boolean };
+type InitialEvent = { name: string; data: KeepEvent };
+
 type CallKeepModule = {
   setup: (options: Record<string, unknown>) => Promise<boolean>;
   displayIncomingCall: (
@@ -11,70 +14,69 @@ type CallKeepModule = {
   ) => void;
   endCall: (uuid: string) => void;
   rejectCall: (uuid: string) => void;
+  reportEndCallWithUUID: (uuid: string, reason: number) => void;
   setAvailable: (enabled: boolean) => void;
   setCurrentCallActive: (uuid: string) => void;
+  setMutedCall: (uuid: string, muted: boolean) => void;
   backToForeground: () => void;
-  addEventListener: (type: string, handler: (event: { callUUID?: string }) => void) => void;
+  getInitialEvents?: () => Promise<InitialEvent[]>;
+  clearInitialEvents?: () => void;
+  addEventListener: (type: string, handler: (event: KeepEvent) => void) => void;
   removeEventListener: (type: string) => void;
 };
 
-let module: CallKeepModule | null | undefined;
-let setupDone = false;
-const uuidByCallId = new Map<string, string>();
-const callIdByUuid = new Map<string, string>();
+/** CXCallEndedReason: the OS shows missed / answered elsewhere correctly. */
+export const END_REASON = { failed: 1, remoteEnded: 2, unanswered: 3, answeredElsewhere: 4, declinedElsewhere: 5 } as const;
 
-/** Stable UUID-shaped id from a Mongo call id so CallKeep can track the ring. */
+let keepModule: CallKeepModule | null | undefined;
+let setupPromise: Promise<boolean> | null = null;
+
 export function callUuidFromId(callId: string): string {
   const hex = callId.replace(/[^a-f0-9]/gi, '').toLowerCase().padEnd(32, '0').slice(0, 32);
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
-async function loadCallKeep(): Promise<CallKeepModule | null> {
-  if (module !== undefined) return module;
+export function callIdFromUuid(uuid: string | undefined): string | null {
+  if (!uuid) return null;
+  const hex = uuid.replace(/-/g, '').toLowerCase();
+  return /^[a-f0-9]{32}$/.test(hex) ? hex.slice(0, 24) : null;
+}
+
+function loadCallKeep(): CallKeepModule | null {
+  if (keepModule !== undefined) return keepModule;
   if (Platform.OS === 'web') {
-    module = null;
+    keepModule = null;
     return null;
   }
   try {
-    const loaded = await import('react-native-callkeep');
-    const api = (loaded.default ?? loaded) as CallKeepModule;
-    if (typeof api?.setup !== 'function' || typeof api.addEventListener !== 'function') {
-      module = null;
-      return null;
-    }
-    module = api;
-    return module;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const loaded = require('react-native-callkeep') as { default?: CallKeepModule } & CallKeepModule;
+    const api = loaded.default ?? loaded;
+    keepModule = typeof api?.setup === 'function' ? api : null;
   } catch {
-    module = null;
-    return null;
+    keepModule = null;
   }
+  return keepModule;
 }
 
-/** True once CallKeep is set up in a native build (not Expo Go). */
-export async function isNativeIncomingCallAvailable(): Promise<boolean> {
-  const keep = await loadCallKeep();
-  return Boolean(keep);
-}
-
-export async function setupNativeIncomingCalls(): Promise<boolean> {
-  if (setupDone) return Boolean(module);
-  const keep = await loadCallKeep();
-  if (!keep) return false;
-  try {
-    await keep.setup({
+export function setupNativeIncomingCalls(): Promise<boolean> {
+  if (setupPromise) return setupPromise;
+  const keep = loadCallKeep();
+  if (!keep) return Promise.resolve(false);
+  setupPromise = keep
+    .setup({
       ios: {
         appName: 'TOKAJO FOODS',
         supportsVideo: false,
         maximumCallGroups: '1',
         maximumCallsPerCallGroup: '1',
-        ringtoneSound: 'incoming_call.wav',
         includesCallsInRecents: false,
       },
       android: {
-        alertTitle: 'Allow phone-account access',
+        alertTitle: 'Allow order calls',
         alertDescription:
           'TOKAJO shows order calls on the lock screen like a normal phone call. Your personal number stays private.',
-        cancelButton: 'Cancel',
+        cancelButton: 'Not now',
         okButton: 'Allow',
         additionalPermissions: [],
         foregroundService: {
@@ -84,101 +86,136 @@ export async function setupNativeIncomingCalls(): Promise<boolean> {
           notificationIcon: 'ic_launcher',
         },
       },
+    })
+    .then(() => {
+      keep.setAvailable(true);
+      return true;
+    })
+    .catch(() => {
+      setupPromise = null;
+      return false;
     });
-    keep.setAvailable(true);
-    setupDone = true;
-    return true;
-  } catch {
-    module = null;
-    return false;
-  }
+  return setupPromise;
 }
 
-export async function displayNativeIncomingCall(input: {
-  callId: string;
-  callerName: string;
-}): Promise<boolean> {
-  const keep = await loadCallKeep();
-  if (!keep || !setupDone) {
-    const ok = await setupNativeIncomingCalls();
-    if (!ok) return false;
-  }
-  const api = await loadCallKeep();
-  if (!api) return false;
-  const uuid = callUuidFromId(input.callId);
-  uuidByCallId.set(input.callId, uuid);
-  callIdByUuid.set(uuid.toLowerCase(), input.callId);
+/** System incoming-call screen with the phone's own ringtone. */
+export async function displayNativeIncomingCall(callId: string, callerName: string): Promise<boolean> {
+  if (!(await setupNativeIncomingCalls())) return false;
+  const keep = loadCallKeep();
+  if (!keep) return false;
   try {
-    api.displayIncomingCall(uuid, 'Tokajo', input.callerName, 'generic', false);
+    keep.displayIncomingCall(callUuidFromId(callId), 'TOKAJO', callerName, 'generic', false);
     return true;
   } catch {
     return false;
   }
 }
 
-export async function endNativeIncomingCall(callId: string): Promise<void> {
-  const keep = await loadCallKeep();
-  if (!keep) return;
-  const uuid = uuidByCallId.get(callId) ?? callUuidFromId(callId);
-  try {
-    keep.endCall(uuid);
-  } catch {
-    try {
-      keep.rejectCall(uuid);
-    } catch {
-      // Already dismissed.
-    }
-  }
-  uuidByCallId.delete(callId);
-  callIdByUuid.delete(uuid.toLowerCase());
-}
-
-export async function bringAppToForeground(): Promise<void> {
-  const keep = await loadCallKeep();
+export function endNativeCall(callId: string): void {
+  const keep = loadCallKeep();
   if (!keep) return;
   try {
-    keep.backToForeground();
+    keep.endCall(callUuidFromId(callId));
   } catch {
-    // iOS / Expo Go may not support this.
+    // Already gone.
   }
 }
 
-export async function markNativeCallActive(callId: string): Promise<void> {
-  const keep = await loadCallKeep();
+export function reportNativeCallEnded(callId: string, reason: number): void {
+  const keep = loadCallKeep();
   if (!keep) return;
-  const uuid = uuidByCallId.get(callId) ?? callUuidFromId(callId);
   try {
-    keep.setCurrentCallActive(uuid);
-    keep.backToForeground();
+    keep.reportEndCallWithUUID(callUuidFromId(callId), reason);
+  } catch {
+    endNativeCall(callId);
+  }
+}
+
+export function markNativeCallActive(callId: string): void {
+  const keep = loadCallKeep();
+  if (!keep) return;
+  try {
+    keep.setCurrentCallActive(callUuidFromId(callId));
   } catch {
     // Optional on some OS versions.
   }
 }
 
+export function setNativeCallMuted(callId: string, muted: boolean): void {
+  const keep = loadCallKeep();
+  if (!keep) return;
+  try {
+    keep.setMutedCall(callUuidFromId(callId), muted);
+  } catch {
+    // Optional.
+  }
+}
+
+export function bringAppToForeground(): void {
+  const keep = loadCallKeep();
+  if (!keep) return;
+  try {
+    keep.backToForeground();
+  } catch {
+    // iOS opens the app itself after answer.
+  }
+}
+
+type NativeHandlers = {
+  onAnswer: (callId: string) => void;
+  onEnd: (callId: string) => void;
+  onMute: (callId: string, muted: boolean) => void;
+};
+
+let bound = false;
+
+export async function bindNativeCallActions(handlers: NativeHandlers): Promise<void> {
+  if (bound) return;
+  const keep = loadCallKeep();
+  if (!keep || !(await setupNativeIncomingCalls())) return;
+  bound = true;
+  const route = (name: string, event: KeepEvent) => {
+    const callId = callIdFromUuid(event.callUUID);
+    if (!callId) return;
+    if (name === 'answerCall' || name === 'RNCallKeepPerformAnswerCallAction') handlers.onAnswer(callId);
+    else if (name === 'endCall' || name === 'RNCallKeepPerformEndCallAction') handlers.onEnd(callId);
+    else if (name === 'didPerformSetMutedCallAction' || name === 'RNCallKeepDidPerformSetMutedCallAction') {
+      handlers.onMute(callId, Boolean(event.muted));
+    }
+  };
+  keep.addEventListener('answerCall', (e) => route('answerCall', e));
+  keep.addEventListener('endCall', (e) => route('endCall', e));
+  keep.addEventListener('didPerformSetMutedCallAction', (e) => route('didPerformSetMutedCallAction', e));
+  try {
+    const initial = (await keep.getInitialEvents?.()) ?? [];
+    initial.forEach((event) => route(event.name, event.data ?? {}));
+    keep.clearInitialEvents?.();
+  } catch {
+    // Older CallKeep has no initial events.
+  }
+}
+
+/** Kept for older notification listeners that still import these names. */
+export async function endNativeIncomingCall(callId: string): Promise<void> {
+  endNativeCall(callId);
+}
+
+export async function isNativeIncomingCallAvailable(): Promise<boolean> {
+  return Boolean(loadCallKeep());
+}
+
 export function resolveCallIdFromUuid(uuid: string | undefined): string | null {
-  if (!uuid) return null;
-  return callIdByUuid.get(uuid.toLowerCase()) ?? null;
+  return callIdFromUuid(uuid);
 }
 
 export async function listenNativeIncomingCallActions(handlers: {
   onAnswer: (callId: string) => void;
   onEnd: (callId: string) => void;
 }): Promise<() => void> {
-  const keep = await loadCallKeep();
-  if (!keep || typeof keep.addEventListener !== 'function') return () => undefined;
-  await setupNativeIncomingCalls();
-  const answer = (event: { callUUID?: string }) => {
-    const callId = resolveCallIdFromUuid(event.callUUID);
-    if (callId) handlers.onAnswer(callId);
-  };
-  const end = (event: { callUUID?: string }) => {
-    const callId = resolveCallIdFromUuid(event.callUUID);
-    if (callId) handlers.onEnd(callId);
-  };
-  keep.addEventListener('answerCall', answer);
-  keep.addEventListener('endCall', end);
-  return () => {
-    keep.removeEventListener('answerCall');
-    keep.removeEventListener('endCall');
-  };
+  await bindNativeCallActions({
+    onAnswer: handlers.onAnswer,
+    onEnd: handlers.onEnd,
+    onMute: () => undefined,
+  });
+  return () => undefined;
 }
