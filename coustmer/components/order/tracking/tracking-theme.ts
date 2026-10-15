@@ -1,0 +1,11 @@
+export const ORANGE = '#FF6A00';
+export const ORANGE_SOFT = '#FFF4EC';
+export const ORANGE_DARK = '#EA580C';
+export const INK = '#111827';
+export const INK_SOFT = '#374151';
+export const MUTED = '#6B7280';
+export const LINE = '#ECEFF3';
+export const WHITE = '#FFFFFF';
+export const GREEN = '#059669';
+export const SHEET = '#F7F8FA';
+export const RED = '#DC2626';

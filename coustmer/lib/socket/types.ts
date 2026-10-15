@@ -10,31 +10,11 @@ export type ServerToClientEvents = {
   /** Order was cancelled */
   'order:cancelled': (data: { orderId: string; reason?: string; refundAmount?: number }) => void;
   /** Rider GPS (primary). Gateway sends latitude/longitude. */
-  'partner:location': (data: {
-    orderId: string;
-    lat?: number;
-    lng?: number;
-    latitude?: number;
-    longitude?: number;
-    heading?: number;
-    accuracy?: number;
-    updatedAt?: string;
-    timestamp?: string;
-    receivedAt?: string;
-  }) => void;
-  /** Rider GPS alias */
-  'tracking:location': (data: {
-    orderId: string;
-    lat?: number;
-    lng?: number;
-    latitude?: number;
-    longitude?: number;
-    heading?: number;
-    accuracy?: number;
-    updatedAt?: string;
-    timestamp?: string;
-    receivedAt?: string;
-  }) => void;
+  'partner:location': (data: PartnerLocationEvent) => void;
+  /** Rider GPS alias (same payload, emitted alongside `partner:location`). */
+  'tracking:location': (data: PartnerLocationEvent) => void;
+  /** A rider was offered / assigned to this order. */
+  'delivery:assigned': (data: { orderId: string; deliveryId?: string; status?: string }) => void;
   /** Last fix is too old to slide the marker. */
   'tracking:stale': (data: { orderId: string }) => void;
   /** ETA update chip */
@@ -90,13 +70,36 @@ export type ServerToClientEvents = {
 
 /** Client → Server events */
 export type ClientToServerEvents = {
-  /** Start receiving updates for an order */
-  'track:order': (data: { orderId: string }) => void;
+  /** Start receiving updates for an order. Gateway acks after the ownership check. */
+  'track:order': (data: { orderId: string }, ack?: (result: TrackOrderAck) => void) => void;
+  /** Stop receiving updates for an order */
+  'untrack:order': (data: { orderId: string }) => void;
   /** Send a chat message to the rider */
   'chat:new-message': (data: { orderId: string; text: string; to: 'partner' }) => void;
   /** Typing indicator */
   typing: (data: { orderId: string; isTyping: boolean }) => void;
 };
+
+export type PartnerLocationEvent = {
+  orderId: string;
+  deliveryId?: string;
+  /** Trip status when the fix was taken (delivery-service writer). */
+  status?: string | null;
+  lat?: number;
+  lng?: number;
+  latitude?: number;
+  longitude?: number;
+  heading?: number;
+  speed?: number;
+  accuracy?: number | null;
+  updatedAt?: string;
+  timestamp?: string;
+  receivedAt?: string;
+};
+
+export type TrackOrderAck =
+  | { ok: true; orderId?: string }
+  | { ok: false; code: string; message?: string; orderId?: string };
 
 export type ChatMessageEvent = {
   orderId: string;

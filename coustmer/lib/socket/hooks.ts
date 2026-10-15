@@ -3,14 +3,17 @@
  * Each hook subscribes to one or more server→client events and returns live state.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import {
   emitTyping,
-  getSocket,
+  getSocketConnection,
   sendChatMessage,
+  subscribeSocketEvent,
   trackOrder,
   untrackOrder,
+  watchSocketConnection,
+  type SocketConnection,
 } from '@/lib/socket/socket';
 import type {
   ChatMessageEvent,
@@ -31,23 +34,16 @@ export function useSocketEvent<E extends EventName>(
   handlerRef.current = handler;
 
   useEffect(() => {
-    let socket: Awaited<ReturnType<typeof getSocket>> | null = null;
-
-    getSocket().then((s) => {
-      socket = s;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      s.on(event as any, (...args: unknown[]) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (handlerRef.current as any)(...args);
-      });
+    return subscribeSocketEvent(event, (...args: unknown[]) => {
+      (handlerRef.current as (...a: unknown[]) => void)(...args);
     });
-
-    return () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      socket?.off(event as any);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event, ...deps]);
+}
+
+/** Live socket connection state, independent of which socket instance is current. */
+export function useSocketConnection(): SocketConnection {
+  return useSyncExternalStore(watchSocketConnection, getSocketConnection, getSocketConnection);
 }
 
 // ─── Order status ─────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-/** Customer map and rider pin. Hidden until the rider accepts the trip. */
+/** Customer map and rider pin. Hidden until the rider accepts the trip; same statuses as the server share window. */
 
 export const RIDER_FIX_STALE_MS = 45_000;
 
@@ -22,8 +22,28 @@ export type RiderPoint = {
   lng: number;
   heading?: number;
   accuracy?: number;
+  /** When the fix was taken, on this device's clock (so phone clock skew never marks a live pin stale). */
   updatedAt?: string;
+  /** Server timestamp of the fix, used only to drop out-of-order socket events. */
+  serverAt?: string;
 };
+
+/** REST returns `ageSeconds`; convert it to a device-clock timestamp. */
+export function localFixTime(ageSeconds: unknown, fallbackIso?: string, now = Date.now()): string | undefined {
+  if (typeof ageSeconds === 'number' && Number.isFinite(ageSeconds) && ageSeconds >= 0) {
+    return new Date(now - ageSeconds * 1000).toISOString();
+  }
+  return fallbackIso;
+}
+
+/** True when `next` is not older than `prev` by server time (or either has no server time). */
+export function isNewerServerFix(prev: RiderPoint | null, next: RiderPoint): boolean {
+  if (!prev?.serverAt || !next.serverAt) return true;
+  const a = Date.parse(prev.serverAt);
+  const b = Date.parse(next.serverAt);
+  if (Number.isNaN(a) || Number.isNaN(b)) return true;
+  return b > a;
+}
 
 export type RouteLeg = 'restaurant' | 'home';
 

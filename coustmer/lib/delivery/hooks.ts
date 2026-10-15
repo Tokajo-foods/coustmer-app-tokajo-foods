@@ -1,21 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { deliveryApi } from '@/lib/delivery/api';
+import { errorStatus } from '@/lib/delivery/http';
 import type {
   AddressChangePayload,
   ContactlessPayload,
   DeliveryInstructionsPayload,
   RatePartnerPayload,
+  TrackingSupportReason,
   TrackingTipPayload,
 } from '@/lib/delivery/types';
 
 export const deliveryKeys = {
   all: ['delivery'] as const,
   tracking: (orderId: string) => [...deliveryKeys.all, 'tracking', orderId] as const,
-  liveLocation: (orderId: string) => [...deliveryKeys.all, 'live-location', orderId] as const,
-  eta: (orderId: string) => [...deliveryKeys.all, 'eta', orderId] as const,
-  route: (orderId: string) => [...deliveryKeys.all, 'route', orderId] as const,
-  partner: (orderId: string) => [...deliveryKeys.all, 'partner', orderId] as const,
   dropOtp: (orderId: string) => [...deliveryKeys.all, 'drop-otp', orderId] as const,
   chat: (orderId: string) => [...deliveryKeys.all, 'chat', orderId] as const,
   publicShare: (token: string) => [...deliveryKeys.all, 'public-share', token] as const,
@@ -73,58 +71,14 @@ export function useOrderTracking(
     queryKey: deliveryKeys.tracking(orderId),
     queryFn: () => deliveryApi.getTracking(orderId),
     enabled: Boolean(orderId) && (options?.enabled ?? true),
-    staleTime: 5_000,
+    staleTime: 3_000,
     refetchInterval: options?.refetchInterval ?? 8_000,
-    retry: 1,
-  });
-}
-
-export function useLiveLocation(orderId: string, active = true) {
-  return useQuery({
-    queryKey: deliveryKeys.liveLocation(orderId),
-    queryFn: () => deliveryApi.getLiveLocation(orderId),
-    enabled: Boolean(orderId) && active,
-    staleTime: 2_000,
-    /** Match rider trip ping (~3s) when socket is quiet. */
-    refetchInterval: active ? 8_000 : false,
-    retry: 0,
-  });
-}
-
-export function useTrackingEta(orderId: string, active = true) {
-  return useQuery({
-    queryKey: deliveryKeys.eta(orderId),
-    queryFn: () => deliveryApi.getEta(orderId),
-    enabled: Boolean(orderId) && active,
-    staleTime: 20_000,
-    refetchInterval: active ? 30_000 : false,
-  });
-}
-
-export function useTrackingRoute(orderId: string) {
-  return useQuery({
-    queryKey: deliveryKeys.route(orderId),
-    queryFn: () => deliveryApi.getRoute(orderId),
-    enabled: Boolean(orderId),
-    staleTime: 60_000,
-  });
-}
-
-/**
- * GET /tracking/order/:orderId/partner — masked rider info.
- * Replaces old useOrderDeliveryPartner (wrong path is gone).
- */
-export function useOrderDeliveryPartner(
-  orderId: string,
-  options?: { enabled?: boolean; refetchInterval?: number | false }
-) {
-  return useQuery({
-    queryKey: deliveryKeys.partner(orderId),
-    queryFn: () => deliveryApi.getOrderPartner(orderId),
-    enabled: Boolean(orderId) && (options?.enabled ?? true),
-    staleTime: 8_000,
-    refetchInterval: options?.refetchInterval ?? 12_000,
-    retry: 1,
+    // 404 = no rider trip yet, 403 = not your order: polling picks up assignment, retrying adds nothing.
+    retry: (count, err) => {
+      const status = errorStatus(err);
+      if (status === 404 || status === 403) return false;
+      return count < 1;
+    },
   });
 }
 
@@ -158,7 +112,10 @@ export function useChatHistory(orderId: string, options?: { enabled?: boolean; r
 /** GET /tracking/share/:shareToken — guest family track (no login). */
 export function usePublicShareTracking(
   shareToken: string,
-  options?: { enabled?: boolean; refetchInterval?: number | false }
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false | ((q: { state: { data?: { status?: string } | null } }) => number | false);
+  }
 ) {
   return useQuery({
     queryKey: deliveryKeys.publicShare(shareToken),
@@ -210,7 +167,8 @@ export function useContactPartner(orderId: string) {
 
 export function useContactSupport(orderId: string) {
   return useMutation({
-    mutationFn: (reason?: string) => deliveryApi.contactSupport(orderId, reason),
+    mutationFn: (input: { reason: TrackingSupportReason; message?: string }) =>
+      deliveryApi.contactSupport(orderId, input),
   });
 }
 

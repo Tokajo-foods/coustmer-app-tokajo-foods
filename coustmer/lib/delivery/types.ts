@@ -14,34 +14,30 @@ export type DeliveryPartner = {
   totalDeliveries: number;
   imageUrl?: string;
   isOnline: boolean;
-  currentLocation?: {
-    lat: number;
-    lng: number;
-    accuracy?: number;
-    heading?: number;
-    lastUpdate: string;
-  };
 };
 
 /** Full tracker DTO from GET /tracking/order/:orderId */
 export type OrderTracker = {
   orderId: string;
   deliveryId?: string;
+  /** Rider trip status (assigned → accepted → … → delivered / returning_to_restaurant / returned). */
   status?: string;
-  orderStatus?: string;
+  dutyHint?: string;
   etaMinutes?: number;
   etaSeconds?: number;
   etaAt?: string;
-  etaText?: string;
+  distanceMeters?: number;
   partner?: DeliveryPartner;
+  /** Last rider fix. Null when the server is not sharing GPS for this trip status, or no fix yet. */
+  rider: LiveLocation | null;
+  /** Server says the trip is inside the live-share window. */
+  liveTracking: boolean;
+  destination: 'restaurant' | 'customer' | null;
   restaurantLat?: number;
   restaurantLng?: number;
   customerLat?: number;
   customerLng?: number;
   routePolyline?: string;
-  timeline?: TrackingTimelineEvent[];
-  shareToken?: string;
-  dropOtp?: string;
   /** Parcel bag photo at restaurant. */
   pickupProofUrl?: string | null;
   /** Handoff / door photo at customer. */
@@ -50,32 +46,28 @@ export type OrderTracker = {
   raw: Record<string, unknown>;
 };
 
-export type TrackingTimelineEvent = {
-  status: string;
-  label?: string;
-  timestamp?: string;
-};
-
 export type LiveLocation = {
   lat: number;
   lng: number;
   heading?: number;
   accuracy?: number;
   speed?: number;
+  /** Fix time on this device's clock (server `ageSeconds` applied). */
   updatedAt?: string;
+  serverAt?: string;
+  stale?: boolean;
 };
 
 export type TrackingEta = {
   etaMinutes?: number;
   etaSeconds?: number;
   etaAt?: string;
-  etaText?: string;
-  distanceKm?: number;
+  distanceMeters?: number;
+  destination?: 'restaurant' | 'customer' | 'arrived';
 };
 
 export type TrackingRoute = {
   polyline?: string;
-  coordinates?: [number, number][];
   distanceMeters?: number;
   durationSeconds?: number;
 };
@@ -133,6 +125,7 @@ export type PublicShareTracking = {
   dropAddress?: string;
   riderLat?: number;
   riderLng?: number;
+  riderUpdatedAt?: string;
   partner?: DeliveryPartner;
   expiresAt?: string;
 };
@@ -169,8 +162,9 @@ export type RatePartnerPayload = {
 
 export type ContactlessPayload = {
   enabled: boolean;
-  instructions?: string;
 };
+
+export type TrackingSupportReason = 'late' | 'wrong_address' | 'rider_issue' | 'food_issue' | 'other';
 
 export type AddressChangePayload = {
   addressId?: string;

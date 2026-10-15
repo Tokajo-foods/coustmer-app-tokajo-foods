@@ -17,6 +17,8 @@ type Props = {
   restName: string;
   rider: RiderPoint | null;
   stale: boolean;
+  /** Socket is down; the pin is driven by REST polling. */
+  offline?: boolean;
   leg: RouteLeg;
   onRoute?: (info: { dist: string; time: string }) => void;
 };
@@ -30,6 +32,7 @@ export function TrackingMap({
   restName,
   rider,
   stale,
+  offline = false,
   leg,
   onRoute,
 }: Props) {
@@ -38,12 +41,17 @@ export function TrackingMap({
   const [mapFailed, setMapFailed] = useState(false);
   const startLeg = useRef(leg);
   const htmlBuilt = useRef(false);
+  const riderRef = useRef(rider);
+  const legRef = useRef(leg);
+  riderRef.current = rider;
+  legRef.current = leg;
   if (!htmlBuilt.current) startLeg.current = leg;
   const pinsReady = restLat != null && restLng != null && custLat != null && custLng != null;
 
   const html = useMemo(() => {
     if (restLat == null || restLng == null || custLat == null || custLng == null) return '';
     htmlBuilt.current = true;
+    ready.current = false;
     return buildTrackingMapHtml({
       restLat,
       restLng,
@@ -92,6 +100,14 @@ export function TrackingMap({
     );
   }
 
+  const banner = stale
+    ? staleCopy(rider?.updatedAt)
+    : !rider
+      ? 'Locating your delivery partner…'
+      : offline
+        ? 'Reconnecting. Location refreshes every few seconds.'
+        : null;
+
   return (
     <View style={styles.fill}>
       <WebView
@@ -102,15 +118,22 @@ export function TrackingMap({
         onLoadEnd={() => {
           ready.current = true;
           webRef.current?.injectJavaScript(
-            `window.__setLeg && window.__setLeg(${JSON.stringify(leg)}); true;`,
+            `window.__setLeg && window.__setLeg(${JSON.stringify(legRef.current)}); true;`,
           );
-          pushRider(rider);
+          pushRider(riderRef.current);
         }}
         onMessage={(event) => {
           try {
             const data = JSON.parse(event.nativeEvent.data) as { type?: string; distance?: string; duration?: string };
             if (data.type === 'MAP_ERROR') {
               setMapFailed(true);
+              return;
+            }
+            if (data.type === 'MAP_READY') {
+              webRef.current?.injectJavaScript(
+                `window.__setLeg && window.__setLeg(${JSON.stringify(legRef.current)}); true;`,
+              );
+              pushRider(riderRef.current);
               return;
             }
             if (data.type === 'ROUTE_INFO' && data.distance && data.duration) {
@@ -125,9 +148,9 @@ export function TrackingMap({
         javaScriptEnabled
         domStorageEnabled
       />
-      {stale ? (
+      {banner ? (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>{staleCopy(rider?.updatedAt)}</Text>
+          <Text style={styles.bannerText}>{banner}</Text>
         </View>
       ) : null}
     </View>
@@ -151,7 +174,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 36,
+    bottom: 76,
     backgroundColor: '#FFFFFF',
     borderRadius: 999,
     paddingVertical: 8,

@@ -90,8 +90,12 @@ export function buildTrackingMapHtml(opts: {
       let riderMarker = null;
       let frame = 0;
       let lastRoute = null;
+      let lastRouteAt = 0;
+      let lastFixAt = 0;
       let fitted = false;
+      let userMovedAt = 0;
       let leg = ${JSON.stringify(opts.leg)};
+      map.addListener('dragstart', function() { userMovedAt = Date.now(); });
       function meters(a, b) {
         const r = Math.PI / 180;
         const dLat = (b.lat - a.lat) * r;
@@ -108,11 +112,23 @@ export function buildTrackingMapHtml(opts: {
       function target() { return leg === 'home' ? home : rest; }
       function fit(extra) {
         const bounds = new google.maps.LatLngBounds();
-        bounds.extend(rest);
         bounds.extend(home);
+        if (leg !== 'home' || !extra) bounds.extend(rest);
         if (extra) bounds.extend(extra);
-        map.fitBounds(bounds, { top: 108, bottom: 56, left: 40, right: 40 });
+        map.fitBounds(bounds, { top: 108, bottom: 72, left: 40, right: 40 });
         fitted = true;
+      }
+      function follow(pos) {
+        if (Date.now() - userMovedAt < 15000) return;
+        const view = map.getBounds();
+        if (!view) return;
+        const ne = view.getNorthEast();
+        const sw = view.getSouthWest();
+        const padLat = (ne.lat() - sw.lat()) * 0.12;
+        const padLng = (ne.lng() - sw.lng()) * 0.12;
+        const inside = pos.lat < ne.lat() - padLat && pos.lat > sw.lat() + padLat
+          && pos.lng < ne.lng() - padLng && pos.lng > sw.lng() + padLng;
+        if (!inside) fit(pos);
       }
       function clearFallback() {
         if (fallback) { fallback.setMap(null); fallback = null; }
@@ -153,7 +169,7 @@ export function buildTrackingMapHtml(opts: {
         }, function(result, status) {
           if (status !== 'OK' || !result.routes[0]) {
             drawFallback(origin);
-            if (refit || !fitted) fit(origin);
+            if (refit || !fitted) fit(origin); else follow(origin);
             return;
           }
           clearFallback();
@@ -166,11 +182,14 @@ export function buildTrackingMapHtml(opts: {
               duration: routeLeg.duration.text
             }));
           }
-          if (refit || !fitted) fit(origin);
+          if (refit || !fitted) fit(origin); else follow(origin);
         });
       }
       function placeRider(next, turn) {
         const drawn = riderIcon(turn);
+        const nowMs = Date.now();
+        const gap = lastFixAt ? nowMs - lastFixAt : 0;
+        lastFixAt = nowMs;
         if (!riderMarker) {
           riderMarker = new google.maps.Marker({
             position: next, map: map, zIndex: 999, icon: drawn, optimized: false
@@ -180,10 +199,12 @@ export function buildTrackingMapHtml(opts: {
         riderMarker.setIcon(drawn);
         const start = riderMarker.getPosition();
         const from = { lat: start.lat(), lng: start.lng() };
-        const t0 = performance.now();
         if (frame) cancelAnimationFrame(frame);
+        if (meters(from, next) > 2000) { riderMarker.setPosition(next); return; }
+        const duration = Math.min(3000, Math.max(500, gap * 0.9));
+        const t0 = performance.now();
         function step(now) {
-          const p = Math.min(1, (now - t0) / 1000);
+          const p = Math.min(1, (now - t0) / duration);
           const e = p * p * (3 - 2 * p);
           riderMarker.setPosition({
             lat: from.lat + (next.lat - from.lat) * e,
@@ -219,14 +240,21 @@ export function buildTrackingMapHtml(opts: {
         const turn = Number.isFinite(Number(heading)) && Number(heading) >= 0
           ? Number(heading)
           : (previous ? bearing(previous, next) : 90);
+        const firstFix = !riderMarker;
         placeRider(next, turn);
-        if (!lastRoute || meters(lastRoute, next) > 35) {
+        if (!lastRoute || meters(lastRoute, next) > 120 || Date.now() - lastRouteAt > 60000) {
           lastRoute = next;
-          drawRoute(next, !fitted);
+          lastRouteAt = Date.now();
+          drawRoute(next, firstFix || !fitted);
+        } else {
+          follow(next);
         }
       };
       fit();
       window.__mapReady = true;
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
+      }
     }
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=${opts.apiKey}&callback=initMap"></script>
