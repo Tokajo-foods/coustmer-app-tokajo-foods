@@ -86,7 +86,7 @@ export function useLiveLocation(orderId: string, active = true) {
     enabled: Boolean(orderId) && active,
     staleTime: 2_000,
     /** Match rider trip ping (~3s) when socket is quiet. */
-    refetchInterval: active ? 4_000 : false,
+    refetchInterval: active ? 8_000 : false,
     retry: 0,
   });
 }

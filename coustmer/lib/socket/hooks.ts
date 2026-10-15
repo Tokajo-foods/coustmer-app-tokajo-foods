@@ -10,6 +10,7 @@ import {
   getSocket,
   sendChatMessage,
   trackOrder,
+  untrackOrder,
 } from '@/lib/socket/socket';
 import type {
   ChatMessageEvent,
@@ -66,6 +67,7 @@ export function useOrderStatusSocket(
   useEffect(() => {
     if (!orderId) return;
     void trackOrder(orderId);
+    return () => untrackOrder(orderId);
   }, [orderId]);
 
   useSocketEvent('order:status', (data) => {

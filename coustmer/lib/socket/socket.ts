@@ -17,6 +17,13 @@ export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let _socket: AppSocket | null = null;
 let _tokenPromise: Promise<string | null> | null = null;
+const trackedOrders = new Map<string, number>();
+
+function rejoinTrackedOrders(socket: AppSocket) {
+  for (const orderId of trackedOrders.keys()) {
+    socket.emit('track:order', { orderId });
+  }
+}
 
 async function fetchSocketToken(): Promise<string | null> {
   try {
@@ -66,6 +73,10 @@ export async function getSocket(): Promise<AppSocket> {
     timeout: 20000,
   }) as AppSocket;
 
+  _socket.on('connect', () => {
+    if (_socket) rejoinTrackedOrders(_socket);
+  });
+
   _socket.on('connect_error', async (err) => {
     const msg = err.message?.toLowerCase() ?? '';
     if (msg.includes('unauthorized') || msg.includes('401') || msg.includes('token')) {
@@ -100,8 +111,16 @@ export function disconnectSocket(): void {
 
 /** Emit `track:order` so the server starts pushing updates for this order. */
 export async function trackOrder(orderId: string): Promise<void> {
+  if (!orderId) return;
+  trackedOrders.set(orderId, (trackedOrders.get(orderId) ?? 0) + 1);
   const socket = await getSocket();
   socket.emit('track:order', { orderId });
+}
+
+export function untrackOrder(orderId: string): void {
+  const next = (trackedOrders.get(orderId) ?? 1) - 1;
+  if (next <= 0) trackedOrders.delete(orderId);
+  else trackedOrders.set(orderId, next);
 }
 
 /** Send an in-trip chat message to the rider. */

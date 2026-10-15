@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { isFixStale, readLatLng, type RiderPoint } from '@/lib/delivery/rider-fix';
 import { useSocketEvent } from '@/lib/socket/hooks';
+import { trackOrder, untrackOrder } from '@/lib/socket/socket';
 
 export type PartnerLocationState = {
   fix: RiderPoint | null;
@@ -16,6 +17,12 @@ export function usePartnerLocationSocket(orderId: string): PartnerLocationState 
   const [fix, setFix] = useState<RiderPoint | null>(null);
   const [forcedStale, setForcedStale] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!orderId) return;
+    void trackOrder(orderId);
+    return () => untrackOrder(orderId);
+  }, [orderId]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 5_000);
