@@ -39,11 +39,11 @@ export function ParcelProofSection({
     <View style={styles.section}>
       <Text style={styles.title}>Delivery photos</Text>
       <Text style={styles.hint}>
-        Taken by your partner at pickup and drop — tap to open.
+        Photos from your partner: food at the restaurant, then the handover. Tap to open.
       </Text>
       <View style={styles.row}>
-        {pickup ? <ProofThumb label="At restaurant" url={pickup} /> : null}
-        {drop ? <ProofThumb label="At your door" url={drop} /> : null}
+        {pickup ? <ProofThumb label="Picked up at restaurant" url={pickup} /> : null}
+        {drop ? <ProofThumb label="Handed to you" url={drop} /> : null}
       </View>
     </View>
   );

@@ -34,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingView, ErrorView } from '@/components/common/StateViews';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
+import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { RetryOnlinePayment } from '@/components/payment/RetryOnlinePayment';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
@@ -58,6 +59,7 @@ import {
   isScheduledOrder,
   normalizeOrderStatus,
 } from '@/lib/order/types';
+import { useOrderTracking } from '@/lib/delivery/hooks';
 import { useOrderReview } from '@/lib/review/hooks';
 
 const ORANGE = '#FF6A00';
@@ -112,6 +114,7 @@ export function OrderDetailScreen() {
   const [showPartialCancel, setShowPartialCancel] = useState(false);
 
   const order = useOrder(id);
+  const proofs = useOrderTracking(id, { enabled: Boolean(id), refetchInterval: 20_000 });
   const reorder = useReorder(id);
   const cancelOrder = useCancelOrder(id);
   const cancelScheduled = useCancelScheduledOrder(id);
@@ -489,6 +492,13 @@ export function OrderDetailScreen() {
               cancelled: data.cancelledAt,
               rejected: data.rejectedAt,
             }}
+          />
+        </View>
+
+        <View style={styles.block}>
+          <ParcelProofSection
+            pickupProofUrl={proofs.data?.pickupProofUrl}
+            proofOfDelivery={proofs.data?.proofOfDelivery}
           />
         </View>
 
