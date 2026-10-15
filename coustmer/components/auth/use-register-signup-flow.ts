@@ -1,162 +1,163 @@
-import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 import {
   mapRegisterApiError,
   type RegisterFieldKey,
-  type RegisterFocusField,
 } from '@/components/auth/register-form-helpers';
-import { useRegisterContactOtp } from '@/components/auth/use-register-contact-otp';
-import { getFirebaseWebConfig, isFirebasePhoneConfigured } from '@/lib/auth/firebase-phone';
+import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
+import { getAuthErrorCode } from '@/lib/auth/http';
+import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
 import { useAuthStore } from '@/store/auth-store';
 import {
-  normalizeIndianPhoneInput,
   validateConfirmPassword,
   validateEmail,
-  validateIndianPhone,
   validateName,
   validateOptionalName,
   validatePassword,
 } from '@/utils/validation';
 
 type Options = {
+  /** Already-verified number handed over from sign-in (USER_NOT_FOUND). */
+  initialPhone?: string;
   onSignIn?: () => void;
   onRegisterSuccess?: () => void;
 };
 
-export function useRegisterSignupFlow({ onSignIn, onRegisterSuccess }: Options) {
+export type RegisterValues = Record<RegisterFieldKey, string>;
+
+const EMPTY_VALUES: RegisterValues = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  referralCode: '',
+};
+
+/** Phone → Firebase OTP → details → POST /auth/phone/register. */
+export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSuccess }: Options) {
   const router = useRouter();
-  const register = useAuthStore((s) => s.register);
-  const isLoading = useAuthStore((s) => s.isLoading);
+  const otp = useFirebasePhoneOtp({ initialPhone });
+  const registerWithPhone = useAuthStore((s) => s.registerWithPhone);
+  const loginWithPhone = useAuthStore((s) => s.loginWithPhone);
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState<RegisterFocusField>(null);
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [banner, setBanner] = useState<{ message: string; type: 'error' | 'success' } | null>(
-    null,
-  );
+  const [values, setValues] = useState<RegisterValues>(EMPTY_VALUES);
+  const [errors, setErrors] = useState<Partial<Record<RegisterFieldKey, string | null>>>({});
+  const [banner, setBanner] = useState<string | null>(null);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
-  const contactOtp = useRegisterContactOtp(
-    email,
-    phone,
-    setPhone,
-    setErrors,
-    setBanner,
-    recaptchaRef,
-  );
-
-  const clearFieldError = (field: RegisterFieldKey) => {
-    setErrors((prev) => (prev[field] ? { ...prev, [field]: null } : prev));
+  const setField = (key: RegisterFieldKey, value: string) => {
+    setValues((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: null } : prev));
   };
 
-  const handleSignIn = () => {
-    if (onSignIn) {
-      onSignIn();
-      return;
-    }
-    router.replace('/?auth=login');
+  const finish = () => {
+    onRegisterSuccess?.();
+    router.replace('/home');
   };
 
-  const onChangeEmail = (v: string) => {
-    setEmail(v);
-    if (contactOtp.emailVerified || contactOtp.emailOtpBlock.otpSent) {
-      contactOtp.resetEmailOtp();
+  const handleSessionError = (error: unknown, fallback: string) => {
+    const code = getAuthErrorCode(error);
+    const message = describePhoneAuthError(error, fallback);
+    if (code && PHONE_REVERIFY_CODES.has(code)) {
+      otp.requireReverify(message);
+      return true;
     }
+    if (code === 'PHONE_ALREADY_REGISTERED') {
+      setAlreadyRegistered(true);
+      setBanner(message);
+      return true;
+    }
+    return false;
   };
 
-  const onChangePhone = (v: string) => {
-    setPhone(v);
-    if (contactOtp.phoneVerified || contactOtp.phoneOtpBlock.otpSent) {
-      contactOtp.resetPhoneOtp();
-    }
+  const handleVerify = async (code: string) => {
+    if (otp.verifying) return;
+    setBanner(null);
+    await otp.verify(code);
+  };
+
+  const validate = () => {
+    const next = {
+      firstName: validateName(values.firstName, 'First name'),
+      lastName: validateOptionalName(values.lastName, 'Last name'),
+      email: validateEmail(values.email, false),
+      password: validatePassword(values.password),
+      confirmPassword: validateConfirmPassword(values.password, values.confirmPassword),
+    };
+    setErrors(next);
+    return !Object.values(next).some(Boolean);
   };
 
   const handleRegister = async () => {
-    const nextErrors = {
-      firstName: validateName(firstName, 'First name'),
-      lastName: validateOptionalName(lastName, 'Last name'),
-      email: validateEmail(email),
-      phone: validateIndianPhone(normalizeIndianPhoneInput(phone), true),
-      password: validatePassword(password),
-      confirmPassword: validateConfirmPassword(password, confirmPassword),
-    };
-    setErrors(nextErrors);
     setBanner(null);
-    if (Object.values(nextErrors).some(Boolean)) return;
+    setAlreadyRegistered(false);
+    if (!otp.phone || !validate()) return;
 
-    if (!contactOtp.emailVerified) {
-      setBanner({ message: 'Verify your email OTP before creating the account.', type: 'error' });
-      return;
-    }
-    if (!contactOtp.phoneVerified) {
-      setBanner({ message: 'Verify your phone OTP before creating the account.', type: 'error' });
-      return;
-    }
-
+    setSubmitting(true);
     try {
-      await register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim() || undefined,
-        email: email.trim().toLowerCase(),
-        phone: normalizeIndianPhoneInput(phone),
-        password,
-        confirmPassword,
-        referralCode: referralCode.trim() || undefined,
+      const idToken = await otp.getIdTokenForSubmit();
+      if (!idToken) return;
+      await registerWithPhone({
+        idToken,
+        phone: otp.phone,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+        referralCode: values.referralCode,
       });
-      onRegisterSuccess?.();
-      router.replace('/home');
+      finish();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      const mapped = mapRegisterApiError(message);
-      if (mapped.field) {
-        setErrors({ [mapped.field]: mapped.message });
-        return;
-      }
-      setBanner({ message, type: 'error' });
+      if (handleSessionError(error, 'Could not create your account.')) return;
+      const mapped = mapRegisterApiError(error);
+      if (mapped.fields) setErrors((prev) => ({ ...prev, ...mapped.fields }));
+      if (mapped.message) setBanner(mapped.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  /** PHONE_ALREADY_REGISTERED → the number is already verified, so sign straight in. */
+  const signInWithVerifiedPhone = async () => {
+    if (!otp.phone) return;
+    setSubmitting(true);
+    setBanner(null);
+    try {
+      const idToken = await otp.getIdTokenForSubmit();
+      if (!idToken) return;
+      await loginWithPhone({ idToken, phone: otp.phone });
+      finish();
+    } catch (error) {
+      if (handleSessionError(error, 'Sign in failed. Try again.')) return;
+      setBanner(describePhoneAuthError(error, 'Sign in failed. Try again.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignIn = () => (onSignIn ? onSignIn() : router.replace('/?auth=login'));
+
+  const changeNumber = () => {
+    setBanner(null);
+    setAlreadyRegistered(false);
+    otp.changeNumber();
+  };
+
   return {
-    firstName,
-    setFirstName,
-    lastName,
-    setLastName,
-    email,
-    phone,
-    password,
-    setPassword,
-    confirmPassword,
-    setConfirmPassword,
-    referralCode,
-    setReferralCode,
-    showPassword,
-    setShowPassword,
-    showConfirmPassword,
-    setShowConfirmPassword,
-    focusedField,
-    setFocusedField,
+    otp,
+    values,
+    setField,
     errors,
     banner,
-    isLoading,
-    clearFieldError,
-    handleSignIn,
+    alreadyRegistered,
+    submitting,
+    handleVerify,
     handleRegister,
-    onChangeEmail,
-    onChangePhone,
-    emailOtpBlock: contactOtp.emailOtpBlock,
-    phoneOtpBlock: contactOtp.phoneOtpBlock,
-    recaptchaRef,
-    firebaseConfig: getFirebaseWebConfig(),
-    firebaseReady: isFirebasePhoneConfigured(),
+    signInWithVerifiedPhone,
+    handleSignIn,
+    changeNumber,
   };
 }

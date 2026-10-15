@@ -1,33 +1,29 @@
 import { Pressable } from '@/components/common/Pressable';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { ArrowRight, Sparkles } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { LoginFormHeader } from '@/components/auth/LoginFormHeader';
+import { PhoneOtpStep } from '@/components/auth/PhoneOtpStep';
 import { RegisterFormFields } from '@/components/auth/RegisterFormFields';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
 import { useRegisterSignupFlow } from '@/components/auth/use-register-signup-flow';
-import { authTheme } from '@/constants/auth-theme';
+import { VerifiedPhoneChip } from '@/components/auth/VerifiedPhoneChip';
 
 type Props = {
+  initialPhone?: string;
   onSignIn?: () => void;
   onRegisterSuccess?: () => void;
 };
 
-export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
-  const flow = useRegisterSignupFlow({ onSignIn, onRegisterSuccess });
+export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess }: Props) {
+  const flow = useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSuccess });
+  const { otp } = flow;
+  const verified = otp.step === 'verified' && Boolean(otp.phone);
 
   return (
     <View style={{ flex: 1 }}>
-      {flow.firebaseReady ? (
-        <FirebaseRecaptchaVerifierModal
-          ref={flow.recaptchaRef}
-          firebaseConfig={flow.firebaseConfig}
-          attemptInvisibleVerification
-        />
-      ) : null}
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={24}
@@ -38,68 +34,70 @@ export function RegisterFormContent({ onSignIn, onRegisterSuccess }: Props) {
       >
         <LoginFormHeader
           title="Create account"
-          subtitle="Join Tokajo for faster checkout and order tracking."
+          subtitle={
+            verified
+              ? 'Almost done — tell us a little about you.'
+              : 'Start with your mobile number. We’ll verify it with a one-time code.'
+          }
         />
 
-        <View style={styles.tipRow}>
-          <View style={styles.tipIcon}>
-            <Sparkles color={authTheme.brand} size={16} strokeWidth={2.2} />
-          </View>
-          <Text style={styles.tipText}>
-            Email and phone are required. Send and verify an OTP for each before creating your
-            account.
-          </Text>
-        </View>
+        {!verified ? (
+          <PhoneOtpStep
+            otp={otp}
+            onVerify={(code) => void flow.handleVerify(code)}
+            phoneTip="Your mobile number is your login. We’ll text a 6-digit code to verify it."
+            verifyLabel="Verify number"
+          />
+        ) : (
+          <>
+            <VerifiedPhoneChip
+              phone={otp.phone!}
+              onChange={flow.changeNumber}
+              disabled={flow.submitting}
+            />
 
-        {flow.banner ? (
-          <View style={styles.bannerWrap}>
-            <AuthMessageBanner message={flow.banner.message} type={flow.banner.type} />
-          </View>
-        ) : null}
+            {flow.banner ? (
+              <View style={styles.bannerWrap}>
+                <AuthMessageBanner message={flow.banner} type="error" />
+              </View>
+            ) : null}
 
-        <RegisterFormFields
-          values={{
-            firstName: flow.firstName,
-            lastName: flow.lastName,
-            email: flow.email,
-            phone: flow.phone,
-            password: flow.password,
-            confirmPassword: flow.confirmPassword,
-            referralCode: flow.referralCode,
-          }}
-          errors={flow.errors}
-          focusedField={flow.focusedField}
-          showPassword={flow.showPassword}
-          showConfirmPassword={flow.showConfirmPassword}
-          emailOtp={flow.emailOtpBlock}
-          phoneOtp={flow.phoneOtpBlock}
-          setFocusedField={flow.setFocusedField}
-          clearFieldError={flow.clearFieldError}
-          setShowPassword={flow.setShowPassword}
-          setShowConfirmPassword={flow.setShowConfirmPassword}
-          onChange={{
-            firstName: flow.setFirstName,
-            lastName: flow.setLastName,
-            email: flow.onChangeEmail,
-            phone: flow.onChangePhone,
-            password: flow.setPassword,
-            confirmPassword: flow.setConfirmPassword,
-            referralCode: flow.setReferralCode,
-          }}
-        />
-
-        <Pressable
-          style={[styles.submitBtn, flow.isLoading && styles.submitBtnDisabled]}
-          onPress={() => void flow.handleRegister()}
-          disabled={flow.isLoading}
-        >
-          <View style={styles.submitBtnInner}>
-            <Text style={styles.submitBtnTextCalm}>
-              {flow.isLoading ? 'Creating account…' : 'Create account'}
-            </Text>
-            {!flow.isLoading ? <ArrowRight color="#FFFFFF" size={18} strokeWidth={2.4} /> : null}
-          </View>
-        </Pressable>
+            {flow.alreadyRegistered ? (
+              <Pressable
+                style={[styles.submitBtn, flow.submitting && styles.submitBtnDisabled]}
+                onPress={() => void flow.signInWithVerifiedPhone()}
+                disabled={flow.submitting}
+              >
+                <Text style={styles.submitBtnTextCalm}>
+                  {flow.submitting ? 'Signing in…' : 'Sign in with this number'}
+                </Text>
+              </Pressable>
+            ) : (
+              <>
+                <RegisterFormFields
+                  values={flow.values}
+                  errors={flow.errors}
+                  onChange={flow.setField}
+                  editable={!flow.submitting}
+                />
+                <Pressable
+                  style={[styles.submitBtn, flow.submitting && styles.submitBtnDisabled]}
+                  onPress={() => void flow.handleRegister()}
+                  disabled={flow.submitting}
+                >
+                  <View style={styles.submitBtnInner}>
+                    <Text style={styles.submitBtnTextCalm}>
+                      {flow.submitting ? 'Creating account…' : 'Create account'}
+                    </Text>
+                    {!flow.submitting ? (
+                      <ArrowRight color="#FFFFFF" size={18} strokeWidth={2.4} />
+                    ) : null}
+                  </View>
+                </Pressable>
+              </>
+            )}
+          </>
+        )}
 
         <View style={styles.bottomLinks}>
           <Text style={styles.signupText}>

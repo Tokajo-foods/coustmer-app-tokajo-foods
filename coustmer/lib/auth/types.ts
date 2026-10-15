@@ -7,24 +7,13 @@ export type AuthUser = {
   /** user-service role, e.g. customer | delivery_partner | restaurant_owner */
   role?: string;
   emailVerified?: boolean;
+  phoneVerified?: boolean;
 };
 
 export type AuthResponse = {
   token: string;
   user: AuthUser;
   message?: string;
-};
-
-export type RegisterPayload = {
-  firstName: string;
-  lastName?: string;
-  email: string;
-  /** Required E.164 phone — verified via register OTP before create */
-  phone: string;
-  password: string;
-  confirmPassword: string;
-  /** Optional friend code — one-time wallet bonus for both when valid */
-  referralCode?: string;
 };
 
 export type LoginPayload = {
@@ -45,19 +34,9 @@ export type OtpVerifyPayload = {
   purpose?: OtpPurpose;
 };
 
-export type ForgotPasswordPayload = {
-  email: string;
-};
-
-export type ConfirmForgotPasswordOtpPayload = {
-  identifier: string;
-  otp: string;
-};
-
-/** OTP path uses identifier; legacy web link uses token. */
+/** Legacy emailed reset link (`/reset-password?token=`). */
 export type ResetPasswordPayload = {
-  token?: string;
-  identifier?: string;
+  token: string;
   password: string;
   confirmPassword?: string;
 };
@@ -72,11 +51,36 @@ export type MessageResponse = {
   message: string;
 };
 
-/** Timing returned by OTP send/resend (`data.expiresInSeconds`). */
-export type OtpSendTiming = {
-  message: string;
+/** `GET /auth/phone/status`. */
+export type PhoneAuthStatus = {
+  firebaseConfigured: boolean;
+  provider: string;
+  otpLength: number;
+  resendCooldownSeconds: number;
+  tokenMaxAgeSeconds: number;
+};
+
+/** Verified Firebase phone + ID token for `/auth/phone/*`. */
+export type PhoneLoginPayload = {
+  idToken: string;
+  phone?: string;
+};
+
+export type PhoneRegisterPayload = {
+  idToken: string;
+  phone: string;
+  firstName: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  referralCode?: string;
+};
+
+export type PhoneForgotPasswordResult = {
+  resetToken: string;
   expiresInSeconds: number;
-  cooldownSeconds: number;
+  /** Masked, e.g. +91******3210 */
+  phone: string;
 };
 
 /** Normalize role strings from user-service. */

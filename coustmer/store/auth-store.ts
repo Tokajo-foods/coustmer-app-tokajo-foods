@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import { authApi, SESSION_AUTH_TOKEN } from '@/lib/auth/api';
+import { signOutFirebase } from '@/lib/auth/firebase-phone';
+import { phoneAuthApi } from '@/lib/auth/phone-auth-api';
 import {
   clearAuthStorage,
   getStoredUser,
@@ -11,12 +13,11 @@ import {
 import type {
   AuthUser,
   ChangePasswordPayload,
-  ForgotPasswordPayload,
   LoginPayload,
   OtpSendPayload,
-  OtpSendTiming,
   OtpVerifyPayload,
-  RegisterPayload,
+  PhoneLoginPayload,
+  PhoneRegisterPayload,
   ResetPasswordPayload,
 } from '@/lib/auth/types';
 import { setUnauthorizedHandler } from '@/lib/auth/unauthorized';
@@ -34,18 +35,13 @@ type AuthState = {
   isLoading: boolean;
   hydrate: () => Promise<void>;
   setSession: (token: string, user: AuthUser) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
   login: (payload: LoginPayload) => Promise<void>;
   sendOtp: (payload: OtpSendPayload) => Promise<string>;
   verifyOtp: (payload: OtpVerifyPayload) => Promise<void>;
-  loginWithFirebasePhone: (idToken: string) => Promise<void>;
-  sendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
-  resendRegisterOtp: (identifier: string) => Promise<OtpSendTiming>;
-  confirmRegisterOtp: (identifier: string, otp: string) => Promise<void>;
-  confirmFirebasePhone: (idToken: string) => Promise<void>;
-  forgotPassword: (payload: ForgotPasswordPayload) => Promise<string>;
-  sendForgotPasswordOtp: (email: string) => Promise<string>;
-  confirmForgotPasswordOtp: (identifier: string, otp: string) => Promise<void>;
+  /** Throws AuthApiError (keeps `code`, e.g. USER_NOT_FOUND). */
+  loginWithPhone: (payload: PhoneLoginPayload) => Promise<void>;
+  /** Throws AuthApiError (keeps `code`, e.g. PHONE_ALREADY_REGISTERED). */
+  registerWithPhone: (payload: PhoneRegisterPayload) => Promise<void>;
   resetPassword: (payload: ResetPasswordPayload) => Promise<string>;
   verifyEmail: (token: string) => Promise<string>;
   changePassword: (payload: ChangePasswordPayload) => Promise<string>;
@@ -114,18 +110,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await mergeGuestCartOnLogin();
   },
 
-  register: async (payload) => {
-    set({ isLoading: true });
-    try {
-      const response = await authApi.register(payload);
-      await get().setSession(response.token, response.user);
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Registration failed'));
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
   login: async (payload) => {
     set({ isLoading: true });
     try {
@@ -162,82 +146,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginWithFirebasePhone: async (idToken) => {
+  loginWithPhone: async (payload) => {
     set({ isLoading: true });
     try {
-      const response = await authApi.loginWithFirebasePhone(idToken);
+      const response = await phoneAuthApi.login(payload);
       await get().setSession(response.token, response.user);
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
+      await signOutFirebase();
     } finally {
       set({ isLoading: false });
     }
   },
 
-  /** Does not toggle global isLoading — signup uses per-channel busy state. */
-  sendRegisterOtp: async (identifier) => {
-    try {
-      return await authApi.sendRegisterOtp(identifier.trim());
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
-    }
-  },
-
-  resendRegisterOtp: async (identifier) => {
-    try {
-      return await authApi.resendRegisterOtp(identifier.trim());
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Failed to resend OTP'));
-    }
-  },
-
-  /** Does not toggle global isLoading — signup uses per-channel busy state. */
-  confirmRegisterOtp: async (identifier, otp) => {
-    try {
-      await authApi.confirmRegisterOtp({ identifier, otp });
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
-    }
-  },
-
-  confirmFirebasePhone: async (idToken) => {
-    try {
-      await authApi.confirmFirebasePhone(idToken);
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Phone verification failed'));
-    }
-  },
-
-  forgotPassword: async (payload) => {
+  registerWithPhone: async (payload) => {
     set({ isLoading: true });
     try {
-      const response = await authApi.forgotPassword(payload);
-      return response.message ?? 'Password reset link sent to your email';
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Failed to send reset link'));
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  sendForgotPasswordOtp: async (email) => {
-    set({ isLoading: true });
-    try {
-      const response = await authApi.sendForgotPasswordOtp(email.trim());
-      return response.message ?? 'OTP sent to your email';
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Failed to send OTP'));
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  confirmForgotPasswordOtp: async (identifier, otp) => {
-    set({ isLoading: true });
-    try {
-      await authApi.confirmForgotPasswordOtp({ identifier, otp });
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'OTP verification failed'));
+      const response = await phoneAuthApi.register(payload);
+      await get().setSession(response.token, response.user);
+      await signOutFirebase();
     } finally {
       set({ isLoading: false });
     }

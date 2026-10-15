@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
+import { ForgotPhoneReset } from '@/components/auth/ForgotPhoneReset';
 import {
   ForgotEmailStep,
   ForgotOtpStep,
@@ -40,6 +41,7 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
   const resetPassword = useAuthStore((s) => s.resetPassword);
   const isLoading = useAuthStore((s) => s.isLoading);
 
+  const [channel, setChannel] = useState<'phone' | 'email'>('phone');
   const [step, setStep] = useState<ForgotStep>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -131,13 +133,17 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
   };
 
   const title =
-    step === 'email'
-      ? 'Forgot password?'
-      : step === 'otp'
-        ? 'Check your email'
-        : step === 'password'
-          ? 'Create new password'
-          : 'All set';
+    channel === 'phone'
+      ? step === 'done'
+        ? 'All set'
+        : 'Reset with phone OTP'
+      : step === 'email'
+        ? 'Forgot password?'
+        : step === 'otp'
+          ? 'Check your email'
+          : step === 'password'
+            ? 'Create new password'
+            : 'All set';
 
   const subtitle =
     step === 'email' ? (
@@ -166,9 +172,21 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
         {step !== 'done' ? (
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <Text style={styles.subtitle}>{subtitle}</Text>
-            <ForgotStepIndicator step={step} />
+            {channel === 'email' ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+            {channel === 'email' ? <ForgotStepIndicator step={step} /> : null}
+            <View style={styles.rowBetween}>
+              <Pressable onPress={() => { setChannel('phone'); setStep('email'); setBanner(null); }}>
+                <Text style={channel === 'phone' ? styles.signupLink : styles.signupText}>Phone OTP</Text>
+              </Pressable>
+              <Pressable onPress={() => { setChannel('email'); setBanner(null); }}>
+                <Text style={channel === 'email' ? styles.signupLink : styles.signupText}>Email code</Text>
+              </Pressable>
+            </View>
           </View>
+        ) : null}
+
+        {channel === 'phone' && step !== 'done' ? (
+          <ForgotPhoneReset onDone={() => setStep('done')} />
         ) : null}
 
         {banner ? (
@@ -177,7 +195,7 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
           </View>
         ) : null}
 
-        {step === 'email' ? (
+        {channel === 'email' && step === 'email' ? (
           <ForgotEmailStep
             {...chrome}
             email={email}
@@ -188,7 +206,7 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
           />
         ) : null}
 
-        {step === 'otp' ? (
+        {channel === 'email' && step === 'otp' ? (
           <ForgotOtpStep
             {...chrome}
             otp={otp}
@@ -200,7 +218,7 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
           />
         ) : null}
 
-        {step === 'password' ? (
+        {channel === 'email' && step === 'password' ? (
           <ForgotPasswordFields
             {...chrome}
             password={password}

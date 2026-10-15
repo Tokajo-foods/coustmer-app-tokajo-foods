@@ -1,146 +1,88 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Eye, EyeOff, Gift, Lock, Mail, Phone, User } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { Eye, EyeOff, Gift, Lock, Mail, User } from 'lucide-react-native';
+import { useState, type ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
-import { RegisterOtpSection } from '@/components/auth/RegisterOtpSection';
+import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import type { RegisterFieldKey, RegisterFocusField } from '@/components/auth/register-form-helpers';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
+import type { RegisterValues } from '@/components/auth/use-register-signup-flow';
 import { authTheme } from '@/constants/auth-theme';
 
-type OtpBlock = {
-  verified: boolean;
-  otpSent: boolean;
-  otp: string;
-  setOtp: (v: string) => void;
-  otpError: string | null;
-  focused: boolean;
-  setFocused: (v: boolean) => void;
-  timerKey: number;
-  validitySeconds: number;
-  cooldownSeconds: number;
-  isLoading: boolean;
-  busyMode: 'idle' | 'sending' | 'verifying' | 'resending';
-  onSend: () => void;
-  onVerify: () => void;
-  onResend: () => void;
-};
-
 type Props = {
-  values: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    password: string;
-    confirmPassword: string;
-    referralCode: string;
-  };
-  errors: Record<string, string | null>;
-  focusedField: RegisterFocusField;
-  showPassword: boolean;
-  showConfirmPassword: boolean;
-  emailOtp: OtpBlock;
-  phoneOtp: OtpBlock;
-  setFocusedField: (f: RegisterFocusField) => void;
-  clearFieldError: (field: RegisterFieldKey) => void;
-  setShowPassword: (v: boolean) => void;
-  setShowConfirmPassword: (v: boolean) => void;
-  onChange: {
-    firstName: (v: string) => void;
-    lastName: (v: string) => void;
-    email: (v: string) => void;
-    phone: (v: string) => void;
-    password: (v: string) => void;
-    confirmPassword: (v: string) => void;
-    referralCode: (v: string) => void;
-  };
+  values: RegisterValues;
+  errors: Partial<Record<RegisterFieldKey, string | null>>;
+  onChange: (field: RegisterFieldKey, value: string) => void;
+  editable?: boolean;
 };
 
-export function RegisterFormFields(props: Props) {
-  const {
-    values,
-    errors,
-    focusedField,
-    showPassword,
-    showConfirmPassword,
-    emailOtp,
-    phoneOtp,
-    setFocusedField,
-    clearFieldError,
-    setShowPassword,
-    setShowConfirmPassword,
-    onChange,
-  } = props;
+type InputOpts = {
+  icon: typeof User;
+  placeholder: string;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address';
+  autoCapitalize?: 'none' | 'words' | 'characters';
+  autoComplete?: 'name-given' | 'name-family' | 'email' | 'new-password' | 'off';
+  maxLength?: number;
+  transform?: (text: string) => string;
+  rightElement?: ReactNode;
+};
 
-  const inputStyle = (field: RegisterFocusField, hasError: boolean) => [
-    styles.inputContainer,
-    focusedField === field && styles.inputFocused,
-    hasError && styles.inputError,
-  ];
+/** Sign-up details collected after the phone is verified. */
+export function RegisterFormFields({ values, errors, onChange, editable = true }: Props) {
+  const [focusedField, setFocusedField] = useState<RegisterFocusField>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const iconColor = (field: RegisterFocusField, hasError: boolean) => {
-    if (hasError) return authTheme.error;
-    if (focusedField === field) return authTheme.brand;
-    return authTheme.textDim;
-  };
-
-  const renderInput = (
-    field: RegisterFieldKey,
-    label: string,
-    opts: {
-      icon: typeof User;
-      placeholder: string;
-      value: string;
-      onChangeText: (text: string) => void;
-      error?: string | null;
-      secureTextEntry?: boolean;
-      keyboardType?: 'default' | 'email-address' | 'phone-pad';
-      autoCapitalize?: 'none' | 'words' | 'characters';
-      maxLength?: number;
-      returnKeyType?: 'next' | 'done';
-      rightElement?: ReactNode;
-      editable?: boolean;
-    },
-  ) => {
+  const renderInput = (field: RegisterFieldKey, label: string, opts: InputOpts) => {
     const Icon = opts.icon;
+    const error = errors[field];
+    const focused = focusedField === field;
+    const tint = error ? authTheme.error : focused ? authTheme.brand : authTheme.textDim;
     return (
       <View style={styles.fieldWrap}>
         <Text style={styles.fieldLabel}>{label}</Text>
-        <View style={inputStyle(field, Boolean(opts.error))}>
-          <View style={[styles.iconCircle, focusedField === field && styles.iconCircleFocused]}>
-            <Icon color={iconColor(field, Boolean(opts.error))} size={18} strokeWidth={2} />
+        <View style={[styles.inputContainer, focused && styles.inputFocused, error && styles.inputError]}>
+          <View style={[styles.iconCircle, focused && styles.iconCircleFocused]}>
+            <Icon color={tint} size={18} strokeWidth={2} />
           </View>
           <TextInput
             style={styles.input}
             placeholder={opts.placeholder}
             placeholderTextColor={authTheme.textDim}
-            value={opts.value}
-            onChangeText={(text) => {
-              opts.onChangeText(text);
-              clearFieldError(field);
-            }}
+            value={values[field]}
+            onChangeText={(text) => onChange(field, opts.transform ? opts.transform(text) : text)}
             secureTextEntry={opts.secureTextEntry}
             keyboardType={opts.keyboardType}
             autoCapitalize={opts.autoCapitalize ?? 'none'}
+            autoComplete={opts.autoComplete}
             autoCorrect={false}
-            returnKeyType={opts.returnKeyType}
             maxLength={opts.maxLength}
-            editable={opts.editable !== false}
+            editable={editable}
             underlineColorAndroid="transparent"
             onFocus={() => setFocusedField(field)}
             onBlur={() => setFocusedField(null)}
           />
           {opts.rightElement ? <View style={styles.rightSlot}>{opts.rightElement}</View> : null}
         </View>
-        {opts.error ? (
+        {error ? (
           <Text style={styles.errorText} numberOfLines={3}>
-            {opts.error}
+            {error}
           </Text>
         ) : null}
       </View>
     );
   };
+
+  const eyeToggle = (shown: boolean, toggle: () => void) => (
+    <Pressable onPress={toggle} hitSlop={10}>
+      {shown ? (
+        <EyeOff color={authTheme.textMuted} size={20} />
+      ) : (
+        <Eye color={authTheme.textMuted} size={20} />
+      )}
+    </Pressable>
+  );
 
   return (
     <>
@@ -150,137 +92,55 @@ export function RegisterFormFields(props: Props) {
           {renderInput('firstName', 'First name', {
             icon: User,
             placeholder: 'Rahul',
-            value: values.firstName,
-            onChangeText: onChange.firstName,
-            error: errors.firstName,
             autoCapitalize: 'words',
-            returnKeyType: 'next',
+            autoComplete: 'name-given',
+            maxLength: 50,
           })}
         </View>
         <View style={styles.half}>
-          {renderInput('lastName', 'Last name', {
+          {renderInput('lastName', 'Last name (optional)', {
             icon: User,
             placeholder: 'Sharma',
-            value: values.lastName,
-            onChangeText: onChange.lastName,
-            error: errors.lastName,
             autoCapitalize: 'words',
-            returnKeyType: 'next',
+            autoComplete: 'name-family',
+            maxLength: 50,
           })}
         </View>
       </View>
 
-      <Text style={styles.sectionLabel}>Contact</Text>
-      {renderInput('email', 'Email', {
+      {renderInput('email', 'Email (optional)', {
         icon: Mail,
         placeholder: 'you@gmail.com',
-        value: values.email,
-        onChangeText: onChange.email,
-        error: errors.email,
         keyboardType: 'email-address',
-        returnKeyType: 'next',
-        editable: !emailOtp.verified,
+        autoComplete: 'email',
       })}
-      <RegisterOtpSection
-        channel="email"
-        isLoading={emailOtp.isLoading}
-        busyMode={emailOtp.busyMode}
-        verified={emailOtp.verified}
-        otpSent={emailOtp.otpSent}
-        otp={emailOtp.otp}
-        setOtp={emailOtp.setOtp}
-        otpError={emailOtp.otpError}
-        focused={emailOtp.focused}
-        setFocused={emailOtp.setFocused}
-        timerKey={emailOtp.timerKey}
-        validitySeconds={emailOtp.validitySeconds}
-        cooldownSeconds={emailOtp.cooldownSeconds}
-        onSend={emailOtp.onSend}
-        onVerify={emailOtp.onVerify}
-        onResend={emailOtp.onResend}
-      />
-
-      {renderInput('phone', 'Phone number', {
-        icon: Phone,
-        placeholder: '+91 98765 43210',
-        value: values.phone,
-        onChangeText: onChange.phone,
-        error: errors.phone,
-        keyboardType: 'phone-pad',
-        maxLength: 15,
-        returnKeyType: 'next',
-        editable: !phoneOtp.verified,
-      })}
-      {!errors.phone && !phoneOtp.verified ? (
-        <Text style={styles.hint}>Required. Add +91 before your 10-digit number.</Text>
-      ) : null}
-      <RegisterOtpSection
-        channel="phone"
-        isLoading={phoneOtp.isLoading}
-        busyMode={phoneOtp.busyMode}
-        verified={phoneOtp.verified}
-        otpSent={phoneOtp.otpSent}
-        otp={phoneOtp.otp}
-        setOtp={phoneOtp.setOtp}
-        otpError={phoneOtp.otpError}
-        focused={phoneOtp.focused}
-        setFocused={phoneOtp.setFocused}
-        timerKey={phoneOtp.timerKey}
-        validitySeconds={phoneOtp.validitySeconds}
-        cooldownSeconds={phoneOtp.cooldownSeconds}
-        onSend={phoneOtp.onSend}
-        onVerify={phoneOtp.onVerify}
-        onResend={phoneOtp.onResend}
-      />
 
       <Text style={styles.sectionLabel}>Security</Text>
       {renderInput('password', 'Password', {
         icon: Lock,
-        placeholder: 'Min 8 chars, uppercase & symbol',
-        value: values.password,
-        onChangeText: onChange.password,
-        error: errors.password,
+        placeholder: 'Min 8 chars, Aa, 1 & symbol',
         secureTextEntry: !showPassword,
-        returnKeyType: 'next',
-        rightElement: (
-          <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
-            {showPassword ? (
-              <EyeOff color={authTheme.textMuted} size={20} />
-            ) : (
-              <Eye color={authTheme.textMuted} size={20} />
-            )}
-          </Pressable>
-        ),
+        autoComplete: 'new-password',
+        maxLength: 128,
+        rightElement: eyeToggle(showPassword, () => setShowPassword((v) => !v)),
       })}
+      <PasswordStrengthMeter password={values.password} />
       {renderInput('confirmPassword', 'Confirm password', {
         icon: Lock,
         placeholder: 'Re-enter password',
-        value: values.confirmPassword,
-        onChangeText: onChange.confirmPassword,
-        error: errors.confirmPassword,
-        secureTextEntry: !showConfirmPassword,
-        returnKeyType: 'done',
-        rightElement: (
-          <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)} hitSlop={10}>
-            {showConfirmPassword ? (
-              <EyeOff color={authTheme.textMuted} size={20} />
-            ) : (
-              <Eye color={authTheme.textMuted} size={20} />
-            )}
-          </Pressable>
-        ),
+        secureTextEntry: !showConfirm,
+        autoComplete: 'new-password',
+        maxLength: 128,
+        rightElement: eyeToggle(showConfirm, () => setShowConfirm((v) => !v)),
       })}
 
       <Text style={styles.sectionLabel}>Referral code</Text>
       {renderInput('referralCode', 'Code (optional)', {
         icon: Gift,
         placeholder: 'Friend’s code',
-        value: values.referralCode,
-        onChangeText: (t) => onChange.referralCode(t.toUpperCase()),
-        error: errors.referralCode,
         autoCapitalize: 'characters',
         maxLength: 20,
-        returnKeyType: 'done',
+        transform: (t) => t.toUpperCase(),
       })}
       {!errors.referralCode ? (
         <Text style={styles.hint}>You and your friend both get wallet credit once.</Text>

@@ -4,8 +4,11 @@ import {
   getAuth,
   PhoneAuthProvider,
   signInWithCredential,
+  signOut,
   type Auth,
 } from 'firebase/auth';
+
+import { FIREBASE_CLIENT_NOT_CONFIGURED_MESSAGE } from '@/lib/auth/firebase-errors';
 
 type Extra = {
   firebaseApiKey?: string;
@@ -51,9 +54,9 @@ let auth: Auth | null = null;
 
 export function getFirebaseAuth(): Auth {
   if (!isFirebasePhoneConfigured()) {
-    throw new Error(
-      'Firebase Phone Auth is not configured. Add EXPO_PUBLIC_FIREBASE_API_KEY, AUTH_DOMAIN, PROJECT_ID, and APP_ID (Firebase Console → Project settings → Your apps → Web).',
-    );
+    throw Object.assign(new Error(FIREBASE_CLIENT_NOT_CONFIGURED_MESSAGE), {
+      code: 'FIREBASE_CLIENT_NOT_CONFIGURED',
+    });
   }
   if (!app) {
     const config = getFirebaseWebConfig();
@@ -73,7 +76,7 @@ export async function startFirebasePhoneOtp(
   return provider.verifyPhoneNumber(phoneE164, applicationVerifier as never);
 }
 
-/** Confirm SMS code → Firebase ID token for login-firebase / confirm-firebase-phone. */
+/** Confirm SMS code → fresh Firebase ID token for `/auth/phone/*`. */
 export async function confirmFirebasePhoneOtp(
   verificationId: string,
   code: string,
@@ -82,4 +85,26 @@ export async function confirmFirebasePhoneOtp(
   const credential = PhoneAuthProvider.credential(verificationId, code);
   const result = await signInWithCredential(authInstance, credential);
   return result.user.getIdToken(true);
+}
+
+/** E.164 phone of the Firebase user still signed in after OTP, if any. */
+export function getVerifiedFirebasePhone(): string | null {
+  if (!auth) return null;
+  return auth.currentUser?.phoneNumber ?? null;
+}
+
+/** Force-refresh the ID token of the verified Firebase user (for retries / delayed submits). */
+export async function getFreshIdToken(): Promise<string | null> {
+  if (!auth?.currentUser) return null;
+  return auth.currentUser.getIdToken(true);
+}
+
+/** Drop the Firebase session once the backend has issued `_sid` (or on change-number). */
+export async function signOutFirebase(): Promise<void> {
+  if (!auth?.currentUser) return;
+  try {
+    await signOut(auth);
+  } catch {
+    // local-only sign out; ignore
+  }
 }

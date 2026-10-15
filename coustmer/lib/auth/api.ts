@@ -1,242 +1,22 @@
-import axios from 'axios';
-
-import { api, assertApiBaseUrl } from '@/lib/api';
+import {
+  apiRequest,
+  AUTH_BASE,
+  ensureCustomerAuth,
+  normalizeAuthResponse,
+  normalizeMessageResponse,
+} from '@/lib/auth/http';
 import type {
-  AuthResponse,
-  AuthUser,
   ChangePasswordPayload,
-  ForgotPasswordPayload,
   LoginPayload,
-  MessageResponse,
   OtpSendPayload,
-  OtpSendTiming,
   OtpVerifyPayload,
-  RegisterPayload,
   ResetPasswordPayload,
 } from '@/lib/auth/types';
-import {
-  assertCustomerAccount,
-  isPartnerRole,
-  normalizeUserRole,
-} from '@/lib/auth/types';
+import { isPartnerRole } from '@/lib/auth/types';
 
-/** Live API mounts auth under user-service (not /auth at root). */
-const AUTH_BASE = '/api/v1/user-service/auth';
-const USERS_ME = '/api/v1/user-service/users/me';
-
-/** Cookie session auth — no JWT in response body. */
-export const SESSION_AUTH_TOKEN = 'session';
-
-function mapApiUser(data: Record<string, unknown>): AuthUser {
-  const emailRaw = data.email != null ? String(data.email).trim() : '';
-  const phoneRaw = data.phone != null ? String(data.phone).trim() : '';
-  return {
-    id: String(data._id ?? data.id ?? ''),
-    email: emailRaw,
-    firstName: (data.firstName as string) || undefined,
-    lastName: (data.lastName as string) || undefined,
-    phone: phoneRaw || undefined,
-    role:
-      normalizeUserRole(
-        data.role ?? data.userType ?? data.type ?? data.accountType
-      ) || undefined,
-    emailVerified: Boolean(data.isEmailVerified ?? data.emailVerified ?? false),
-  };
-}
-
-function normalizeAuthResponse(data: unknown): AuthResponse {
-  const payload = data as Record<string, unknown>;
-  const nested = payload.data as Record<string, unknown> | undefined;
-
-  const token =
-    (payload.token as string) ||
-    (payload.accessToken as string) ||
-    (payload.access_token as string) ||
-    (nested?.token as string) ||
-    (nested?.accessToken as string) ||
-    SESSION_AUTH_TOKEN;
-
-  const userSource = (nested?.user ??
-    nested ??
-    payload.user ??
-    payload) as Record<string, unknown>;
-  const user = mapApiUser(userSource);
-
-  if (!user.id) {
-    throw new Error('Invalid authentication response from server');
-  }
-  // Phone OTP login may create/return users without email.
-  if (!user.email && !user.phone) {
-    throw new Error('Invalid authentication response from server');
-  }
-
-  return { token, user, message: payload.message as string | undefined };
-}
-
-function normalizeMessageResponse(data: unknown): MessageResponse {
-  const payload = data as { message?: string };
-  return { message: payload.message ?? 'Success' };
-}
-
-function normalizeOtpSendTiming(data: unknown): OtpSendTiming {
-  const payload = data as {
-    message?: string;
-    data?: { expiresInSeconds?: number; cooldownSeconds?: number };
-    expiresInSeconds?: number;
-    cooldownSeconds?: number;
-  };
-  const nested = payload.data ?? {};
-  const expiresInSeconds = Number(
-    nested.expiresInSeconds ?? payload.expiresInSeconds ?? 600,
-  );
-  const cooldownSeconds = Number(
-    nested.cooldownSeconds ?? payload.cooldownSeconds ?? 30,
-  );
-  return {
-    message: payload.message ?? 'OTP sent successfully',
-    expiresInSeconds: Number.isFinite(expiresInSeconds) ? expiresInSeconds : 600,
-    cooldownSeconds: Number.isFinite(cooldownSeconds) ? cooldownSeconds : 30,
-  };
-}
-
-function extractErrorMessage(data: unknown, fallback: string): string {
-  const payload = data as {
-    message?: string;
-    error?: string;
-    errors?: Record<string, string[]>;
-  } | null;
-
-  if (payload?.errors) {
-    const details = Object.values(payload.errors).flat().filter(Boolean);
-    if (details.length > 0) {
-      return details.join('\n');
-    }
-  }
-
-  return payload?.message || payload?.error || fallback;
-}
-
-async function apiRequest<T>(
-  path: string,
-  options: {
-    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    body?: unknown;
-  } = {}
-): Promise<T> {
-  const { method = 'GET', body } = options;
-
-  assertApiBaseUrl();
-
-  try {
-    const response = await api.request<T>({
-      url: path,
-      method,
-      data: body,
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      if (!error.response) {
-        throw new Error(
-          'Network request failed. Check your internet connection and try again.'
-        );
-      }
-
-      const message = extractErrorMessage(
-        error.response.data,
-        `Request failed (${error.response.status})`
-      );
-
-      if (message.toLowerCase().includes('csrf')) {
-        throw new Error(
-          'Security token expired. Close and reopen the app, then try again.'
-        );
-      }
-
-      if (message.includes('generatePasswordResetToken')) {
-        throw new Error(
-          'Password reset failed on the server. Ask backend to fix User.generatePasswordResetToken in AuthService.forgotPassword (user query must return a Mongoose document, not a plain object).'
-        );
-      }
-
-      throw new Error(message);
-    }
-
-    throw error;
-  }
-}
-
-/** Best-effort logout so a rejected partner session is not left open. */
-async function revokeSessionQuietly() {
-  try {
-    await apiRequest<unknown>(`${AUTH_BASE}/logout`, { method: 'POST' });
-  } catch {
-    // ignore
-  }
-}
-
-/**
- * Ensure the authenticated account is a customer.
- * If login response omitted role, fetch /users/me.
- */
-async function ensureCustomerAuth(
-  response: AuthResponse
-): Promise<AuthResponse> {
-  let role = response.user.role;
-
-  if (!role) {
-    try {
-      const me = await apiRequest<{
-        data?: Record<string, unknown>;
-        role?: string;
-      }>(USERS_ME);
-      const source = (me.data ?? me) as Record<string, unknown>;
-      role =
-        normalizeUserRole(
-          source.role ?? source.userType ?? source.type ?? source.accountType
-        ) || undefined;
-    } catch {
-      // If profile fetch fails, keep going with whatever we have.
-    }
-  }
-
-  try {
-    assertCustomerAccount(role);
-  } catch (error) {
-    await revokeSessionQuietly();
-    throw error;
-  }
-
-  return {
-    ...response,
-    user: {
-      ...response.user,
-      role: role || 'customer',
-    },
-  };
-}
+export { AuthApiError, getAuthErrorCode, SESSION_AUTH_TOKEN } from '@/lib/auth/http';
 
 export const authApi = {
-  register: async (payload: RegisterPayload) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/register`, {
-      method: 'POST',
-      body: {
-        firstName: payload.firstName.trim(),
-        lastName: payload.lastName?.trim() || undefined,
-        email: payload.email.trim().toLowerCase(),
-        phone: payload.phone.trim(),
-        password: payload.password,
-        ...(payload.referralCode?.trim()
-          ? { referralCode: payload.referralCode.trim().toUpperCase() }
-          : {}),
-        // Always register as a customer in this app.
-        role: 'customer',
-      },
-    });
-    return ensureCustomerAuth(normalizeAuthResponse(data));
-  },
-
   login: async (payload: LoginPayload) => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/login`, {
       method: 'POST',
@@ -257,44 +37,6 @@ export const authApi = {
     return normalizeMessageResponse(data);
   },
 
-  /** Signup contact proof — purpose register + confirm-register (no session). */
-  sendRegisterOtp: async (identifier: string): Promise<OtpSendTiming> => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/send`, {
-      method: 'POST',
-      body: {
-        identifier: identifier.trim(),
-        purpose: 'register',
-        role: 'customer',
-      },
-    });
-    return normalizeOtpSendTiming(data);
-  },
-
-  /** Respects server resend cooldown / window (do not use send for resend). */
-  resendRegisterOtp: async (identifier: string): Promise<OtpSendTiming> => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/resend`, {
-      method: 'POST',
-      body: {
-        identifier: identifier.trim(),
-        purpose: 'register',
-        role: 'customer',
-      },
-    });
-    return normalizeOtpSendTiming(data);
-  },
-
-  confirmRegisterOtp: async (payload: { identifier: string; otp: string }) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-register`, {
-      method: 'POST',
-      body: {
-        identifier: payload.identifier.trim(),
-        otp: payload.otp.trim(),
-        role: 'customer',
-      },
-    });
-    return data;
-  },
-
   verifyOtp: async (payload: OtpVerifyPayload) => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/verify`, {
       method: 'POST',
@@ -307,95 +49,27 @@ export const authApi = {
     return ensureCustomerAuth(normalizeAuthResponse(data));
   },
 
-  /** After Firebase Phone Auth — stamps phone for POST /auth/register. */
-  confirmFirebasePhone: async (idToken: string) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-firebase-phone`, {
-      method: 'POST',
-      body: {
-        idToken,
-        role: 'customer',
-      },
-    });
-    return data;
-  },
-
-  /** After Firebase Phone Auth — creates `_sid` session (phone login). */
-  loginWithFirebasePhone: async (idToken: string) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/login-firebase`, {
-      method: 'POST',
-      body: { idToken },
-    });
-    return ensureCustomerAuth(normalizeAuthResponse(data));
-  },
-
-  forgotPassword: async (payload: ForgotPasswordPayload) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/forgot-password`, {
-      method: 'POST',
-      body: payload,
-    });
-    return normalizeMessageResponse(data);
-  },
-
-  /** Send branded nodemailer OTP for password reset (purpose: forgot_password). */
-  sendForgotPasswordOtp: async (identifier: string) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/send`, {
-      method: 'POST',
-      body: {
-        identifier: identifier.trim(),
-        purpose: 'forgot_password',
-      },
-    });
-    return normalizeMessageResponse(data);
-  },
-
-  confirmForgotPasswordOtp: async (payload: {
-    identifier: string;
-    otp: string;
-  }) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-forgot-password`, {
-      method: 'POST',
-      body: {
-        identifier: payload.identifier.trim(),
-        otp: payload.otp.trim(),
-      },
-    });
-    return data;
-  },
-
+  /** Legacy emailed reset link (`/reset-password?token=`). Phone reset uses phoneAuthApi. */
   resetPassword: async (payload: ResetPasswordPayload) => {
-    const body: Record<string, string> = {
-      newPassword: payload.password,
-    };
-    if (payload.identifier?.trim()) {
-      body.identifier = payload.identifier.trim();
-    } else if (payload.token?.trim()) {
-      body.token = payload.token.trim();
-    }
     const data = await apiRequest<unknown>(`${AUTH_BASE}/reset-password`, {
       method: 'POST',
-      body,
+      body: { token: payload.token.trim(), newPassword: payload.password },
     });
     return normalizeMessageResponse(data);
   },
 
   verifyEmail: async (token: string) => {
-    const data = await apiRequest<unknown>(
-      `${AUTH_BASE}/email/verify/${token}`
-    );
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/email/verify/${token}`);
     return normalizeMessageResponse(data);
   },
 
   logout: async () => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/logout`, {
-      method: 'POST',
-    });
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/logout`, { method: 'POST' });
     return normalizeMessageResponse(data);
   },
 
   logoutAll: async () => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/logout-all`, {
-      method: 'POST',
-    });
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/logout-all`, { method: 'POST' });
     return normalizeMessageResponse(data);
   },
 

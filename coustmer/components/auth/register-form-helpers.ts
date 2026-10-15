@@ -1,45 +1,46 @@
+import { AuthApiError } from '@/lib/auth/http';
+import { describePhoneAuthError } from '@/lib/auth/phone-auth-errors';
+
 export type RegisterFocusField =
   | 'firstName'
   | 'lastName'
   | 'email'
-  | 'phone'
   | 'password'
   | 'confirmPassword'
   | 'referralCode'
-  | 'otp'
   | null;
 
 export type RegisterFieldKey = Exclude<RegisterFocusField, null>;
 
-export function mapRegisterApiError(
-  message: string,
-): { field?: RegisterFieldKey; message: string } {
-  const lower = message.toLowerCase();
+const FIELD_KEYS: RegisterFieldKey[] = [
+  'firstName',
+  'lastName',
+  'email',
+  'password',
+  'confirmPassword',
+  'referralCode',
+];
 
-  if (lower.includes('confirm') || lower.includes('match') || lower.includes('re-enter')) {
-    return { field: 'confirmPassword', message };
+/** Map POST /auth/phone/register errors onto form fields where possible. */
+export function mapRegisterApiError(error: unknown): {
+  fields?: Partial<Record<RegisterFieldKey, string>>;
+  message?: string;
+} {
+  if (error instanceof AuthApiError) {
+    if (error.code === 'EMAIL_ALREADY_EXISTS') {
+      return { fields: { email: describePhoneAuthError(error, error.message) } };
+    }
+    if (error.code?.includes('REFERRAL') || /referral/i.test(error.message)) {
+      return { fields: { referralCode: error.message } };
+    }
+    if (error.status === 422 && error.fieldErrors) {
+      const fields: Partial<Record<RegisterFieldKey, string>> = {};
+      for (const [key, messages] of Object.entries(error.fieldErrors)) {
+        const field = FIELD_KEYS.find((k) => k === key);
+        if (field && messages?.[0]) fields[field] = messages[0];
+      }
+      if (Object.keys(fields).length > 0) return { fields };
+    }
   }
-  if (
-    lower.includes('password') ||
-    lower.includes('digit') ||
-    lower.includes('uppercase') ||
-    lower.includes('special') ||
-    lower.includes('character')
-  ) {
-    return { field: 'password', message };
-  }
-  if (lower.includes('email')) return { field: 'email', message };
-  if (lower.includes('phone')) return { field: 'phone', message };
-  if (lower.includes('otp') || lower.includes('code')) return { field: 'otp', message };
-  if (lower.includes('first name') || lower.includes('firstname')) {
-    return { field: 'firstName', message };
-  }
-  if (lower.includes('last name') || lower.includes('lastname')) {
-    return { field: 'lastName', message };
-  }
-  if (lower.includes('referral')) {
-    return { field: 'referralCode', message };
-  }
-
-  return { message };
+  return { message: describePhoneAuthError(error, 'Could not create your account. Try again.') };
 }
