@@ -1,7 +1,6 @@
 import { Pressable } from '@/components/common/Pressable';
 import { Leaf, Search } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Layout } from 'react-native-reanimated';
 
 import { fonts } from '@/constants/typography';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
@@ -61,18 +60,17 @@ export function RestaurantMenuSearchBar({
         {FILTER_CHIPS.map((chip) => {
           const on = menuFilter === chip.id;
           return (
-            <Pressable key={chip.id} onPress={() => onMenuFilter(chip.id)}>
-              <Animated.View
-                layout={Layout.springify().damping(18).stiffness(320)}
-                style={[styles.filterChip, on && styles.filterChipOn]}
-              >
-                {chip.vegIcon ? (
-                  <Leaf color={on ? '#FFF' : '#15803D'} size={12} strokeWidth={2.4} />
-                ) : null}
-                <Text style={[styles.filterChipText, on && styles.filterChipTextOn]}>
-                  {chip.label}
-                </Text>
-              </Animated.View>
+            <Pressable
+              key={chip.id}
+              style={[styles.filterChip, on && styles.filterChipOn]}
+              onPress={() => onMenuFilter(chip.id)}
+            >
+              {chip.vegIcon ? (
+                <Leaf color={on ? '#FFF' : '#15803D'} size={12} strokeWidth={2.4} />
+              ) : null}
+              <Text style={[styles.filterChipText, on && styles.filterChipTextOn]}>
+                {chip.label}
+              </Text>
             </Pressable>
           );
         })}

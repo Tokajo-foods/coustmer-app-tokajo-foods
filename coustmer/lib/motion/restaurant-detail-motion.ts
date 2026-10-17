@@ -1,20 +1,10 @@
-import { FadeIn, FadeInDown, FadeOut, FadeOutUp } from 'react-native-reanimated';
+import { Easing, FadeIn } from 'react-native-reanimated';
 
-/** Main tab panels: Menu, Offers, Reviews, Info */
-export const RESTAURANT_DETAIL_TAB_ENTERING = FadeInDown.duration(360)
-  .springify()
-  .damping(20)
-  .stiffness(320);
+/** Calm ease-out — no bounce (iOS-like). */
+const EASE_OUT = Easing.bezier(0.33, 0, 0.2, 1);
 
-export const RESTAURANT_DETAIL_TAB_EXITING = FadeOutUp.duration(220);
+/** Menu / Offers / Reviews / Info panel */
+export const RESTAURANT_DETAIL_TAB_ENTERING = FadeIn.duration(240).easing(EASE_OUT);
 
-/** Veg / non-veg / bestseller menu filter swap */
-export const RESTAURANT_MENU_FILTER_ENTERING = FadeInDown.duration(300)
-  .springify()
-  .damping(22)
-  .stiffness(340);
-
-export const RESTAURANT_MENU_FILTER_EXITING = FadeOut.duration(160);
-
-/** Tab bar underline + filter chip */
-export const RESTAURANT_CHIP_ENTERING = FadeIn.duration(180);
+/** Veg, non-veg, bestsellers, etc. */
+export const RESTAURANT_MENU_FILTER_ENTERING = FadeIn.duration(200).easing(EASE_OUT);

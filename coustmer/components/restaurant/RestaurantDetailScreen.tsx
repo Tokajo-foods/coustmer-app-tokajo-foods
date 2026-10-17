@@ -23,12 +23,10 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import {
   RESTAURANT_DETAIL_TAB_ENTERING,
-  RESTAURANT_DETAIL_TAB_EXITING,
   RESTAURANT_MENU_FILTER_ENTERING,
-  RESTAURANT_MENU_FILTER_EXITING,
 } from '@/lib/motion/restaurant-detail-motion';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -643,7 +641,6 @@ export function RestaurantDetailScreen() {
         <Animated.View
           key={tab}
           entering={RESTAURANT_DETAIL_TAB_ENTERING}
-          exiting={RESTAURANT_DETAIL_TAB_EXITING}
           style={tab === 'Info' ? { flexGrow: 1 } : undefined}
         >
         {tab === 'Menu' ? (
@@ -685,12 +682,10 @@ export function RestaurantDetailScreen() {
                   <Animated.View
                     key={menuFilter}
                     entering={RESTAURANT_MENU_FILTER_ENTERING}
-                    exiting={RESTAURANT_MENU_FILTER_EXITING}
                   >
-                    {grouped.map((cat, sectionIndex) => (
-                      <Animated.View
+                    {grouped.map((cat) => (
+                      <View
                         key={cat.id}
-                        entering={FadeInDown.delay(60 + sectionIndex * 35).duration(320)}
                         onLayout={onSectionLayout(cat.id)}
                         style={styles.categoryBlock}
                       >
@@ -714,7 +709,7 @@ export function RestaurantDetailScreen() {
                             />
                           ))}
                         </View>
-                      </Animated.View>
+                      </View>
                     ))}
                   </Animated.View>
                 )}
@@ -734,12 +729,8 @@ export function RestaurantDetailScreen() {
                 </Text>
               </View>
             ) : (
-              (offers.data ?? []).map((offer, i) => (
-                <Animated.View
-                  key={offer.id}
-                  entering={FadeInDown.delay(i * 50).duration(320)}
-                  style={styles.offerCard}
-                >
+              (offers.data ?? []).map((offer) => (
+                <View key={offer.id} style={styles.offerCard}>
                   <LinearGradient
                     colors={['#FFF7ED', '#FFFFFF']}
                     style={styles.offerGrad}
@@ -754,7 +745,7 @@ export function RestaurantDetailScreen() {
                       </View>
                     ) : null}
                   </LinearGradient>
-                </Animated.View>
+                </View>
               ))
             )}
           </View>
