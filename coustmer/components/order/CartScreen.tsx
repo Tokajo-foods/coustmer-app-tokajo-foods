@@ -59,6 +59,7 @@ import { ScheduleOrderSection } from '@/components/order/ScheduleOrderSection';
 import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
 import { GroupOrderSheet } from '@/components/order/GroupOrderSheet';
 import { CouponPickerSheet } from '@/components/order/CouponPickerSheet';
+import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { useCreateOrder } from '@/lib/order/hooks';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import type { DeliveryLocationResult } from '@/components/location/DeliveryLocationPicker';
@@ -84,7 +85,10 @@ import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
-import { paymentMethodLabel } from '@/lib/checkout/payment-display';
+import {
+  paymentMethodHint,
+  paymentMethodLabel,
+} from '@/lib/checkout/payment-display';
 import { OrderPlacementModal, PlacementPhase } from '@/components/order/OrderPlacementModal';
 import { PaymentGatewayWebView } from '@/components/payment/PaymentGatewayWebView';
 
@@ -270,7 +274,9 @@ export function CartScreen() {
   const verifyPayment = useVerifyPayment();
 
   const paymentMethod = useCartStore((s) => s.paymentMethod);
+  const setPaymentMethod = useCartStore((s) => s.setPaymentMethod);
   const [paying, setPaying] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const [paymentGatewayOpen, setPaymentGatewayOpen] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
@@ -403,6 +409,27 @@ export function CartScreen() {
 
   const addressLabel = location?.label || 'Home';
   const addressLine = location?.formattedAddress || 'Add a delivery address';
+  const itemCount = items.reduce((n, i) => n + i.quantity, 0);
+
+  const selectPaymentMethod = async (method: string) => {
+    if (method === 'wallet') {
+      try {
+        await ensureWalletCoversCheckout({
+          payableBeforeWallet: payableBeforeWallet(billBreakdown),
+          walletBalance: Number(wallet.data?.balance ?? 0),
+        });
+        void liveBill.refetch();
+      } catch (err) {
+        Alert.alert(
+          'Wallet',
+          err instanceof Error ? err.message : 'Could not apply wallet'
+        );
+        return;
+      }
+    }
+    setPaymentMethod(method);
+    setPaymentModalOpen(false);
+  };
 
   useEffect(() => {
     if (couponCode) setVoucherCode(couponCode);
@@ -1287,8 +1314,10 @@ export function CartScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Payment preview — change on order summary */}
-          <View style={styles.paymentCard}>
+          <Pressable
+            style={styles.paymentCard}
+            onPress={() => setPaymentModalOpen(true)}
+          >
             <View style={styles.paymentIconWrap}>
               {paymentMethod === 'cod' ? (
                 <Bike color={ORANGE} size={18} strokeWidth={2.3} />
@@ -1304,10 +1333,14 @@ export function CartScreen() {
                 {paymentMethodLabel(paymentMethod, paymentMethods.data)}
               </Text>
               <Text style={styles.paymentHint} numberOfLines={1}>
-                Change payment on order summary
+                {paymentMethodHint(paymentMethod)}
               </Text>
             </View>
-          </View>
+            <View style={styles.paymentChange}>
+              <Text style={styles.paymentChangeText}>Change</Text>
+              <ChevronRight color={ORANGE} size={16} strokeWidth={2.4} />
+            </View>
+          </Pressable>
 
           {/* Bill */}
           <BillDetailsSection
@@ -1391,6 +1424,23 @@ export function CartScreen() {
             </View>
           </Pressable>
         </Modal>
+
+        <PaymentOptionsModal
+          visible={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          selectedMethod={paymentMethod}
+          onSelectMethod={(m) => void selectPaymentMethod(m)}
+          onPay={(m) => void selectPaymentMethod(m)}
+          itemCount={itemCount}
+          total={payableBeforeWallet(billBreakdown) || displayTotal}
+          savings={billBreakdown.discount}
+          restaurantName={restaurant?.name || ''}
+          deliveryTime={restaurant?.deliveryTime}
+          addressLabel={addressLabel}
+          addressText={addressLine}
+          savedMethods={paymentMethods.data}
+          wallet={wallet.data}
+        />
 
         {/* ── Order Placement Modal ───────────────────────────────── */}
         <OrderPlacementModal
