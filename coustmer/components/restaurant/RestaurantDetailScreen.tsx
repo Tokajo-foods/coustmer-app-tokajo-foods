@@ -9,6 +9,7 @@ import {
   Clock,
   MapPin,
   Search,
+  Share2,
   ShieldCheck,
   Star,
   Tag,
@@ -38,6 +39,8 @@ import {
   type MenuFilterId,
 } from '@/components/restaurant/detail/RestaurantMenuSearchBar';
 import { RestaurantPopularPicks } from '@/components/restaurant/detail/RestaurantPopularPicks';
+import { RestaurantShareSheet } from '@/components/restaurant/RestaurantShareSheet';
+import { useRestaurantShareGate } from '@/lib/restaurant/use-restaurant-share-gate';
 import {
   featuredMenuSuggestions,
   filterMenuPool,
@@ -117,6 +120,7 @@ export function RestaurantDetailScreen() {
     slug?: string;
     category?: string;
     itemId?: string;
+    share?: string;
   }>();
   const idParam = Array.isArray(params.restaurantId)
     ? params.restaurantId[0]
@@ -148,11 +152,16 @@ export function RestaurantDetailScreen() {
     vegOnly ? 'veg' : 'all'
   );
   const [searchFocused, setSearchFocused] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareFlag = Array.isArray(params.share) ? params.share[0] : params.share;
+  const fromShare = shareFlag === '1' || shareFlag === 'true';
 
   const slugQuery = useRestaurantBySlug(slugOnly ? slugParam || '' : '', coords);
   const idQuery = useRestaurant(idParam || '', coords);
   const restaurant = slugOnly ? slugQuery : idQuery;
   const id = restaurant.data?.id || idParam || '';
+
+  useRestaurantShareGate(restaurant.data, fromShare);
   const reviewStats = useRestaurantReviewStats(id, {
     enabled: Boolean(id),
   });
@@ -592,17 +601,27 @@ export function RestaurantDetailScreen() {
                 <ChevronLeft color="#FFF" size={22} strokeWidth={2.4} />
               </Pressable>
 
-              {eta ? (
-                <View style={styles.etaPill}>
-                  <Clock color={INK} size={11} strokeWidth={2.6} />
-                  <Text style={styles.etaText}>{eta}</Text>
-                </View>
-              ) : distanceLabel ? (
-                <View style={styles.etaPill}>
-                  <MapPin color={INK} size={11} strokeWidth={2.6} />
-                  <Text style={styles.etaText}>{distanceLabel}</Text>
-                </View>
-              ) : null}
+              <View style={styles.topBarRight}>
+                <Pressable
+                  onPress={() => setShareOpen(true)}
+                  style={styles.glassBtn}
+                  hitSlop={8}
+                  accessibilityLabel="Share restaurant"
+                >
+                  <Share2 color="#FFF" size={20} strokeWidth={2.3} />
+                </Pressable>
+                {eta ? (
+                  <View style={styles.etaPill}>
+                    <Clock color={INK} size={11} strokeWidth={2.6} />
+                    <Text style={styles.etaText}>{eta}</Text>
+                  </View>
+                ) : distanceLabel ? (
+                  <View style={styles.etaPill}>
+                    <MapPin color={INK} size={11} strokeWidth={2.6} />
+                    <Text style={styles.etaText}>{distanceLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           </SafeAreaView>
 
@@ -1234,6 +1253,20 @@ export function RestaurantDetailScreen() {
       ) : null}
 
       <CartFloatingBar />
+
+      <RestaurantShareSheet
+        visible={shareOpen}
+        restaurant={
+          id
+            ? {
+                id,
+                slug: r.slug,
+                name: restaurantName,
+              }
+            : null
+        }
+        onClose={() => setShareOpen(false)}
+      />
     </View>
   );
 }
@@ -1265,6 +1298,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   glassBtn: {
     width: 40,
