@@ -28,6 +28,7 @@ type Props = {
   menuFilter: MenuFilterId;
   onMenuFilter: (id: MenuFilterId) => void;
   vegOnly: boolean;
+  restaurantName?: string;
 };
 
 export function RestaurantMenuSearchBar({
@@ -39,11 +40,13 @@ export function RestaurantMenuSearchBar({
   menuFilter,
   onMenuFilter,
   vegOnly,
+  restaurantName,
 }: Props) {
+  const scope = restaurantName?.trim() || 'this restaurant';
   const placeholder =
     menuFilter === 'veg' || vegOnly
-      ? 'Search veg dishes on this menu…'
-      : 'Search for biryani, pizza, desserts…';
+      ? `Search veg dishes at ${scope}…`
+      : `Search ${scope} menu…`;
 
   return (
     <View style={styles.card}>

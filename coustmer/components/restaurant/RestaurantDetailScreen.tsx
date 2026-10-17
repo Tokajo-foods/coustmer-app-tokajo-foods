@@ -32,11 +32,17 @@ import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { RestaurantCategoryRail } from '@/components/restaurant/detail/RestaurantCategoryRail';
 import { RestaurantDetailTabs } from '@/components/restaurant/detail/RestaurantDetailTabs';
 import type { RestaurantDetailTab } from '@/components/restaurant/detail/RestaurantDetailTabs';
+import { RestaurantMenuAutocomplete } from '@/components/restaurant/detail/RestaurantMenuAutocomplete';
 import {
   RestaurantMenuSearchBar,
   type MenuFilterId,
 } from '@/components/restaurant/detail/RestaurantMenuSearchBar';
 import { RestaurantPopularPicks } from '@/components/restaurant/detail/RestaurantPopularPicks';
+import {
+  featuredMenuSuggestions,
+  filterMenuPool,
+  rankMenuSearch,
+} from '@/lib/restaurant/menu-search';
 import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { MenuItemDetailSheet } from '@/components/restaurant/MenuItemDetailSheet';
 import { RestaurantReviewsPanel } from '@/components/review/RestaurantReviewsPanel';
@@ -65,7 +71,6 @@ import {
   useRestaurantBySlug,
   useRestaurantHolidays,
   useRestaurantHygiene,
-  useRestaurantItems,
   useRestaurantOffers,
   useRestaurantRatings,
   useRestaurantSpecialHours,
@@ -164,14 +169,6 @@ export function RestaurantDetailScreen() {
   const notifyOpen = useNotifyOpen(id);
   const needle = query.trim().toLowerCase();
   const isSearching = needle.length > 0;
-  const searchedItems = useRestaurantItems(
-    id,
-    {
-      q: isSearching ? query.trim() : undefined,
-      veg: menuFilter === 'veg' || vegOnly || undefined,
-    },
-    { enabled: Boolean(id) && isSearching }
-  );
 
   const goBack = () => navigateBack(router, '/home');
 
@@ -180,19 +177,14 @@ export function RestaurantDetailScreen() {
     setSelectedItem(item);
   };
 
-  const matchesQuery = (item: MenuItem, q: string) => {
-    if (!q) return true;
-    const hay = [
-      item.name,
-      item.description,
-      item.categoryName,
-      ...(item.tags ?? []),
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return hay.includes(q);
-  };
+  const menuSearchPool = useMemo(
+    () =>
+      filterMenuPool(menu.items, {
+        vegOnly,
+        menuFilter,
+      }),
+    [menu.items, vegOnly, menuFilter]
+  );
 
   const visibleItems = useMemo(() => {
     let items = menu.items;
@@ -276,70 +268,23 @@ export function RestaurantDetailScreen() {
     return picks.length >= 3 ? picks : pool.slice(0, 8);
   }, [menu.recommended, menu.items, visibleItems, vegOnly, menuFilter]);
 
-  const searchSuggestions = useMemo(() => {
-    const pool = menu.items.filter((item) => {
-      if (vegOnly || menuFilter === 'veg') return item.isVeg === true;
-      if (menuFilter === 'non_veg') return item.isVeg === false;
-      return true;
-    });
-    if (!pool.length) return [] as MenuItem[];
-
-    if (!needle) {
-      const featured = [
-        ...(menu.recommended ?? []),
-        ...pool.filter((i) => i.isBestSeller || i.isRecommended),
-        ...pool,
-      ];
-      const seen = new Set<string>();
-      const out: MenuItem[] = [];
-      for (const item of featured) {
-        if (seen.has(item.id)) continue;
-        if (vegOnly || menuFilter === 'veg') {
-          if (item.isVeg !== true) continue;
-        }
-        seen.add(item.id);
-        out.push(item);
-        if (out.length >= 8) break;
-      }
-      return out;
-    }
-
-    return pool
-      .filter((item) => matchesQuery(item, needle))
-      .slice(0, 8);
-  }, [menu.items, menu.recommended, needle, vegOnly, menuFilter]);
-
   const searchResults = useMemo(() => {
     if (!isSearching) return [];
-    const apiHits = searchedItems.data ?? [];
-    let results =
-      searchedItems.isSuccess && apiHits.length
-        ? apiHits
-        : menu.items.filter((item) => matchesQuery(item, needle));
+    return rankMenuSearch(menuSearchPool, query.trim(), { limit: 80 });
+  }, [isSearching, menuSearchPool, query]);
 
-    if (menuFilter === 'veg' || vegOnly) {
-      results = results.filter((item) => item.isVeg === true);
-    } else if (menuFilter === 'non_veg') {
-      results = results.filter((item) => item.isVeg === false);
-    } else if (menuFilter === 'bestsellers') {
-      const bestsellers = results.filter((item) => item.isBestSeller === true);
-      if (bestsellers.length) results = bestsellers;
-    } else if (menuFilter === 'recommended') {
-      const flagged = results.filter(
-        (item) => item.isRecommended === true || item.isBestSeller === true
-      );
-      if (flagged.length) results = flagged;
+  const autocompleteSuggestions = useMemo(() => {
+    if (!needle) {
+      return featuredMenuSuggestions(menuSearchPool, menu.recommended, 6);
     }
-    return results;
-  }, [
-    isSearching,
-    searchedItems.data,
-    searchedItems.isSuccess,
-    menu.items,
-    needle,
-    vegOnly,
-    menuFilter,
-  ]);
+    return rankMenuSearch(menuSearchPool, query.trim(), { limit: 6 });
+  }, [needle, menuSearchPool, menu.recommended, query]);
+
+  const showAutocomplete =
+    tab === 'Menu' &&
+    (searchFocused || isSearching) &&
+    autocompleteSuggestions.length > 0 &&
+    !menu.isLoading;
 
   const categories = useMemo(() => {
     if (menu.categories.length) return menu.categories;
@@ -758,48 +703,34 @@ export function RestaurantDetailScreen() {
             setSearchFocused(true);
           }}
           onSearchBlur={() => {
-            setTimeout(() => setSearchFocused(false), 180);
+            setTimeout(() => setSearchFocused(false), 240);
           }}
           onClearSearch={clearSearch}
           menuFilter={menuFilter}
           onMenuFilter={applyMenuFilter}
           vegOnly={vegOnly}
+          restaurantName={restaurantName}
         />
 
-        {(searchFocused || needle.length > 0) &&
-        searchSuggestions.length > 0 &&
-        tab === 'Menu' ? (
-          <View style={styles.suggestBlock}>
-            <Text style={styles.suggestLabel}>
-              {needle ? 'Suggestions' : 'Popular on this menu'}
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.suggestRail}
-            >
-              {searchSuggestions.map((item) => (
-                <Pressable
-                  key={`suggest-${item.id}`}
-                  style={styles.suggestChip}
-                  onPress={() => {
-                    setQuery(item.name);
-                    setTab('Menu');
-                    setActiveCat('popular');
-                    setSelectedItem(item);
-                    setSearchFocused(false);
-                  }}
-                >
-                  <Text style={styles.suggestChipText} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.suggestPrice}>₹{item.price}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
+        <RestaurantMenuAutocomplete
+          visible={showAutocomplete}
+          query={query}
+          restaurantName={restaurantName}
+          suggestions={autocompleteSuggestions}
+          totalMatches={searchResults.length}
+          onSelectItem={(item) => {
+            setQuery(item.name);
+            setTab('Menu');
+            setActiveCat('popular');
+            setSelectedItem(item);
+            setSearchFocused(false);
+          }}
+          onFillQuery={(text) => {
+            setQuery(text);
+            setTab('Menu');
+            setSearchFocused(false);
+          }}
+        />
 
         <RestaurantDetailTabs active={tab} onChange={setTab} />
 
@@ -817,7 +748,7 @@ export function RestaurantDetailScreen() {
                     {searchResults.length === 1 ? '' : 's'}
                   </Text>
                   <Text style={styles.sectionSub}>
-                    Showing matches for “{query.trim()}”
+                    Dishes at {restaurantName} matching “{query.trim()}”
                   </Text>
                 </View>
 
