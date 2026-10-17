@@ -1,39 +1,15 @@
 import { Image } from 'expo-image';
-import { Search, Star } from 'lucide-react-native';
+import { Star } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
-import type { SearchDish, SearchRestaurant, SearchSuggestion } from '@/lib/search/types';
+import type { SearchDish, SearchRestaurant } from '@/lib/search/types';
 
 import { searchColors } from './search-styles';
 import { formatInr } from '@/lib/format/money';
 
 const { ink: INK, muted: MUTED, border: BORDER } = searchColors;
-
-export const SuggestionRow = memo(function SuggestionRow({
-  item,
-  onPress,
-}: {
-  item: SearchSuggestion;
-  onPress: (item: SearchSuggestion) => void;
-}) {
-  return (
-    <Pressable style={styles.suggestionRow} onPress={() => onPress(item)} android_ripple={{ color: '#F1F5F9' }}>
-      {item.imageUrl ? (
-        <Image source={{ uri: item.imageUrl }} style={styles.suggestionImg} contentFit="cover" transition={150} />
-      ) : (
-        <View style={styles.suggestionIcon}>
-          <Search color={MUTED} size={13} />
-        </View>
-      )}
-      <View style={styles.flex}>
-        <Text style={styles.suggestionText} numberOfLines={1}>{item.text}</Text>
-        {item.type && item.type !== 'query' ? <Text style={styles.suggestionType}>{item.type}</Text> : null}
-      </View>
-    </Pressable>
-  );
-});
 
 export const RestaurantRow = memo(function RestaurantRow({
   restaurant,
@@ -111,27 +87,6 @@ export function ResultSkeleton({ rows = 5 }: { rows?: number }) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  suggestionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  suggestionImg: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#F1F5F9' },
-  suggestionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  suggestionText: { fontFamily: fonts.uiSemi, fontSize: 14, color: INK },
-  suggestionType: { fontFamily: fonts.ui, fontSize: 11, color: MUTED, textTransform: 'capitalize', marginTop: 1 },
   resultCard: {
     flexDirection: 'row',
     paddingHorizontal: 16,

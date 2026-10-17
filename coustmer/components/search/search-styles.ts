@@ -108,6 +108,15 @@ export const searchStyles = StyleSheet.create({
     paddingBottom: 8,
   },
 
+  correctedText: { fontFamily: fonts.ui, fontSize: 13, color: muted, paddingHorizontal: 16, paddingTop: 12 },
+  retryBtn: {
+    marginTop: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: orange,
+  },
+  retryText: { fontFamily: fonts.uiBold, fontSize: 13.5, color: '#FFFFFF' },
   emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 8 },
   emptyText: { fontFamily: fonts.displayBold, fontSize: 16, color: ink, marginTop: 12 },
   emptySubtext: { fontFamily: fonts.ui, fontSize: 13, color: muted },

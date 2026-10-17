@@ -1,125 +1,98 @@
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 
+import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { searchApi } from '@/lib/search/api';
 import type {
-  SearchCombinedParams,
-  SearchDishesParams,
+  SearchCategoryDishesParams,
   SearchRestaurantsParams,
-  SearchSuggestionsParams,
+  SearchScope,
 } from '@/lib/search/types';
+import { useDeliveryCoords } from '@/store/delivery-location-store';
+
+/** search-service radius is meters; the home list radius is km. */
+const SEARCH_RADIUS_M = CUSTOMER_DISCOVERY_RADIUS_KM * 1000;
 
 export const searchKeys = {
   all: ['search'] as const,
-  health: () => [...searchKeys.all, 'health'] as const,
-  restaurants: (params: SearchRestaurantsParams) =>
-    [...searchKeys.all, 'restaurants', params] as const,
-  dishes: (params: SearchDishesParams) =>
-    [...searchKeys.all, 'dishes', params] as const,
-  combined: (params: SearchCombinedParams) =>
-    [...searchKeys.all, 'combined', params] as const,
-  suggestions: (params: SearchSuggestionsParams) =>
-    [...searchKeys.all, 'suggestions', params] as const,
-  catalog: () => [...searchKeys.all, 'catalog'] as const,
+  suggestions: (q: string, scope: SearchScope) => [...searchKeys.all, 'suggestions', q, scope] as const,
+  combined: (q: string, scope: SearchScope) => [...searchKeys.all, 'combined', q, scope] as const,
+  restaurants: (params: SearchRestaurantsParams) => [...searchKeys.all, 'restaurants', params] as const,
+  categoryDishes: (params: SearchCategoryDishesParams) => [...searchKeys.all, 'category-dishes', params] as const,
 };
 
-/** Debounce a string for search inputs (default 220ms). */
+/** Debounce a value for search inputs (default 220ms). */
 export function useDebouncedValue<T>(value: T, delayMs = 220): T {
   const [debounced, setDebounced] = useState(value);
-
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delayMs);
     return () => clearTimeout(timer);
   }, [value, delayMs]);
-
   return debounced;
 }
 
-/** Warm restaurant catalog so fallback search stays snappy. */
-export function usePrefetchSearchCatalog() {
+/**
+ * Delivery pin + the home radius. Every search query uses this so results are only
+ * restaurants that also appear on the home list. Null until a pin is set.
+ */
+export function useSearchScope(): SearchScope | null {
+  const coords = useDeliveryCoords();
+  return useMemo(
+    () => (coords ? { lat: coords.lat, lng: coords.lng, radius: SEARCH_RADIUS_M } : null),
+    [coords],
+  );
+}
+
+/** Type-ahead from the first character: dishes, restaurants and cuisines in range. */
+export function useSearchSuggestions(q: string, options?: { enabled?: boolean; limit?: number }) {
+  const scope = useSearchScope();
+  const term = q.trim();
   return useQuery({
-    queryKey: searchKeys.catalog(),
-    queryFn: () => searchApi.prefetchCatalog(),
-    staleTime: 90_000,
+    queryKey: searchKeys.suggestions(term, scope ?? {}),
+    queryFn: () => searchApi.getSuggestions({ ...scope, q: term, limit: options?.limit ?? 12 }),
+    enabled: (options?.enabled ?? true) && Boolean(scope) && term.length >= 1,
+    staleTime: 30_000,
     retry: 1,
+    placeholderData: keepPreviousData,
   });
 }
 
-/** GET /health */
-export function useSearchServiceHealth(enabled = false) {
+/** Full results after submit: restaurants, dishes and matching cuisines in range. */
+export function useSearchCombined(q: string, options?: { enabled?: boolean }) {
+  const scope = useSearchScope();
+  const term = q.trim();
   return useQuery({
-    queryKey: searchKeys.health(),
-    queryFn: searchApi.health,
-    enabled,
-    staleTime: 60_000,
+    queryKey: searchKeys.combined(term, scope ?? {}),
+    queryFn: () => searchApi.searchCombined({ ...scope, q: term, limit: 30 }),
+    enabled: (options?.enabled ?? true) && Boolean(scope) && term.length >= 1,
+    staleTime: 30_000,
     retry: 1,
+    placeholderData: keepPreviousData,
   });
 }
 
-/** GET /restaurants (?q=&cuisine=&lat=&lng=&sort=) */
-export function useSearchRestaurants(
-  params: SearchRestaurantsParams,
-  options?: { enabled?: boolean }
-) {
+/** Restaurant-only text search (browse screen). */
+export function useSearchRestaurants(params: SearchRestaurantsParams, options?: { enabled?: boolean }) {
   const hasQuery = Boolean(params.q?.trim() || params.cuisine);
-
   return useQuery({
     queryKey: searchKeys.restaurants(params),
     queryFn: () => searchApi.searchRestaurants(params),
     enabled: (options?.enabled ?? true) && hasQuery,
     staleTime: 20_000,
     retry: 1,
-    placeholderData: (prev) => prev,
+    placeholderData: keepPreviousData,
   });
 }
 
-/** GET /dishes (?q=&restaurantId=&veg=) */
-export function useSearchDishes(
-  params: SearchDishesParams,
-  options?: { enabled?: boolean }
-) {
-  const hasQuery = Boolean(params.q?.trim() || params.restaurantId);
-
+/** Every dish in range for a cuisine or food category. */
+export function useSearchCategoryDishes(input: Omit<SearchCategoryDishesParams, keyof SearchScope>) {
+  const scope = useSearchScope();
+  const params: SearchCategoryDishesParams = { ...input, ...scope, limit: input.limit ?? 80 };
   return useQuery({
-    queryKey: searchKeys.dishes(params),
-    queryFn: () => searchApi.searchDishes(params),
-    enabled: (options?.enabled ?? true) && hasQuery,
-    staleTime: 20_000,
+    queryKey: searchKeys.categoryDishes(params),
+    queryFn: () => searchApi.getCategoryDishes(params),
+    enabled: Boolean(scope) && Boolean(input.slug || input.name),
+    staleTime: 60_000,
     retry: 1,
-    placeholderData: (prev) => prev,
-  });
-}
-
-/** GET /combined — primary Search screen query. Starts from 1 char. */
-export function useSearchCombined(
-  params: SearchCombinedParams,
-  options?: { enabled?: boolean }
-) {
-  const q = params.q.trim();
-
-  return useQuery({
-    queryKey: searchKeys.combined({ ...params, q }),
-    queryFn: () => searchApi.searchCombined({ ...params, q }),
-    enabled: (options?.enabled ?? true) && q.length >= 1,
-    staleTime: 12_000,
-    retry: 1,
-    placeholderData: (prev) => prev,
-  });
-}
-
-/** GET /suggestions — autocomplete from 1 char. */
-export function useSearchSuggestions(
-  params: SearchSuggestionsParams,
-  options?: { enabled?: boolean }
-) {
-  const q = params.q.trim();
-
-  return useQuery({
-    queryKey: searchKeys.suggestions({ ...params, q }),
-    queryFn: () => searchApi.getSuggestions({ ...params, q }),
-    enabled: (options?.enabled ?? true) && q.length >= 1,
-    staleTime: 8_000,
-    retry: 1,
-    placeholderData: (prev) => prev,
   });
 }

@@ -214,7 +214,7 @@ export function RestaurantBrowseScreen() {
   const resultCount = isCategoryMode
     ? (categoryQuery.data?.total ?? filteredList.length)
     : isTextSearch
-      ? (searchQuery.data?.meta?.total ?? filteredList.length)
+      ? (searchQuery.data?.total ?? filteredList.length)
       : filteredList.length;
 
   const subtitle = useMemo(() => {

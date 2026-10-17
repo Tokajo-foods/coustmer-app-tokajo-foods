@@ -1,19 +1,11 @@
 /**
- * Search Service (public).
- * Gateway prefix: /api/v1/search-service
- * Routes: GET /restaurants | /dishes | /combined | /suggestions | /health
- *
- * Note: backend rejects text (`q`) + geo (`lat`/`lng`) in the same query
- * ("text and geoNear not allowed"). Client omits geo when `q` is set.
+ * Search Service (public). Gateway prefix: /api/v1/search-service
+ * Every call is scoped to restaurants that deliver to the pin (same radius as home).
  */
 
-export type PaginationMeta = {
-  total?: number;
-  page?: number;
-  limit?: number;
-  totalPages?: number;
-  hasNext?: boolean;
-};
+export type SearchMatchReason = 'name' | 'cuisine' | 'serves_dish' | 'serves_category';
+export type SearchSuggestionType = 'restaurant' | 'dish' | 'category';
+export type SearchCategorySource = 'cuisine' | 'food_category';
 
 export type SearchRestaurant = {
   id: string;
@@ -26,6 +18,7 @@ export type SearchRestaurant = {
   cuisines?: string[];
   deliveryTime?: string;
   priceForTwo?: number;
+  costForTwo?: number;
   distance?: number;
   isOpen?: boolean;
   address?: string;
@@ -34,6 +27,8 @@ export type SearchRestaurant = {
   isPureVeg?: boolean;
   lat?: number;
   lng?: number;
+  /** Why it matched: its name, a cuisine tag, or a dish on its menu. */
+  matchReason?: SearchMatchReason;
 };
 
 export type SearchDish = {
@@ -41,82 +36,92 @@ export type SearchDish = {
   name: string;
   description?: string;
   price: number;
+  discountedPrice?: number;
   imageUrl?: string;
   isVeg?: boolean;
-  isAvailable?: boolean;
-  rating?: number;
+  isBestSeller?: boolean;
   restaurantId: string;
   restaurantName?: string;
+  restaurantImageUrl?: string;
+  restaurantIsOpen?: boolean;
   categoryId?: string;
   categoryName?: string;
 };
 
-export type SearchSuggestion = {
+export type SearchCategory = {
   id: string;
-  text: string;
-  type?: 'restaurant' | 'dish' | 'cuisine' | 'query' | string;
-  restaurantId?: string;
-  dishId?: string;
+  name: string;
+  slug: string;
   imageUrl?: string;
+  /** Dishes nearby (food categories). */
+  itemCount?: number;
+  /** Restaurants nearby (cuisines). */
+  restaurantCount?: number;
+  source: SearchCategorySource;
 };
 
-export type SearchRestaurantsParams = {
-  q?: string;
-  cuisine?: string;
+export type SearchSuggestion = {
+  id: string;
+  type: SearchSuggestionType;
+  text: string;
+  subtitle?: string;
+  imageUrl?: string;
+  restaurantId?: string;
+  restaurantName?: string;
+  dishId?: string;
+  slug?: string;
+  source?: SearchCategorySource;
+  price?: number;
+  isVeg?: boolean;
+  rating?: number;
+  isOpen?: boolean;
+};
+
+/** Pin + radius (meters) that limit every search to restaurants delivering here. */
+export type SearchScope = {
   lat?: number;
   lng?: number;
+  radius?: number;
+  veg?: boolean;
+};
+
+export type SearchSuggestionsParams = SearchScope & { q: string; limit?: number };
+export type SearchCombinedParams = SearchScope & { q: string; limit?: number };
+export type SearchRestaurantsParams = SearchScope & {
+  q?: string;
+  cuisine?: string;
   sort?: string;
   page?: number;
   limit?: number;
 };
-
-export type SearchDishesParams = {
-  q?: string;
-  restaurantId?: string;
-  veg?: boolean;
-  page?: number;
+export type SearchCategoryDishesParams = SearchScope & {
+  slug: string;
+  name?: string;
+  source?: SearchCategorySource;
   limit?: number;
 };
 
-export type SearchCombinedParams = {
-  q: string;
-  cuisine?: string;
-  lat?: number;
-  lng?: number;
-  veg?: boolean;
-  page?: number;
-  limit?: number;
+export type SearchSuggestionsResult = {
+  query: string;
+  correctedQuery?: string;
+  suggestions: SearchSuggestion[];
 };
 
-export type SearchSuggestionsParams = {
-  q: string;
-  limit?: number;
-  lat?: number;
-  lng?: number;
-  /** Meters — search-service default ~50km when omitted. */
-  radius?: number;
+export type SearchCombinedResult = {
+  query: string;
+  correctedQuery?: string;
+  restaurants: SearchRestaurant[];
+  dishes: SearchDish[];
+  categories: SearchCategory[];
 };
 
 export type SearchRestaurantsResult = {
   restaurants: SearchRestaurant[];
-  meta?: PaginationMeta;
-  query?: string;
+  total: number;
 };
 
-export type SearchDishesResult = {
+export type SearchCategoryDishesResult = {
+  category: { name: string; slug: string; source?: SearchCategorySource; imageUrl?: string };
+  restaurantCount: number;
   dishes: SearchDish[];
-  meta?: PaginationMeta;
-  query?: string;
-};
-
-export type SearchCombinedResult = {
-  restaurants: SearchRestaurant[];
-  dishes: SearchDish[];
-  query?: string;
-  meta?: PaginationMeta;
-};
-
-export type SearchSuggestionsResult = {
-  suggestions: SearchSuggestion[];
-  query?: string;
 };

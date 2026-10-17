@@ -4,38 +4,38 @@ import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { navigateBack } from '@/lib/motion/navigate-back';
 import { useMorphBackHandler, useSearchMorph } from '@/lib/motion/use-search-morph';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
-import { useDebouncedValue, useSearchCombined, useSearchSuggestions } from '@/lib/search/hooks';
+import { useDebouncedValue, useSearchCombined, useSearchScope, useSearchSuggestions } from '@/lib/search/hooks';
 import {
   clearLocalRecentSearches,
   loadLocalRecentSearches,
   pushLocalRecentSearch,
   removeLocalRecentSearch,
 } from '@/lib/search/recent';
-import type { SearchSuggestion } from '@/lib/search/types';
-import { useDeliveryCoords } from '@/store/delivery-location-store';
+import type { SearchCategorySource, SearchSuggestion } from '@/lib/search/types';
 
 import { SearchHeader } from './SearchHeader';
 import { SearchMorphGhost } from './SearchMorphGhost';
 import { SearchDiscover } from './discover/SearchDiscover';
-import { SearchResults, SuggestionList } from './SearchSections';
+import { SearchMessage, SearchResults, SuggestionList } from './SearchSections';
 import { searchStyles as s } from './search-styles';
 
-/** search-service radius is meters; discovery radius is km. */
-const SUGGEST_RADIUS_M = CUSTOMER_DISCOVERY_RADIUS_KM * 1000;
+function errorText(error: unknown): string | null {
+  if (!error) return null;
+  return error instanceof Error ? error.message : 'Please try again.';
+}
 
 export function SearchScreen() {
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
-  const coords = useDeliveryCoords();
+  const scope = useSearchScope();
 
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const debouncedQuery = useDebouncedValue(query, 250);
+  const debouncedQuery = useDebouncedValue(query, 180);
 
   const focusInput = useCallback(() => inputRef.current?.focus(), []);
   const morph = useSearchMorph(focusInput);
@@ -43,23 +43,15 @@ export function SearchScreen() {
   const goBack = useCallback(() => morph.close(leave), [morph, leave]);
   useMorphBackHandler(morph.close, leave);
 
-  const suggestions = useSearchSuggestions(
-    {
-      q: debouncedQuery,
-      limit: 10,
-      lat: coords?.lat,
-      lng: coords?.lng,
-      radius: coords ? SUGGEST_RADIUS_M : undefined,
-    },
-    { enabled: !submitted && debouncedQuery.length >= 1 }
-  );
-  const combined = useSearchCombined(
-    { q: debouncedQuery, lat: coords?.lat, lng: coords?.lng },
-    { enabled: submitted && debouncedQuery.length >= 1 }
-  );
+  const suggestions = useSearchSuggestions(debouncedQuery, { enabled: !submitted });
+  const combined = useSearchCombined(query, { enabled: submitted });
 
   useEffect(() => {
     loadLocalRecentSearches().then(setRecentSearches);
+  }, []);
+
+  const remember = useCallback((term: string) => {
+    pushLocalRecentSearch(term).then(setRecentSearches);
   }, []);
 
   const performSearch = useCallback((term: string) => {
@@ -68,29 +60,37 @@ export function SearchScreen() {
     setQuery(cleaned);
     setSubmitted(true);
     Keyboard.dismiss();
-    pushLocalRecentSearch(cleaned).then(setRecentSearches);
-  }, []);
+    remember(cleaned);
+  }, [remember]);
 
   const openRestaurant = useCallback((id: string, itemId?: string) => {
     openRestaurantMenu(router, id, { params: itemId ? { itemId } : undefined });
   }, [router]);
 
-  const openSuggestion = useCallback((item: SearchSuggestion) => {
-    if (item.type === 'restaurant' && (item.restaurantId || item.id)) {
-      openRestaurant(item.restaurantId || item.id);
-      return;
-    }
-    if (item.type === 'dish' && item.restaurantId) {
-      openRestaurant(item.restaurantId, item.dishId || item.id);
-      return;
-    }
-    performSearch(item.text);
-  }, [openRestaurant, performSearch]);
+  const openCategory = useCallback((c: { slug: string; name: string; source?: SearchCategorySource }) => {
+    router.push({ pathname: '/search-category', params: { slug: c.slug, name: c.name, source: c.source ?? '' } });
+  }, [router]);
 
-  const showingResults = submitted && debouncedQuery.length >= 1;
+  const openSuggestion = useCallback((item: SearchSuggestion) => {
+    remember(item.text);
+    if (item.type === 'restaurant' && item.restaurantId) return openRestaurant(item.restaurantId);
+    if (item.type === 'dish' && item.restaurantId) return openRestaurant(item.restaurantId, item.dishId);
+    if (item.type === 'category' && item.slug) return openCategory({ slug: item.slug, name: item.text, source: item.source });
+    performSearch(item.text);
+  }, [openCategory, openRestaurant, performSearch, remember]);
+
+  const fillQuery = useCallback((text: string) => {
+    setQuery(`${text} `);
+    setSubmitted(false);
+    inputRef.current?.focus();
+  }, []);
+
+  const typed = query.trim();
+  const showingDiscover = !submitted && typed.length === 0;
+  const showingSuggestions = !submitted && typed.length >= 1;
+  const showingResults = submitted && typed.length >= 1;
   const suggestionItems = suggestions.data?.suggestions ?? [];
-  const showingSuggestions = !submitted && query.trim().length >= 1;
-  const showingDiscover = !submitted && query.trim().length === 0;
+  const waitingForTyping = debouncedQuery.trim() !== typed || suggestions.isFetching;
 
   return (
     <View ref={morph.rootRef} collapsable={false} style={s.root}>
@@ -120,20 +120,39 @@ export function SearchScreen() {
               onClearRecent={() => clearLocalRecentSearches().then(() => setRecentSearches([]))}
             />
           ) : null}
-          {showingSuggestions ? (
-            <SuggestionList
-              query={query}
-              items={suggestionItems}
-              onPick={openSuggestion}
-              onSearchAll={() => performSearch(query)}
-            />
+          {!scope && !showingDiscover ? (
+            <SearchMessage kind="empty" title="Set your delivery location"
+              body="Search shows restaurants and dishes that deliver to your address." />
           ) : null}
-          {showingResults ? (
+          {scope && showingSuggestions ? (
+            suggestions.isError && !suggestionItems.length ? (
+              <SearchMessage kind="error" title="Couldn't load suggestions"
+                body={errorText(suggestions.error) ?? ''} onRetry={() => void suggestions.refetch()} />
+            ) : !suggestionItems.length && !waitingForTyping && suggestions.isFetched ? (
+              <SearchMessage kind="empty" title={`Nothing near you for “${typed}”`}
+                body="Try a dish, a cuisine like “Chinese”, or a restaurant name." />
+            ) : (
+              <SuggestionList
+                query={query}
+                items={suggestionItems}
+                correctedQuery={suggestions.data?.correctedQuery}
+                onPick={openSuggestion}
+                onFill={fillQuery}
+                onSearchAll={() => performSearch(query)}
+              />
+            )
+          ) : null}
+          {scope && showingResults ? (
             <SearchResults
-              query={query}
+              query={typed}
               loading={combined.isLoading}
-              restaurants={combined.data?.restaurants}
-              dishes={combined.data?.dishes}
+              error={combined.isError ? errorText(combined.error) : null}
+              onRetry={() => void combined.refetch()}
+              correctedQuery={combined.data?.correctedQuery}
+              categories={combined.data?.categories ?? []}
+              restaurants={combined.data?.restaurants ?? []}
+              dishes={combined.data?.dishes ?? []}
+              onCategory={openCategory}
               onRestaurant={(r) => openRestaurant(r.id)}
               onDish={(d) => openRestaurant(d.restaurantId, d.id)}
             />
