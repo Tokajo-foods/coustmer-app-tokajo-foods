@@ -6,7 +6,6 @@ import {
 
 import { profileApi } from '@/lib/profile/api';
 import type {
-  AddWalletPayload,
   ApplyReferralPayload,
   DeleteAccountPayload,
   DietaryPreferences,
@@ -25,8 +24,6 @@ export const profileKeys = {
   all: ['profile'] as const,
   me: () => [...profileKeys.all, 'me'] as const,
   preferences: () => [...profileKeys.all, 'preferences'] as const,
-  wallet: () => [...profileKeys.all, 'wallet'] as const,
-  transactions: () => [...profileKeys.all, 'transactions'] as const,
   sessions: () => [...profileKeys.all, 'sessions'] as const,
   devices: () => [...profileKeys.all, 'devices'] as const,
   referral: () => [...profileKeys.all, 'referral'] as const,
@@ -161,31 +158,6 @@ export function useUpdatePhone() {
 export function useUpdateEmail() {
   return useMutation({
     mutationFn: (payload: UpdateEmailPayload) => profileApi.updateEmail(payload),
-  });
-}
-
-export function useWallet() {
-  return useQuery({
-    queryKey: profileKeys.wallet(),
-    queryFn: profileApi.getWallet,
-  });
-}
-
-export function useWalletTransactions() {
-  return useQuery({
-    queryKey: profileKeys.transactions(),
-    queryFn: profileApi.getWalletTransactions,
-  });
-}
-
-export function useAddWalletMoney() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: AddWalletPayload) => profileApi.addWalletMoney(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileKeys.wallet() });
-      queryClient.invalidateQueries({ queryKey: profileKeys.transactions() });
-    },
   });
 }
 

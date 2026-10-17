@@ -124,23 +124,6 @@ export type WalletSummary = {
   [key: string]: unknown;
 };
 
-export type WalletTransaction = {
-  id: string;
-  type?: string;
-  amount: number;
-  currency?: string;
-  description?: string;
-  status?: string;
-  balanceAfter?: number;
-  createdAt?: string;
-  [key: string]: unknown;
-};
-
-export type WalletTransactionsResult = {
-  transactions: WalletTransaction[];
-  meta?: PaginationMeta;
-};
-
 export type RefundStatus =
   | 'requested'
   | 'pending'

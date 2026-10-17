@@ -2,7 +2,6 @@ import axios from 'axios';
 
 import { api, refreshCsrfToken } from '@/lib/api';
 import type {
-  AddWalletPayload,
   ApplyReferralPayload,
   DeleteAccountPayload,
   DietaryPreferences,
@@ -17,8 +16,6 @@ import type {
   UserPreferences,
   UserProfile,
   UserSession,
-  WalletSummary,
-  WalletTransactionsResponse,
 } from '@/lib/profile/types';
 
 const USERS_BASE = '/api/v1/user-service/users/me';
@@ -234,43 +231,6 @@ export const profileApi = {
       body: payload,
     });
     return res.message ?? 'Verification email sent';
-  },
-
-  getWallet: async (): Promise<WalletSummary> => {
-    const res = await request<WalletSummary>(`${USERS_BASE}/wallet`);
-    return {
-      balance: Number(res.data?.balance ?? 0),
-      currency: String(res.data?.currency ?? 'INR'),
-      isLocked: Boolean(res.data?.isLocked ?? false),
-      lastCredited: res.data?.lastCredited,
-    };
-  },
-
-  getWalletTransactions: async (): Promise<WalletTransactionsResponse> => {
-    const res = await request<WalletTransactionsResponse>(
-      `${USERS_BASE}/wallet/transactions`
-    );
-    const data = res.data;
-    return {
-      data: Array.isArray(data?.data) ? data.data : [],
-      total: Number(data?.total ?? 0),
-      page: Number(data?.page ?? 1),
-      limit: Number(data?.limit ?? 20),
-      totalPages: Number(data?.totalPages ?? 0),
-    };
-  },
-
-  addWalletMoney: async (payload: AddWalletPayload): Promise<WalletSummary> => {
-    const res = await request<WalletSummary>(`${USERS_BASE}/wallet/add`, {
-      method: 'POST',
-      body: payload,
-    });
-    return {
-      balance: Number(res.data?.balance ?? 0),
-      currency: String(res.data?.currency ?? 'INR'),
-      isLocked: Boolean(res.data?.isLocked ?? false),
-      lastCredited: res.data?.lastCredited,
-    };
   },
 
   getSessions: async (): Promise<UserSession[]> => {

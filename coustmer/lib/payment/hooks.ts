@@ -29,8 +29,6 @@ export const paymentKeys = {
   detail: (id: string) => [...paymentKeys.all, 'detail', id] as const,
   methods: () => [...paymentKeys.all, 'methods'] as const,
   wallet: () => [...paymentKeys.all, 'wallet'] as const,
-  walletTx: (params?: { page?: number; limit?: number }) =>
-    [...paymentKeys.all, 'wallet-tx', params ?? {}] as const,
   refund: (id: string) => [...paymentKeys.all, 'refund', id] as const,
   orderRefunds: (orderId: string) =>
     [...paymentKeys.all, 'order-refunds', orderId] as const,
@@ -88,17 +86,6 @@ export function usePaymentWallet() {
   return useQuery({
     queryKey: paymentKeys.wallet(),
     queryFn: paymentApi.getWallet,
-  });
-}
-
-/** GET /payments/wallet/transactions */
-export function usePaymentWalletTransactions(params?: {
-  page?: number;
-  limit?: number;
-}) {
-  return useQuery({
-    queryKey: paymentKeys.walletTx(params),
-    queryFn: () => paymentApi.getWalletTransactions(params),
   });
 }
 
@@ -220,7 +207,6 @@ export function useVerifyWalletTopup() {
     mutationFn: (payload: WalletTopupVerifyPayload) => walletTopupApi.verify(payload),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.wallet() });
-      queryClient.invalidateQueries({ queryKey: [...paymentKeys.all, 'wallet-tx'] });
     },
   });
 }

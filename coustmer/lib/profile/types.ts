@@ -65,34 +65,6 @@ export type UpdateEmailPayload = {
   email: string;
 };
 
-export type WalletSummary = {
-  balance: number;
-  currency: string;
-  isLocked: boolean;
-  lastCredited?: string;
-};
-
-export type WalletTransaction = {
-  id?: string;
-  type?: string;
-  amount?: number;
-  description?: string;
-  createdAt?: string;
-  [key: string]: unknown;
-};
-
-export type WalletTransactionsResponse = {
-  data: WalletTransaction[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
-
-export type AddWalletPayload = {
-  amount: number;
-};
-
 export type UserSession = {
   id: string;
   deviceName?: string;

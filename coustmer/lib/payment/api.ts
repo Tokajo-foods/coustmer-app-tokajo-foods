@@ -12,8 +12,6 @@ import type {
   SavedPaymentMethod,
   VerifyPaymentPayload,
   WalletSummary,
-  WalletTransaction,
-  WalletTransactionsResult,
 } from '@/lib/payment/types';
 
 const PAYMENT_SERVICE = '/api/v1/payment-service';
@@ -216,25 +214,6 @@ export function mapWallet(data: Record<string, unknown>): WalletSummary {
     isLocked: Boolean(data.isLocked ?? data.locked),
     lastCredited:
       (data.lastCredited as string) || (data.lastTopupAt as string) || undefined,
-  };
-}
-
-export function mapWalletTransaction(
-  data: Record<string, unknown>
-): WalletTransaction {
-  return {
-    id: String(data._id ?? data.id ?? ''),
-    type: (data.type as string) || (data.txnType as string) || undefined,
-    amount: Number(data.amount ?? 0),
-    currency: (data.currency as string) || 'INR',
-    description:
-      (data.description as string) ||
-      (data.note as string) ||
-      (data.remarks as string) ||
-      undefined,
-    status: (data.status as string) || undefined,
-    balanceAfter: Number(data.balanceAfter ?? data.balance ?? 0) || undefined,
-    createdAt: (data.createdAt as string) || (data.created_at as string) || undefined,
   };
 }
 
@@ -448,27 +427,6 @@ export const paymentApi = {
   getWallet: async (): Promise<WalletSummary> => {
     const res = await request<Record<string, unknown>>(`${PAYMENTS_BASE}/wallet`);
     return mapWallet(asRecord(res.data ?? res));
-  },
-
-  /** GET /payments/wallet/transactions */
-  getWalletTransactions: async (params?: {
-    page?: number;
-    limit?: number;
-  }): Promise<WalletTransactionsResult> => {
-    const query = new URLSearchParams();
-    if (params?.page) query.set('page', String(params.page));
-    if (params?.limit) query.set('limit', String(params.limit));
-    const qs = query.toString();
-    const res = await request<unknown>(
-      `${PAYMENTS_BASE}/wallet/transactions${qs ? `?${qs}` : ''}`
-    );
-    const list = extractList(res.data);
-    return {
-      transactions: (list.length ? list : extractList(res)).map(
-        mapWalletTransaction
-      ),
-      meta: res.meta,
-    };
   },
 
   /** POST /payments/refunds/request */
