@@ -1,7 +1,8 @@
 import { Pressable } from '@/components/common/Pressable';
+import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Search, TrendingUp, UtensilsCrossed, X } from 'lucide-react-native';
+import { ChevronLeft, Search, TrendingUp, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
@@ -31,6 +32,8 @@ const ORANGE = '#F97316';
 const INK = '#0B1220';
 const MUTED = '#64748B';
 const BG = '#F6F8FB';
+const BORDER = '#E8EDF3';
+const SURFACE = '#FFFFFF';
 
 export function RestaurantMenuSearchScreen() {
   const router = useRouter();
@@ -45,6 +48,7 @@ export function RestaurantMenuSearchScreen() {
 
   const inputRef = useRef<TextInput>(null);
   const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
   const menu = useFullMenu(restaurantId);
   const trimmed = query.trim();
   const isTyping = trimmed.length > 0;
@@ -77,32 +81,65 @@ export function RestaurantMenuSearchScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <Animated.View entering={FadeInDown.duration(320).springify()} style={styles.header}>
-        <Pressable onPress={goBack} hitSlop={10} style={styles.backBtn}>
-          <ArrowLeft color={INK} size={22} strokeWidth={2.4} />
-        </Pressable>
-        <View style={styles.searchShell}>
-          <Search color={MUTED} size={18} strokeWidth={2.2} />
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={`Search ${restaurantName} menu`}
-            placeholderTextColor="#94A3B8"
-            returnKeyType="search"
-            autoCorrect={false}
-            autoCapitalize="none"
-            clearButtonMode="never"
-          />
-          {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <X color={MUTED} size={18} />
-            </Pressable>
-          ) : null}
-        </View>
-      </Animated.View>
+    <View style={styles.root}>
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <Animated.View entering={FadeInDown.duration(300).springify()} style={styles.header}>
+          <View style={styles.headerTop}>
+            <SmoothPressable
+              onPress={goBack}
+              style={styles.backBtn}
+              pressScale={0.92}
+              accessibilityLabel="Back to menu"
+            >
+              <ChevronLeft color={INK} size={26} strokeWidth={2.2} />
+            </SmoothPressable>
+
+            <View
+              style={[
+                styles.searchPill,
+                focused && styles.searchPillFocused,
+              ]}
+            >
+              <View style={styles.searchIconWrap}>
+                <Search
+                  color={focused ? ORANGE : MUTED}
+                  size={17}
+                  strokeWidth={2.5}
+                />
+              </View>
+              <TextInput
+                ref={inputRef}
+                style={styles.searchInput}
+                value={query}
+                onChangeText={setQuery}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder="Search dishes…"
+                placeholderTextColor="#94A3B8"
+                returnKeyType="search"
+                autoCorrect={false}
+                autoCapitalize="none"
+                clearButtonMode="never"
+                selectionColor={ORANGE}
+              />
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery('')}
+                  hitSlop={8}
+                  style={styles.clearBtn}
+                >
+                  <X color={MUTED} size={15} strokeWidth={2.5} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            <Text style={styles.headerSubtitleMuted}>Menu · </Text>
+            {restaurantName}
+          </Text>
+        </Animated.View>
+      </SafeAreaView>
 
       <Animated.View entering={FadeInUp.delay(80).duration(300)} style={styles.body}>
         {!isTyping && popularItems.length > 0 ? (
@@ -202,42 +239,91 @@ function SuggestionRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
+  headerSafe: {
+    backgroundColor: SURFACE,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: BORDER,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+    zIndex: 2,
+  },
   header: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 14,
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    backgroundColor: '#FFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8EDF3',
+    gap: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginLeft: -2,
   },
-  searchShell: {
+  searchPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    minHeight: 50,
+    paddingLeft: 4,
+    paddingRight: 10,
+    borderRadius: 16,
     backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    minHeight: 48,
+  },
+  searchPillFocused: {
+    backgroundColor: '#FFFBF7',
+    borderColor: 'rgba(249, 115, 22, 0.45)',
+    shadowColor: ORANGE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchIconWrap: {
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchInput: {
     flex: 1,
-    fontFamily: fonts.ui,
+    fontFamily: fonts.uiMedium,
     fontSize: 16,
     color: INK,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingRight: 4,
+  },
+  clearBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E2E8F0',
+  },
+  headerSubtitle: {
+    marginTop: 10,
+    marginLeft: 56,
+    fontFamily: fonts.uiSemi,
+    fontSize: 13,
+    color: INK,
+    letterSpacing: -0.2,
+  },
+  headerSubtitleMuted: {
+    fontFamily: fonts.ui,
+    color: MUTED,
   },
   body: { flex: 1, paddingTop: 12 },
   popularBlock: { paddingHorizontal: 16, marginBottom: 8 },
