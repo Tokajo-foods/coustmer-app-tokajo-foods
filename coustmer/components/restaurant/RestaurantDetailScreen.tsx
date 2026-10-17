@@ -402,10 +402,17 @@ export function RestaurantDetailScreen() {
       : typeof r.hygieneScore === 'number'
         ? r.hygieneScore
         : undefined;
-  const showInfoHygiene =
+  const showHygieneScore =
     typeof infoHygieneScore === 'number' && infoHygieneScore > 0;
   const infoFssaiFull =
     (hygiene.data?.fssaiLicense ?? r.fssaiLicense ?? '').trim() || undefined;
+  const showInfoFssaiOrHygiene = Boolean(infoFssaiFull) || showHygieneScore;
+  const infoComplianceTitle =
+    infoFssaiFull && showHygieneScore
+      ? 'FSSAI & hygiene'
+      : infoFssaiFull
+        ? 'FSSAI license'
+        : 'Hygiene';
   const cover = r.coverUrl || r.imageUrl || '';
   const logo = r.logoUrl || r.imageUrl;
   const restaurantName = r.name || 'Restaurant';
@@ -876,7 +883,7 @@ export function RestaurantDetailScreen() {
                   ? 'Open now · accepting orders'
                   : 'Hours may vary'}
               {r.isPureVeg ? ' · Pure veg' : ''}
-              {showInfoHygiene ? ` · Hygiene ${infoHygieneScore}` : ''}
+              {showHygieneScore ? ` · Hygiene ${infoHygieneScore}` : ''}
             </Text>
 
             {kitchenClosed && token ? (
@@ -1019,17 +1026,19 @@ export function RestaurantDetailScreen() {
               </>
             ) : null}
 
-            {showInfoHygiene ? (
+            {showInfoFssaiOrHygiene ? (
               <>
                 <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-                  Hygiene
+                  {infoComplianceTitle}
                 </Text>
                 <View style={styles.hygieneRow}>
                   <ShieldCheck color="#15803D" size={16} />
                   <Text style={styles.infoBody}>
                     {[
                       infoFssaiFull ? `FSSAI ${infoFssaiFull}` : null,
-                      `Score ${infoHygieneScore}`,
+                      showHygieneScore
+                        ? `Hygiene score ${infoHygieneScore}`
+                        : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}

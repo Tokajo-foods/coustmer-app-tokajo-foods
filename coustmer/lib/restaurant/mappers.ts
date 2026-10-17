@@ -488,7 +488,9 @@ export function mapRestaurantHygiene(data: Record<string, unknown>): RestaurantH
         ? nested.hygieneScore
         : typeof nested.score === 'number'
           ? nested.score
-          : Number(data.hygieneScore) || undefined,
+          : typeof data.hygieneScore === 'number'
+            ? data.hygieneScore
+            : undefined,
     raw: data,
   };
 }
