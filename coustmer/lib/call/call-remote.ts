@@ -1,4 +1,4 @@
-import { callErrorMessage, getInternetCall } from '@/lib/call/api';
+import { callErrorMessage, disconnectInternetCall, getInternetCall } from '@/lib/call/api';
 import {
   connectOutgoingCall,
   finishCall,
@@ -6,14 +6,24 @@ import {
   ringIncomingCall,
   type RingMeta,
 } from '@/lib/call/call-engine';
-import { getCall } from '@/lib/call/call-store';
+import { getCall, useCallStore } from '@/lib/call/call-store';
 import { dismissIncomingCallNotification } from '@/lib/call/incoming-call-notify';
+import type { VoiceLinkState } from '@/lib/call/internet-audio';
 import { END_REASON, reportNativeCallEnded } from '@/lib/call/native-incoming-call';
 
 const TERMINAL = new Set(['ended', 'declined', 'timed_out']);
+const DROPPED = 'Call dropped. Check your connection and call again.';
 
-function terminalNotice(state: string, direction: 'in' | 'out', wasRinging: boolean): string {
+function terminalNotice(
+  state: string,
+  direction: 'in' | 'out',
+  wasRinging: boolean,
+  endReason: string | undefined,
+  peerName: string,
+): string {
+  if (endReason === 'dropped') return DROPPED;
   if (direction === 'out') {
+    if (endReason === 'busy') return `${peerName} is on another call. Try again shortly.`;
     if (state === 'timed_out') return 'No answer. Try again or use chat.';
     if (state === 'declined') return 'Call declined.';
     return 'Call ended.';
@@ -25,7 +35,7 @@ function terminalNotice(state: string, direction: 'in' | 'out', wasRinging: bool
 export async function applyRemoteCallState(
   callId: string,
   state: string,
-  extra?: { reason?: string },
+  extra?: { reason?: string; endReason?: string },
 ): Promise<void> {
   const call = getCall();
   if (!call || call.callId !== callId) {
@@ -40,7 +50,8 @@ export async function applyRemoteCallState(
     const reason = !ringing
       ? END_REASON.remoteEnded
       : state === 'declined' ? END_REASON.declinedElsewhere : END_REASON.unanswered;
-    await finishCall(callId, { notice: terminalNotice(state, call.direction, ringing), reason });
+    const notice = terminalNotice(state, call.direction, ringing, extra?.endReason, call.peerName);
+    await finishCall(callId, { notice, reason });
     return;
   }
   if (state !== 'accepted') return;
@@ -56,6 +67,10 @@ export async function applyRemoteCallState(
   }
 }
 
+function text(row: Record<string, unknown>, key: string): string | null {
+  return typeof row[key] === 'string' ? (row[key] as string) : null;
+}
+
 export function onCallSocketEvent(payload: unknown, myUserId: string | null): void {
   const row = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {};
   const callId = String(row.callId ?? '');
@@ -64,7 +79,7 @@ export function onCallSocketEvent(payload: unknown, myUserId: string | null): vo
   if (!callId || !orderId || isCallClosed(callId)) return;
   const current = getCall();
   if (current?.callId === callId) {
-    void applyRemoteCallState(callId, state);
+    void applyRemoteCallState(callId, state, { endReason: text(row, 'endReason') ?? undefined });
     return;
   }
   const calleeRole = String(row.calleeRole ?? '');
@@ -76,9 +91,9 @@ export function onCallSocketEvent(payload: unknown, myUserId: string | null): vo
     callId,
     callerRole: String(row.callerRole ?? ''),
     calleeRole,
-    callerName: typeof row.callerName === 'string' ? row.callerName : null,
-    callerLogoUrl: typeof row.callerLogoUrl === 'string' ? row.callerLogoUrl : null,
-    orderNumber: typeof row.orderNumber === 'string' ? row.orderNumber : null,
+    callerName: text(row, 'callerName'),
+    callerLogoUrl: text(row, 'callerLogoUrl'),
+    orderNumber: text(row, 'orderNumber'),
   };
   void ringIncomingCall(meta);
 }
@@ -89,11 +104,24 @@ export async function syncCurrentCall(): Promise<void> {
   try {
     const session = await getInternetCall(call.callId);
     if (session.state !== call.remoteState || TERMINAL.has(session.state)) {
-      await applyRemoteCallState(call.callId, session.state);
+      await applyRemoteCallState(call.callId, session.state, { endReason: session.endReason ?? undefined });
     }
   } catch (err) {
     if (/not found|no longer|ended/i.test(callErrorMessage(err))) {
       await finishCall(call.callId, { notice: 'Call ended.' });
     }
   }
+}
+
+/** Our own audio link. LiveKit retries first; `dropped` means it gave up. */
+export function handleVoiceLink(state: VoiceLinkState): void {
+  const call = getCall();
+  if (!call || call.phase !== 'active') return;
+  if (state !== 'dropped') {
+    useCallStore.getState().patchCall(call.callId, { reconnecting: state === 'reconnecting' });
+    return;
+  }
+  void finishCall(call.callId, { notice: DROPPED, reason: END_REASON.failed }).then(() =>
+    disconnectInternetCall(call.callId).catch(() => undefined)
+  );
 }

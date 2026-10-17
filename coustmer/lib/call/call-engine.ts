@@ -8,7 +8,7 @@ import {
   disconnectInternetCall,
   getInternetCall,
 } from '@/lib/call/api';
-import { getCall, roleLabel, useCallStore, type ActiveCall } from '@/lib/call/call-store';
+import { getCall, partyTitle, roleLabel, useCallStore, type ActiveCall } from '@/lib/call/call-store';
 import { startRingback, startRingtone, stopCallTones } from '@/lib/call/call-tones';
 import {
   dismissIncomingCallNotification,
@@ -61,7 +61,7 @@ function fromSession(session: InternetCallSession, direction: 'in' | 'out'): Act
     phase: direction === 'out' ? 'outgoing' : 'incoming',
     direction,
     peerRole,
-    peerName: name?.trim() || roleLabel(peerRole),
+    peerName: partyTitle(peerRole, name),
     peerLogoUrl: logo?.trim() || null,
     orderNumber: session.orderNumber ?? null,
     callerRole: session.callerRole,
@@ -104,7 +104,7 @@ export async function startOutgoingCall(orderId: string, role: CallRole, fallbac
     await ensureMicrophone();
     const session = await createInternetCall(orderId, role);
     const call = fromSession(session, 'out');
-    if (call.peerName === roleLabel(role) && fallbackName) call.peerName = fallbackName;
+    if (call.peerName === roleLabel(role) && fallbackName) call.peerName = partyTitle(role, fallbackName);
     store().set({ call });
     void startRingback(true);
   } catch (err) {
@@ -119,7 +119,11 @@ export async function ringIncomingCall(
   opts?: { verify?: boolean; inApp?: boolean },
 ): Promise<void> {
   if (!meta.callId || !meta.orderId || closed.has(meta.callId)) return;
-  if (getCall()) return;
+  const current = getCall();
+  if (current) {
+    if (current.callId !== meta.callId) void rejectBusy(meta.callId);
+    return;
+  }
   let call: ActiveCall;
   if (opts?.verify) {
     const session = await getInternetCall(meta.callId).catch(() => null);
@@ -138,7 +142,7 @@ export async function ringIncomingCall(
       phase: 'incoming',
       direction: 'in',
       peerRole,
-      peerName: meta.callerName?.trim() || roleLabel(peerRole),
+      peerName: partyTitle(peerRole, meta.callerName),
       peerLogoUrl: meta.callerLogoUrl?.trim() || null,
       orderNumber: meta.orderNumber?.trim() || null,
       callerRole: meta.callerRole,
@@ -230,6 +234,13 @@ export async function declineCall(callId: string): Promise<void> {
     // Timed out on the server already.
   }
   await finishCall(callId, { local: true });
+}
+
+/** Already on a call: the caller hears "on another call" instead of ringing out. */
+async function rejectBusy(callId: string): Promise<void> {
+  if (closed.has(callId)) return;
+  closed.add(callId);
+  await declineInternetCall(callId, 'busy').catch(() => undefined);
 }
 
 export async function hangupCall(): Promise<void> {

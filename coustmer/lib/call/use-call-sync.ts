@@ -3,9 +3,10 @@ import { AppState, Platform } from 'react-native';
 
 import { ensureNativeBindings } from '@/lib/call/call-engine';
 import { handleCallPush, handleCallResponse } from '@/lib/call/call-push';
-import { onCallSocketEvent, syncCurrentCall } from '@/lib/call/call-remote';
+import { handleVoiceLink, onCallSocketEvent, syncCurrentCall } from '@/lib/call/call-remote';
 import { useCallStore } from '@/lib/call/call-store';
 import { ensureCallNotificationSetup } from '@/lib/call/incoming-call-notify';
+import { onVoiceLink } from '@/lib/call/internet-audio';
 import { loadNotifications } from '@/lib/notification/load-notifications';
 import { getSocket } from '@/lib/socket/socket';
 
@@ -21,6 +22,8 @@ export function useCallSync(userId: string | null, enabled: boolean) {
     void ensureCallNotificationSetup();
     void ensureNativeBindings();
   }, [enabled]);
+
+  useEffect(() => onVoiceLink(handleVoiceLink), []);
 
   useEffect(() => {
     if (!enabled) return undefined;

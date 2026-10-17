@@ -194,28 +194,3 @@ export async function bindNativeCallActions(handlers: NativeHandlers): Promise<v
     // Older CallKeep has no initial events.
   }
 }
-
-/** Kept for older notification listeners that still import these names. */
-export async function endNativeIncomingCall(callId: string): Promise<void> {
-  endNativeCall(callId);
-}
-
-export async function isNativeIncomingCallAvailable(): Promise<boolean> {
-  return Boolean(loadCallKeep());
-}
-
-export function resolveCallIdFromUuid(uuid: string | undefined): string | null {
-  return callIdFromUuid(uuid);
-}
-
-export async function listenNativeIncomingCallActions(handlers: {
-  onAnswer: (callId: string) => void;
-  onEnd: (callId: string) => void;
-}): Promise<() => void> {
-  await bindNativeCallActions({
-    onAnswer: handlers.onAnswer,
-    onEnd: handlers.onEnd,
-    onMute: () => undefined,
-  });
-  return () => undefined;
-}

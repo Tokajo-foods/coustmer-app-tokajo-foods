@@ -36,6 +36,7 @@ function useStatus(call: ActiveCall): string {
   }, []);
   if (call.phase === 'incoming') return 'Incoming voice call';
   if (call.phase === 'connecting') return 'Connecting…';
+  if (call.reconnecting) return 'Reconnecting…';
   if (call.phase === 'outgoing') return now - openedAt < 2000 ? 'Calling…' : 'Ringing…';
   return formatCallDuration(Math.max(0, Math.floor((now - (call.connectedAt ?? now)) / 1000)));
 }
@@ -48,27 +49,8 @@ export function CallScreen(props: Props) {
   const incoming = call.phase === 'incoming';
   const ringing = incoming || call.phase === 'outgoing';
 
-  const speakerBtn = (
-    <CallControl
-      label="Speaker"
-      tone={speaker ? 'on' : 'neutral'}
-      size={incoming ? 52 : 64}
-      onPress={props.onToggleSpeaker}
-      icon={<Volume2 color={speaker ? '#0B141A' : '#FFFFFF'} size={incoming ? 22 : 26} />}
-    />
-  );
-  const muteBtn = (
-    <CallControl
-      label={muted ? 'Unmute' : 'Mute'}
-      tone={muted ? 'on' : 'neutral'}
-      size={incoming ? 52 : 64}
-      onPress={props.onToggleMute}
-      icon={muted ? <MicOff color="#0B141A" size={incoming ? 22 : 26} /> : <Mic color="#FFFFFF" size={incoming ? 22 : 26} />}
-    />
-  );
-
   return (
-    <View style={[styles.wrap, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 36 }]}>
+    <View style={[styles.wrap, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 28 }]}>
       <View style={styles.topBar}>
         {props.onMinimize && !incoming ? (
           <Pressable onPress={props.onMinimize} hitSlop={12} accessibilityLabel="Minimise call">
@@ -79,7 +61,7 @@ export function CallScreen(props: Props) {
         )}
         <View style={styles.privacy}>
           <Lock color="#8696A0" size={12} />
-          <Text style={styles.privacyText}>Tokajo voice call · number stays private</Text>
+          <Text style={styles.privacyText}>Tokajo voice call · number hidden</Text>
         </View>
         <View style={styles.topSpacer} />
       </View>
@@ -92,40 +74,47 @@ export function CallScreen(props: Props) {
         <Text style={styles.sub} numberOfLines={1}>
           {peerSubtitle(call)}
         </Text>
-        <Text style={[styles.status, call.phase === 'active' && styles.timer]}>{status}</Text>
+        <Text style={[styles.status, call.phase === 'active' && !call.reconnecting && styles.timer]}>
+          {status}
+        </Text>
       </View>
 
       {incoming ? (
-        <View style={styles.footer}>
-          <View style={styles.row}>
-            {speakerBtn}
-            {muteBtn}
-          </View>
-          <View style={styles.row}>
-            <CallControl
-              label="Decline"
-              tone="end"
-              size={72}
-              busy={busy === 'decline'}
-              disabled={Boolean(busy)}
-              onPress={props.onDecline}
-              icon={<PhoneOff color="#FFFFFF" size={30} />}
-            />
-            <CallControl
-              label="Accept"
-              tone="accept"
-              size={72}
-              busy={busy === 'accept'}
-              disabled={Boolean(busy)}
-              onPress={props.onAccept}
-              icon={<Phone color="#FFFFFF" size={30} />}
-            />
-          </View>
+        <View style={styles.answerRow}>
+          <CallControl
+            label="Decline"
+            tone="end"
+            size={74}
+            busy={busy === 'decline'}
+            disabled={Boolean(busy)}
+            onPress={props.onDecline}
+            icon={<PhoneOff color="#FFFFFF" size={30} />}
+          />
+          <CallControl
+            label="Accept"
+            tone="accept"
+            size={74}
+            busy={busy === 'accept'}
+            disabled={Boolean(busy)}
+            onPress={props.onAccept}
+            icon={<Phone color="#FFFFFF" size={30} />}
+          />
         </View>
       ) : (
-        <View style={styles.row}>
-          {speakerBtn}
-          {muteBtn}
+        <View style={styles.panel}>
+          <CallControl
+            label="Speaker"
+            tone={speaker ? 'on' : 'neutral'}
+            onPress={props.onToggleSpeaker}
+            icon={<Volume2 color={speaker ? '#0B141A' : '#FFFFFF'} size={26} />}
+          />
+          <CallControl
+            label={muted ? 'Unmute' : 'Mute'}
+            tone={muted ? 'on' : 'neutral'}
+            disabled={call.phase !== 'active'}
+            onPress={props.onToggleMute}
+            icon={muted ? <MicOff color="#0B141A" size={26} /> : <Mic color="#FFFFFF" size={26} />}
+          />
           <CallControl
             label="End"
             tone="end"
@@ -145,7 +134,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0B141A',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topSpacer: { width: 26 },
@@ -162,6 +151,19 @@ const styles = StyleSheet.create({
   sub: { marginTop: 6, fontFamily: fonts.uiMedium, fontSize: 14, color: '#8696A0' },
   status: { marginTop: 14, fontFamily: fonts.uiMedium, fontSize: 16, color: '#D1D7DB' },
   timer: { letterSpacing: 1, fontVariant: ['tabular-nums'] },
-  footer: { gap: 36 },
-  row: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'flex-start' },
+  answerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    paddingHorizontal: 12,
+  },
+  panel: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'flex-start',
+    backgroundColor: '#1F2C34',
+    borderRadius: 28,
+    paddingTop: 18,
+    paddingBottom: 14,
+  },
 });

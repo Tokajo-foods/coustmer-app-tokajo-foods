@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
+import { isCallPush } from '@/lib/call/call-push';
 import { notificationKeys } from '@/lib/notification/hooks';
 import { loadNotifications } from '@/lib/notification/load-notifications';
 import { ensureOrderUpdatesChannel } from '@/lib/notification/push-channel';
@@ -50,13 +51,16 @@ export function CustomerPushSync() {
         const N = await loadNotifications();
         if (!N || cancelled) return;
         N.setNotificationHandler({
-          handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: false,
-            shouldShowBanner: true,
-            shouldShowList: true,
-          }),
+          handleNotification: async (n) => {
+            const show = !isCallPush(n.request.content.data);
+            return {
+              shouldShowAlert: show,
+              shouldPlaySound: show,
+              shouldSetBadge: false,
+              shouldShowBanner: show,
+              shouldShowList: show,
+            };
+          },
         });
         await ensureOrderUpdatesChannel(N);
 

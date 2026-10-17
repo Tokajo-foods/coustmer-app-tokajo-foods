@@ -9,7 +9,7 @@ import {
   type RingMeta,
 } from '@/lib/call/call-engine';
 import { applyRemoteCallState } from '@/lib/call/call-remote';
-import { getCall } from '@/lib/call/call-store';
+import { getCall, partyTitle } from '@/lib/call/call-store';
 import { presentMissedCallNotification } from '@/lib/call/incoming-call-notify';
 
 type Data = Record<string, unknown>;
@@ -36,6 +36,11 @@ export function readCallPushData(raw: unknown): Data | null {
     if (item && CALL_KINDS.has(String(item.kind ?? ''))) return item;
   }
   return null;
+}
+
+/** The in-app call screen rings in the foreground, so these pushes stay silent there. */
+export function isCallPush(raw: unknown): boolean {
+  return readCallPushData(raw) !== null;
 }
 
 function metaOf(data: Data): RingMeta {
@@ -75,7 +80,7 @@ export async function handleCallPush(raw: unknown, source: 'task' | 'foreground'
     await presentMissedCallNotification({
       orderId: meta.orderId,
       callId: meta.callId,
-      callerName: meta.callerName?.trim() || 'Tokajo',
+      callerName: partyTitle(meta.callerRole, meta.callerName),
       orderNumber: meta.orderNumber,
     });
   }
