@@ -77,6 +77,9 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.fooddeliveryapp.customer',
+    entitlements: {
+      'com.apple.developer.usernotifications.time-sensitive': true,
+    },
     config: {
       googleMapsApiKey: mapsKey,
     },
