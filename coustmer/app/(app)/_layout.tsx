@@ -41,7 +41,10 @@ export default function AppLayout() {
           name="search"
           options={{
             ...PREMIUM_FADE_OPTIONS,
+            animation: 'none',
+            gestureEnabled: false,
             presentation: 'transparentModal',
+            contentStyle: { backgroundColor: 'transparent' },
           }}
         />
       </Stack>

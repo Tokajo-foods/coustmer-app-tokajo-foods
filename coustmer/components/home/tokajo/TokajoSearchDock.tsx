@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import { Search, SlidersHorizontal } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
+import { setSearchOrigin, useSearchSourceHidden } from '@/lib/motion/search-morph';
+import { hapticLight } from '@/lib/utils/haptics';
 
 const ORANGE = '#F97316';
 
@@ -18,17 +20,37 @@ const HINTS = [
 export function TokajoSearchDock() {
   const router = useRouter();
   const [i, setI] = useState(0);
+  const pill = useRef<View>(null);
+  const opening = useRef(false);
+  const hidden = useSearchSourceHidden();
 
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % HINTS.length), 3000);
     return () => clearInterval(t);
   }, []);
 
+  const openSearch = () => {
+    if (opening.current) return;
+    opening.current = true;
+    void hapticLight();
+    const go = () => {
+      router.push('/search');
+      setTimeout(() => { opening.current = false; }, 600);
+    };
+    if (!pill.current) return go();
+    pill.current.measureInWindow((x, y, width, height) => {
+      setSearchOrigin({ x, y, width, height }, HINTS[i]);
+      go();
+    });
+  };
+
   return (
     <View style={styles.row}>
       <Pressable
-        style={styles.search}
-        onPress={() => router.push('/search')}
+        ref={pill}
+        collapsable={false}
+        style={[styles.search, hidden && styles.hidden]}
+        onPress={openSearch}
         accessibilityRole="search"
       >
         <View style={styles.searchIcon}>
@@ -79,6 +101,7 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     color: '#8A8A8A',
   },
+  hidden: { opacity: 0 },
   divider: {
     width: 1,
     height: 24,

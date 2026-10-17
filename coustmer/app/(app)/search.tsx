@@ -6,8 +6,9 @@ export default function SearchPage() {
     <>
       <Stack.Screen
         options={{
-          animation: 'fade',
+          animation: 'none',
           presentation: 'transparentModal',
+          gestureEnabled: false,
           contentStyle: { backgroundColor: 'transparent' },
           headerShown: false,
         }}
