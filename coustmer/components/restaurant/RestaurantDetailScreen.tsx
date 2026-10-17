@@ -1771,7 +1771,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: 'rgba(255,255,255,0.98)',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8EDF3',
+    borderBottomColor: '#CBD5E1',
     zIndex: 20,
     shadowColor: '#0B1220',
     shadowOffset: { width: 0, height: 4 },

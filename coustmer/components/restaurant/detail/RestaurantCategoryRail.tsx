@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E8EDF3',
+    borderColor: '#CBD5E1',
     marginTop: 4,
   },
   wrapCompact: {
