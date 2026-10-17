@@ -21,10 +21,7 @@ import { navigateBack } from '@/lib/motion/navigate-back';
 import { PREMIUM_LIST } from '@/lib/motion/premium';
 import { useFullMenu } from '@/lib/restaurant/hooks';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
-import {
-  featuredMenuSuggestions,
-  rankMenuSearch,
-} from '@/lib/restaurant/menu-search';
+import { rankMenuSearch } from '@/lib/restaurant/menu-search';
 import type { MenuItem } from '@/lib/restaurant/types';
 
 const ORANGE = '#F97316';
@@ -52,17 +49,20 @@ export function RestaurantMenuSearchScreen() {
     return () => clearTimeout(t);
   }, []);
 
-  const popularItems = useMemo(
-    () => featuredMenuSuggestions(menu.items, menu.recommended, 8),
-    [menu.items, menu.recommended]
-  );
+  const fullMenu = useMemo(() => {
+    return [...menu.items].sort((a, b) => {
+      const cat = (a.categoryName ?? '').localeCompare(b.categoryName ?? '');
+      if (cat !== 0) return cat;
+      return (a.name ?? '').localeCompare(b.name ?? '');
+    });
+  }, [menu.items]);
 
   const listData = useMemo(() => {
     if (isTyping) {
-      return rankMenuSearch(menu.items, trimmed, { limit: 40 });
+      return rankMenuSearch(menu.items, trimmed, { limit: fullMenu.length || 999 });
     }
-    return popularItems;
-  }, [isTyping, menu.items, trimmed, popularItems]);
+    return fullMenu;
+  }, [isTyping, menu.items, trimmed, fullMenu]);
 
   const openItem = (item: MenuItem) => {
     Keyboard.dismiss();
@@ -79,14 +79,11 @@ export function RestaurantMenuSearchScreen() {
   const listHeader = (
     <View style={styles.listHead}>
       {!isTyping ? (
-        <>
-          <Text style={styles.sectionTitle}>Popular on this menu</Text>
-          <Text style={styles.helper}>
-            Tap a dish below or start typing to search
-          </Text>
-        </>
+        <Text style={styles.helper}>
+          Tap a dish below or start typing to search
+        </Text>
       ) : listData.length > 0 ? (
-        <Text style={styles.sectionTitle}>
+        <Text style={styles.matchCount}>
           {listData.length} match{listData.length === 1 ? '' : 'es'}
         </Text>
       ) : null}
@@ -241,17 +238,16 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 10,
   },
-  sectionTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 16,
-    color: INK,
-  },
   helper: {
-    marginTop: 6,
-    fontFamily: fonts.ui,
+    fontFamily: fonts.uiSemi,
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 20,
+  },
+  matchCount: {
+    fontFamily: fonts.uiSemi,
     fontSize: 13,
     color: MUTED,
-    lineHeight: 18,
   },
   row: {
     flexDirection: 'row',
