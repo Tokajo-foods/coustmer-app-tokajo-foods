@@ -7,18 +7,15 @@ import {
   BellOff,
   ChevronLeft,
   Clock,
-  Flame,
   MapPin,
   Search,
   ShieldCheck,
-  Sparkles,
   Star,
   Tag,
   UtensilsCrossed,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Dimensions,
   LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -27,7 +24,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
@@ -39,6 +36,7 @@ import {
   RestaurantMenuSearchBar,
   type MenuFilterId,
 } from '@/components/restaurant/detail/RestaurantMenuSearchBar';
+import { RestaurantPopularPicks } from '@/components/restaurant/detail/RestaurantPopularPicks';
 import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { MenuItemDetailSheet } from '@/components/restaurant/MenuItemDetailSheet';
 import { RestaurantReviewsPanel } from '@/components/review/RestaurantReviewsPanel';
@@ -83,8 +81,6 @@ import { useVegPreferenceStore } from '@/store/veg-preference-store';
 const ORANGE = '#F97316';
 const INK = '#0B1220';
 const MUTED = '#64748B';
-const SCREEN_W = Dimensions.get('window').width;
-const POPULAR_CARD_W = SCREEN_W * 0.58;
 const WEEKDAYS = [
   'monday',
   'tuesday',
@@ -855,96 +851,21 @@ export function RestaurantDetailScreen() {
                 <View style={styles.menuSectionCard}>
                   {categoryRail}
 
-                {/* Popular picks */}
-                {popularItems.length > 0 ? (
-                  <Animated.View entering={FadeInDown.delay(60).duration(360)}>
-                    <View style={styles.sectionHead}>
-                      <View style={styles.sectionTitleRow}>
-                        <Flame color={ORANGE} size={18} strokeWidth={2.6} />
-                        <Text style={styles.sectionTitle}>
-                          {(menu.recommended?.length ?? 0) >= 2
-                            ? 'Recommended'
-                            : 'Popular picks'}
-                        </Text>
-                      </View>
-                      <Text style={styles.sectionSub}>
-                        {(menu.recommended?.length ?? 0) >= 2
-                          ? 'Bestsellers from this kitchen'
-                          : 'Crowd favourites — tap to customise'}
-                      </Text>
-                    </View>
-
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      decelerationRate="fast"
-                      snapToInterval={POPULAR_CARD_W + 14}
-                      contentContainerStyle={styles.popularRow}
-                      keyboardShouldPersistTaps="handled"
-                    >
-                      {popularItems.map((item, i) => {
-                        const badge =
-                          item.isRecommended
-                            ? 'Chef’s pick'
-                            : item.isBestSeller
-                              ? 'Bestseller'
-                              : null;
-                        const photo = item.imageUrl?.trim() || '';
-                        return (
-                        <Animated.View
-                          key={item.id}
-                          entering={FadeInRight.delay(40 + i * 40).duration(340)}
-                        >
-                          <Pressable
-                            style={[styles.popularCard, { width: POPULAR_CARD_W }]}
-                            onPress={() => setSelectedItem(item)}
-                          >
-                            {photo ? (
-                              <Image
-                                source={{ uri: photo }}
-                                style={styles.popularImage}
-                                contentFit="cover"
-                              />
-                            ) : (
-                              <View style={[styles.popularImage, styles.popularImageFallback]}>
-                                <UtensilsCrossed color="#94A3B8" size={28} />
-                              </View>
-                            )}
-                            <LinearGradient
-                              colors={['transparent', 'rgba(0,0,0,0.82)']}
-                              style={styles.popularGrad}
-                            />
-                            {badge ? (
-                              <View style={styles.popularBadge}>
-                                <Sparkles color="#FFF" size={11} strokeWidth={2.4} />
-                                <Text style={styles.popularBadgeText}>
-                                  {badge}
-                                </Text>
-                              </View>
-                            ) : null}
-                            <View style={styles.popularCopy}>
-                              <Text style={styles.popularName} numberOfLines={2}>
-                                {item.name}
-                              </Text>
-                              <View style={styles.popularFooter}>
-                                <Text style={styles.popularPrice}>
-                                  ₹{item.price}
-                                </Text>
-                                <Pressable
-                                  style={styles.popularAdd}
-                                  onPress={() => addItem(item)}
-                                >
-                                  <Text style={styles.popularAddText}>ADD</Text>
-                                </Pressable>
-                              </View>
-                            </View>
-                          </Pressable>
-                        </Animated.View>
-                        );
-                      })}
-                    </ScrollView>
-                  </Animated.View>
-                ) : null}
+                <RestaurantPopularPicks
+                  title={
+                    (menu.recommended?.length ?? 0) >= 2
+                      ? 'Recommended'
+                      : 'Popular picks'
+                  }
+                  subtitle={
+                    (menu.recommended?.length ?? 0) >= 2
+                      ? 'Bestsellers from this kitchen'
+                      : 'Tap a dish to view or add'
+                  }
+                  items={popularItems}
+                  onPressItem={setSelectedItem}
+                  onAddItem={addItem}
+                />
 
                 {/* Menu by category */}
                 {menu.isLoading ? (
@@ -1830,79 +1751,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiMedium,
     fontSize: 13,
     color: MUTED,
-  },
-  popularRow: {
-    paddingHorizontal: 16,
-    gap: 14,
-    paddingBottom: 8,
-  },
-  popularCard: {
-    height: 168,
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#111',
-  },
-  popularImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  popularImageFallback: {
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  popularGrad: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: ORANGE,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  popularBadgeText: {
-    fontFamily: fonts.uiBold,
-    fontSize: 10,
-    color: '#FFF',
-  },
-  popularCopy: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 12,
-    gap: 8,
-  },
-  popularName: {
-    fontFamily: fonts.displayBold,
-    fontSize: 15,
-    color: '#FFF',
-    lineHeight: 19,
-  },
-  popularFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  popularPrice: {
-    fontFamily: fonts.displayBold,
-    fontSize: 15,
-    color: '#FFF',
-  },
-  popularAdd: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  popularAddText: {
-    fontFamily: fonts.uiBold,
-    fontSize: 12,
-    color: ORANGE,
   },
   menuSectionCard: {
     marginHorizontal: 16,
