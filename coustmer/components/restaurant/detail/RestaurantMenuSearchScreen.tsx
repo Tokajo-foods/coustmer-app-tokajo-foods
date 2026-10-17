@@ -57,10 +57,12 @@ export function RestaurantMenuSearchScreen() {
     [menu.items, menu.recommended]
   );
 
-  const suggestions = useMemo(() => {
-    if (!trimmed) return popularItems;
-    return rankMenuSearch(menu.items, trimmed, { limit: 40 });
-  }, [menu.items, popularItems, trimmed]);
+  const listData = useMemo(() => {
+    if (isTyping) {
+      return rankMenuSearch(menu.items, trimmed, { limit: 40 });
+    }
+    return popularItems;
+  }, [isTyping, menu.items, trimmed, popularItems]);
 
   const openItem = (item: MenuItem) => {
     Keyboard.dismiss();
@@ -74,22 +76,22 @@ export function RestaurantMenuSearchScreen() {
     navigateBack(router, `/restaurants/${restaurantId}`);
   };
 
-  const listHeader = !isTyping && popularItems.length > 0 ? (
-    <View style={styles.popularSection}>
-      <Text style={styles.sectionTitle}>Popular searches</Text>
-      <View style={styles.chipRow}>
-        {popularItems.map((item) => (
-          <Pressable
-            key={item.id}
-            style={styles.chip}
-            onPress={() => setQuery(item.name)}
-          >
-            <Text style={styles.chipText} numberOfLines={1}>{item.name}</Text>
-          </Pressable>
-        ))}
-      </View>
+  const listHeader = (
+    <View style={styles.listHead}>
+      {!isTyping ? (
+        <>
+          <Text style={styles.sectionTitle}>Popular on this menu</Text>
+          <Text style={styles.helper}>
+            Tap a dish below or start typing to search
+          </Text>
+        </>
+      ) : listData.length > 0 ? (
+        <Text style={styles.sectionTitle}>
+          {listData.length} match{listData.length === 1 ? '' : 'es'}
+        </Text>
+      ) : null}
     </View>
-  ) : null;
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -136,7 +138,7 @@ export function RestaurantMenuSearchScreen() {
         <ActivityIndicator color={ORANGE} style={styles.loader} />
       ) : (
         <FlatList
-          data={suggestions}
+          data={listData}
           keyExtractor={(item) => item.id}
           {...PREMIUM_LIST}
           keyboardShouldPersistTaps="handled"
@@ -148,7 +150,9 @@ export function RestaurantMenuSearchScreen() {
                 No dishes match “{trimmed}”.
               </Text>
             ) : (
-              <Text style={styles.hint}>Start typing to find a dish</Text>
+              <Text style={styles.empty}>
+                Start typing to search this menu.
+              </Text>
             )
           }
           renderItem={({ item }) => (
@@ -232,40 +236,22 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 40,
   },
-  popularSection: {
+  listHead: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   sectionTitle: {
     fontFamily: fonts.displayBold,
     fontSize: 16,
     color: INK,
-    marginBottom: 12,
   },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    maxWidth: '48%',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 10,
-    backgroundColor: FIELD,
-  },
-  chipText: {
+  helper: {
+    marginTop: 6,
     fontFamily: fonts.ui,
     fontSize: 13,
-    color: INK,
-  },
-  hint: {
-    fontFamily: fonts.ui,
-    fontSize: 14,
     color: MUTED,
-    textAlign: 'center',
-    marginTop: 28,
+    lineHeight: 18,
   },
   row: {
     flexDirection: 'row',
