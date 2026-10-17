@@ -9,6 +9,7 @@ import { loadNotifications } from '@/lib/notification/load-notifications';
 import { ensureOrderUpdatesChannel } from '@/lib/notification/push-channel';
 import { registerCustomerPushDevice } from '@/lib/notification/push-device';
 import { routeForNotificationData } from '@/lib/notification/push-route';
+import { usePricingSync } from '@/lib/pricing/use-pricing-sync';
 import { useSocketEvent } from '@/lib/socket/hooks';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -17,7 +18,10 @@ type NotificationResponse = import('expo-notifications').NotificationResponse;
 /** Survives re-mounts so a cold-start tap is not replayed when auth state changes. */
 const handledResponses = new Set<string>();
 
-/** Registers the customer push token, keeps the inbox live, and opens the right screen on tap. */
+/**
+ * Registers the customer push token, keeps the inbox and server pricing live,
+ * and opens the right screen on tap.
+ */
 export function CustomerPushSync() {
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
@@ -26,6 +30,7 @@ export function CustomerPushSync() {
   useSocketEvent('notification:new', () => {
     void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
   });
+  usePricingSync();
 
   useEffect(() => {
     if (!token || Platform.OS === 'web') return;

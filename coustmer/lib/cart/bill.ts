@@ -70,10 +70,6 @@ function pickNullableNumber(...values: unknown[]): number | null {
   return null;
 }
 
-/** Matches cart-service BASE_DELIVERY_FEE default. */
-export const DEFAULT_DELIVERY_FEE = 15;
-export const DEFAULT_DELIVERY_FEE_MAX = 50;
-
 export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
   const itemsSubtotal = num(
     raw.itemsSubtotal,
@@ -86,8 +82,8 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
   const deliveryFee = num(raw.deliveryFee, raw.deliveryCharge);
   const deliveryDistanceKm = pickNullableNumber(raw.deliveryDistanceKm, raw.distanceKm);
   const deliveryDistanceCharge = num(raw.deliveryDistanceCharge, raw.distanceCharge);
-  const deliveryFeePerKm = num(raw.deliveryFeePerKm, raw.perKm) || 4;
-  const deliveryFeeMax = num(raw.deliveryFeeMax, raw.maxDeliveryFee) || DEFAULT_DELIVERY_FEE_MAX;
+  const deliveryFeePerKm = num(raw.deliveryFeePerKm, raw.perKm);
+  const deliveryFeeMax = num(raw.deliveryFeeMax, raw.maxDeliveryFee);
   const surgeMultiplier = Math.max(1, num(raw.surgeMultiplier, raw.surge) || 1);
   const rainFee = num(raw.rainFee, raw.rainCharge);
   const taxRate = num(raw.taxRate, raw.gstRate);

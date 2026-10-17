@@ -55,6 +55,13 @@ export type ServerToClientEvents = {
     reason?: string | null;
     action?: string | null;
   }) => void;
+  /** Admin changed charges / tax / delivery fee. No amounts — refetch server bills. */
+  'pricing:config_updated': (data: {
+    eventId?: string | null;
+    version?: number | null;
+    changedModules?: string[];
+    updatedAt?: string | null;
+  }) => void;
   /** GreenVN masks changed. Payload has no phone number. */
   'call:masks': (data: { orderId: string; reason?: string }) => void;
   /** In-app call state. Payload has no phone number. */

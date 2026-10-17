@@ -4,7 +4,6 @@ import { Info } from 'lucide-react-native';
 
 import { fonts } from '@/constants/typography';
 import type { BillBreakdown, BillChargeLine } from '@/lib/cart/bill';
-import { DEFAULT_DELIVERY_FEE } from '@/lib/cart/bill';
 import { formatInr, formatSignedInr } from '@/lib/format/money';
 
 const TEXT = '#0B1220';
@@ -201,9 +200,11 @@ function DeliveryFeeRow({
       <View style={styles.billRow}>
         <Text style={styles.billLabel}>Delivery fee</Text>
         <View style={styles.deliveryFeeRight}>
-          <Text style={[styles.billValue, styles.strikeMuted]}>
-            {formatInr(bill.deliveryFeeBase > 0 ? bill.deliveryFeeBase : DEFAULT_DELIVERY_FEE)}
-          </Text>
+          {bill.deliveryFeeBase > 0 ? (
+            <Text style={[styles.billValue, styles.strikeMuted]}>
+              {formatInr(bill.deliveryFeeBase)}
+            </Text>
+          ) : null}
           <Text style={[styles.billValue, { color: GREEN }]}>FREE</Text>
           <Text style={styles.waiverHint}>Super</Text>
         </View>
@@ -263,14 +264,17 @@ function DeliveryFeeRow({
   }
 
   if (billError || !bill.billReady) {
-    const base = bill.deliveryFeeBase > 0 ? bill.deliveryFeeBase : DEFAULT_DELIVERY_FEE;
     return (
       <View style={styles.billRow}>
         <Text style={styles.billLabel}>Delivery fee</Text>
-        <View style={styles.deliveryFeeRight}>
-          <Text style={styles.billValue}>{formatInr(base)}</Text>
-          <Text style={styles.waiverHint}>est.</Text>
-        </View>
+        {bill.deliveryFeeBase > 0 ? (
+          <View style={styles.deliveryFeeRight}>
+            <Text style={styles.billValue}>{formatInr(bill.deliveryFeeBase)}</Text>
+            <Text style={styles.waiverHint}>est.</Text>
+          </View>
+        ) : (
+          <Text style={[styles.billValue, styles.pendingFee]}>Unavailable</Text>
+        )}
       </View>
     );
   }
