@@ -1,7 +1,6 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
-import { authTheme } from '@/constants/auth-theme';
 import { WALLET_FILTERS, walletPalette } from '@/lib/payment/wallet-display';
 import type { WalletFilter } from '@/lib/payment/wallet-types';
 
@@ -9,11 +8,7 @@ type Props = { value: WalletFilter; onChange: (filter: WalletFilter) => void };
 
 export function WalletHistoryFilters({ value, onChange }: Props) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-    >
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {WALLET_FILTERS.map((filter) => {
         const active = filter.id === value;
         return (
@@ -36,16 +31,16 @@ export function WalletHistoryFilters({ value, onChange }: Props) {
 const styles = StyleSheet.create({
   row: { gap: 8, paddingVertical: 2 },
   chip: {
-    height: 34,
-    paddingHorizontal: 16,
+    height: 32,
+    paddingHorizontal: 14,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: walletPalette.hairline,
+    borderColor: '#E4E5EA',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipActive: { backgroundColor: authTheme.brandSoft, borderColor: authTheme.brand },
-  text: { color: walletPalette.muted, fontSize: 13, fontWeight: '700' },
-  textActive: { color: authTheme.brandDark },
+  chipActive: { backgroundColor: walletPalette.ink, borderColor: walletPalette.ink },
+  text: { color: '#3D4152', fontSize: 13, fontWeight: '600' },
+  textActive: { color: '#FFFFFF', fontWeight: '700' },
 });

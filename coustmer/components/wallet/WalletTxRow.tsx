@@ -19,6 +19,7 @@ function WalletTxRowBase({ item, onPress }: Props) {
   const Icon = visual.icon;
   const isCredit = item.type === 'credit';
   const status = item.status !== 'completed' ? STATUS_LABELS[item.status] : null;
+  const meta = [item.subtitle, timeLabel(item.createdAt)].filter(Boolean).join(' · ');
 
   return (
     <SmoothPressable
@@ -33,32 +34,28 @@ function WalletTxRowBase({ item, onPress }: Props) {
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {[item.subtitle, timeLabel(item.createdAt)].filter(Boolean).join(' · ')}
-        </Text>
-        {item.reason ? (
-          <View style={styles.reason}>
-            <Text style={styles.reasonText} numberOfLines={2}>
-              {item.reason}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.right}>
-        <Text style={[styles.amount, { color: isCredit ? walletPalette.credit : walletPalette.debit }]}>
-          {signedAmount(item, formatInr(item.amount))}
-        </Text>
-        {status ? (
-          <Text style={[styles.status, { color: status.color }]}>{status.label}</Text>
-        ) : (
-          <Text style={styles.balance} numberOfLines={1}>
-            Bal {formatInr(item.balanceAfter)}
+        <View style={styles.topLine}>
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+          <Text style={[styles.amount, isCredit && styles.amountCredit]}>
+            {signedAmount(item, formatInr(item.amount))}
           </Text>
-        )}
+        </View>
+        <View style={styles.topLine}>
+          <Text style={styles.meta} numberOfLines={1}>{meta}</Text>
+          {status ? (
+            <View style={[styles.status, { backgroundColor: status.bg }]}>
+              <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+            </View>
+          ) : (
+            <Text style={styles.balance} numberOfLines={1}>Bal {formatInr(item.balanceAfter)}</Text>
+          )}
+        </View>
+        {item.reason ? (
+          <Text style={styles.reason} numberOfLines={2}>
+            <Text style={styles.reasonLabel}>Reason: </Text>
+            {item.reason}
+          </Text>
+        ) : null}
       </View>
     </SmoothPressable>
   );
@@ -75,28 +72,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     backgroundColor: '#FFFFFF',
   },
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: { flex: 1, gap: 3, paddingTop: 1 },
-  title: { color: walletPalette.ink, fontSize: 14, fontWeight: '700', letterSpacing: -0.1 },
-  meta: { color: walletPalette.muted, fontSize: 12, fontWeight: '500' },
-  reason: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    backgroundColor: '#F7F7FA',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    maxWidth: '100%',
-  },
-  reasonText: { color: '#3D4152', fontSize: 11.5, fontWeight: '600', lineHeight: 15 },
-  right: { alignItems: 'flex-end', gap: 3, paddingTop: 1, maxWidth: 120 },
-  amount: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  balance: { color: '#93959F', fontSize: 11, fontWeight: '600' },
-  status: { fontSize: 11, fontWeight: '800' },
+  icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, gap: 4, paddingTop: 1 },
+  topLine: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  title: { flex: 1, color: walletPalette.ink, fontSize: 14.5, fontWeight: '700', letterSpacing: -0.1 },
+  amount: { color: walletPalette.ink, fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  amountCredit: { color: walletPalette.credit },
+  meta: { flex: 1, color: walletPalette.muted, fontSize: 12, fontWeight: '500' },
+  balance: { color: '#9A9CA6', fontSize: 11.5, fontWeight: '600' },
+  status: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
+  statusText: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.2 },
+  reason: { marginTop: 2, color: '#3D4152', fontSize: 12, fontWeight: '500', lineHeight: 17 },
+  reasonLabel: { color: walletPalette.muted, fontWeight: '700' },
 });

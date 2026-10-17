@@ -70,8 +70,8 @@ export function WalletTxDetailSheet({ item, onClose }: Props) {
         </View>
 
         {tx.reason ? (
-          <View style={styles.reasonBox}>
-            <Text style={styles.reasonLabel}>Reason</Text>
+          <View style={[styles.reasonBox, { backgroundColor: visual.bg, borderLeftColor: visual.color }]}>
+            <Text style={[styles.reasonLabel, { color: visual.color }]}>Reason</Text>
             <Text style={styles.reasonText}>{tx.reason}</Text>
           </View>
         ) : null}
@@ -79,13 +79,13 @@ export function WalletTxDetailSheet({ item, onClose }: Props) {
         <View style={styles.card}>
           <DetailRow
             label="Type"
-            value={tx.type === 'credit' ? 'Money in · credited to wallet' : 'Money out · debited from wallet'}
+            value={tx.type === 'credit' ? 'Money in · Credited' : 'Money out · Debited'}
           />
           <DetailRow label="Date & time" value={fullDateTime(tx.createdAt)} />
           {tx.subtitle ? <DetailRow label="Details" value={tx.subtitle} /> : null}
           {method ? <DetailRow label="Paid via" value={method} /> : null}
           <DetailRow label="Wallet balance after" value={formatInr(tx.balanceAfter)} />
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, styles.detailRowLast]}>
             <Text style={styles.detailLabel}>Transaction ID</Text>
             <SmoothPressable onPress={copyId} style={styles.copy} accessibilityLabel="Copy transaction ID">
               <Text style={styles.detailValue}>{copied ? 'Copied' : tx.transactionId}</Text>
@@ -138,15 +138,21 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   hero: { alignItems: 'center', gap: 6, paddingTop: 12 },
-  heroIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  amount: { fontSize: 30, fontWeight: '900', letterSpacing: -0.6 },
-  title: { color: walletPalette.ink, fontSize: 15, fontWeight: '700' },
+  heroIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  amount: { fontSize: 30, fontWeight: '800', letterSpacing: -0.8 },
+  title: { color: walletPalette.ink, fontSize: 15, fontWeight: '700', textAlign: 'center' },
   status: { marginTop: 2, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   statusText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
-  reasonBox: { backgroundColor: '#F5F0FF', borderRadius: 14, padding: 14, gap: 4 },
-  reasonLabel: { color: '#7E22CE', fontSize: 11, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase' },
-  reasonText: { color: '#3B0764', fontSize: 14, fontWeight: '600', lineHeight: 20 },
-  card: { borderWidth: 1, borderColor: walletPalette.hairline, borderRadius: 16, paddingHorizontal: 14 },
+  reasonBox: { borderRadius: 12, borderLeftWidth: 3, paddingVertical: 12, paddingHorizontal: 14, gap: 4 },
+  reasonLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+  reasonText: { color: walletPalette.ink, fontSize: 14, fontWeight: '600', lineHeight: 20 },
+  card: {
+    backgroundColor: '#FAFAFC',
+    borderWidth: 1,
+    borderColor: walletPalette.hairline,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+  },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -156,6 +162,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: walletPalette.hairline,
   },
+  detailRowLast: { borderBottomWidth: 0 },
   detailLabel: { color: walletPalette.muted, fontSize: 13, fontWeight: '500' },
   detailValue: { flexShrink: 1, textAlign: 'right', color: walletPalette.ink, fontSize: 13, fontWeight: '700' },
   copy: { flexDirection: 'row', alignItems: 'center', gap: 6 },

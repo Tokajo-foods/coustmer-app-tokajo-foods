@@ -22,6 +22,7 @@ export const walletPalette = {
   ink: '#02060C',
   muted: '#686B78',
   hairline: '#EEEEF2',
+  canvas: '#F5F6F8',
 } as const;
 
 type CategoryVisual = { icon: LucideIcon; color: string; bg: string; label: string };

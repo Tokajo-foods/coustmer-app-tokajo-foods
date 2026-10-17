@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   icon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
   iconSuccess: { backgroundColor: walletPalette.credit },
   iconPending: { backgroundColor: '#F59E0B' },
-  amount: { color: walletPalette.ink, fontSize: 34, fontWeight: '900', letterSpacing: -0.8 },
+  amount: { color: walletPalette.ink, fontSize: 34, fontWeight: '800', letterSpacing: -0.8 },
   title: { color: walletPalette.ink, fontSize: 18, fontWeight: '800' },
   subtitle: {
     color: walletPalette.muted,

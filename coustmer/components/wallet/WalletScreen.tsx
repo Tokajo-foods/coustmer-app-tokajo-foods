@@ -99,7 +99,14 @@ export function WalletScreen() {
             <WalletAwaitingBanner amount={data.awaitingCredit.amount} count={data.awaitingCredit.count} />
             <WalletStatsRow overview={data} />
             <View style={styles.historyHead}>
-              <Text style={styles.historyTitle}>Transaction history</Text>
+              <View style={styles.historyTitleRow}>
+                <Text style={styles.historyTitle}>Passbook</Text>
+                {data.transactionCount > 0 ? (
+                  <Text style={styles.historyCount}>
+                    {data.transactionCount} {data.transactionCount === 1 ? 'entry' : 'entries'}
+                  </Text>
+                ) : null}
+              </View>
               <WalletHistoryFilters value={filter} onChange={setFilter} />
             </View>
           </View>
@@ -157,19 +164,21 @@ function Header() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F7F7FA' },
-  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: '#F7F7FA' },
+  safe: { flex: 1, backgroundColor: walletPalette.canvas },
+  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: walletPalette.canvas },
   list: { paddingHorizontal: 16, paddingBottom: 40 },
   top: { gap: 14, paddingTop: 6 },
-  historyHead: { gap: 12, marginTop: 8 },
-  historyTitle: { color: walletPalette.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  historyHead: { gap: 12, marginTop: 10 },
+  historyTitleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  historyTitle: { color: walletPalette.ink, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+  historyCount: { color: walletPalette.muted, fontSize: 12, fontWeight: '600' },
   sectionTitle: {
-    color: '#93959F',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.6,
+    color: '#8A8D99',
+    fontSize: 11.5,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
-    marginTop: 18,
+    marginTop: 20,
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -182,7 +191,7 @@ const styles = StyleSheet.create({
   },
   rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 18, borderTopRightRadius: 18 },
   rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: walletPalette.hairline },
+  rowDivider: { borderTopWidth: 1, borderTopColor: '#F3F3F6' },
   loader: { marginVertical: 24 },
   emptyIcon: {
     width: 56,
