@@ -283,11 +283,10 @@ export default function HomeScreen() {
   const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
   const openRestaurant = useCallback(
-    (id: string, slug?: string | null) => {
-      const r = restaurants.find((x) => x.id === id);
-      openRestaurantMenu(router, id, { slug: slug ?? r?.slug });
+    (id: string) => {
+      openRestaurantMenu(router, id);
     },
-    [router, restaurants]
+    [router]
   );
 
   const onToggleFavorite = useCallback(

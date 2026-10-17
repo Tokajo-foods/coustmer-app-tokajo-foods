@@ -31,7 +31,6 @@ export function RestaurantShareLinkHandler() {
     try {
       if (!token || !user) {
         setPending(link);
-        router.replace('/');
         return;
       }
 
@@ -59,8 +58,6 @@ export function RestaurantShareLinkHandler() {
   };
 
   const ingestUrl = (url: string | null) => {
-    if (!url?.trim()) return;
-    if (!/\/restaurants\/|\/r\/|fooddeliveryapp:/i.test(url)) return;
     const parsed = parseRestaurantShareUrl(url);
     if (!parsed) return;
     void runFulfill(parsed);

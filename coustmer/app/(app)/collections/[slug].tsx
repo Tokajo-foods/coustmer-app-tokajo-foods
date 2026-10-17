@@ -33,7 +33,7 @@ export default function CollectionScreen() {
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.88}
-        onPress={() => openRestaurantMenu(router, item.id, { slug: item.slug })}
+        onPress={() => openRestaurantMenu(router, item.id)}
       >
         <View style={styles.cardImgWrap}>
           {item.imageUrl ? (

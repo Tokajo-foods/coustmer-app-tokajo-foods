@@ -1,7 +1,8 @@
-import type { Href, Router } from 'expo-router';
+import type { Router } from 'expo-router';
 
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { restaurantApi } from '@/lib/restaurant/api';
+import { restaurantMenuHref } from '@/lib/restaurant/open-restaurant';
 import type { ParsedRestaurantShareLink } from '@/lib/restaurant/share-link';
 import { restaurantWithinDiscovery } from '@/lib/restaurant/within-radius';
 import { usePendingRestaurantShareStore } from '@/store/pending-restaurant-share-store';
@@ -64,12 +65,13 @@ export async function fulfillRestaurantShare(input: {
     return { status: 'not_serviceable', restaurantName: restaurant.name || 'This restaurant' };
   }
 
-  const q = link.fromShare ? '?share=1' : '';
-  const href = (
-    restaurant.slug
-      ? `/restaurants/slug/${encodeURIComponent(restaurant.slug)}${q}`
-      : `/restaurants/${encodeURIComponent(restaurant.id)}${q}`
-  ) as Href;
+  const href = restaurantMenuHref(restaurant.id, {
+    useSlugRoute: Boolean(restaurant.slug),
+    slug: restaurant.slug,
+    replace: true,
+    params: link.fromShare ? { share: '1' } : undefined,
+  });
+  if (!href) return { status: 'not_found' };
   router.replace(href);
 
   return { status: 'opened', restaurantId: restaurant.id };

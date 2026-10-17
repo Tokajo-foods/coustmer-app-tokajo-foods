@@ -45,8 +45,8 @@ export function routeForNotificationData(raw: unknown): NotificationRoute | null
   const restaurantId = str(data.restaurantId ?? data.restaurant_id ?? data.restaurant);
   if (restaurantId) {
     return {
-      pathname: `/restaurants/${encodeURIComponent(restaurantId)}`,
-      params: {},
+      pathname: '/restaurants/[restaurantId]',
+      params: { restaurantId },
     };
   }
   const paymentId = str(data.paymentId ?? data.payment_id ?? data.payment);

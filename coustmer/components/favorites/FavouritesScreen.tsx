@@ -28,6 +28,7 @@ import {
   LoadingView,
 } from '@/components/common/StateViews';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import {
   ExploreRestaurantCard,
 } from '@/components/home/ExploreRestaurantCard';
@@ -272,7 +273,7 @@ export function FavouritesScreen() {
   const goBack = () => navigateBack(router, '/home');
 
   const openRestaurant = (id: string) => {
-    router.push(`/restaurants/${id}` as import('expo-router').Href);
+    openRestaurantMenu(router, id);
   };
 
   const heroBlock = (
