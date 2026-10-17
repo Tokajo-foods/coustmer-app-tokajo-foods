@@ -23,11 +23,8 @@ import {
   useOrderRefunds,
   useRequestRefund,
 } from '@/lib/payment/hooks';
-import {
-  REFUND_REASONS,
-  REFUND_STATUS_LABELS,
-  type Refund,
-} from '@/lib/payment/types';
+import { refundDisplay } from '@/lib/payment/refund-display';
+import { REFUND_REASONS, type Refund } from '@/lib/payment/types';
 import { formatInr } from '@/lib/format/money';
 
 export function OrderRefundsScreen() {
@@ -226,9 +223,9 @@ function RefundRow({
     <Pressable style={styles.row} onPress={onPress}>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowTitle}>{formatInr(refund.amount)}</Text>
-        <Text style={styles.rowMeta}>
-          {REFUND_STATUS_LABELS[refund.status] ?? refund.status}
-          {refund.reason ? ` · ${refund.reason}` : ''}
+        <Text style={styles.rowMeta}>{refundDisplay(refund).title}</Text>
+        <Text style={styles.rowMeta} numberOfLines={2}>
+          {refundDisplay(refund).detail}
         </Text>
       </View>
       <Text style={styles.rowCta}>Details</Text>

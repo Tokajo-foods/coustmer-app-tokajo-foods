@@ -250,6 +250,11 @@ export function mapRefund(data: Record<string, unknown>): Refund {
     createdAt: (data.createdAt as string) || undefined,
     updatedAt: (data.updatedAt as string) || undefined,
     processedAt: (data.processedAt as string) || undefined,
+    refundMethod: (data.refundMethod as string) || undefined,
+    fallbackMethod: data.fallbackMethod === 'wallet' ? 'wallet' : undefined,
+    expectedBy: (data.expectedBy as string) || undefined,
+    bankReference: (data.bankReference as string) || undefined,
+    kind: data.kind === 'duplicate_capture' ? 'duplicate_capture' : 'order',
   };
 }
 

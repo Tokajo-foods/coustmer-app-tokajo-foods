@@ -162,6 +162,16 @@ export type Refund = {
   createdAt?: string;
   updatedAt?: string;
   processedAt?: string;
+  /** original_payment | wallet | bank_transfer */
+  refundMethod?: string;
+  /** Bank rejected the gateway refund and it was credited to the wallet. */
+  fallbackMethod?: 'wallet';
+  /** Promised landing date for gateway refunds. */
+  expectedBy?: string;
+  /** ARN / RRN the customer can quote to their bank. */
+  bankReference?: string;
+  /** duplicate_capture = an extra payment on an already-paid order being returned. */
+  kind?: 'order' | 'duplicate_capture';
   [key: string]: unknown;
 };
 
@@ -186,6 +196,8 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
 };
 
 export const REFUND_STATUS_LABELS: Record<string, string> = {
+  initiated: 'Requested',
+  success: 'Refunded',
   requested: 'Requested',
   pending: 'Pending',
   processing: 'Processing',

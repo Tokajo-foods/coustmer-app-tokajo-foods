@@ -12,7 +12,7 @@ import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { authTheme } from '@/constants/auth-theme';
 import { useRefund } from '@/lib/payment/hooks';
-import { REFUND_STATUS_LABELS } from '@/lib/payment/types';
+import { refundDisplay } from '@/lib/payment/refund-display';
 import { formatInr } from '@/lib/format/money';
 
 export function RefundDetailScreen() {
@@ -48,6 +48,7 @@ export function RefundDetailScreen() {
   }
 
   const data = refund.data;
+  const display = refundDisplay(data);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -67,13 +68,18 @@ export function RefundDetailScreen() {
         <View style={styles.card}>
           <Text style={styles.label}>Amount</Text>
           <Text style={styles.amount}>{formatInr(data.amount)}</Text>
-          <Text style={styles.status}>
-            {REFUND_STATUS_LABELS[data.status] ?? data.status}
+          <Text style={[styles.status, display.tone === 'problem' && styles.statusProblem]}>
+            {display.title}
           </Text>
+          <Text style={styles.detail}>{display.detail}</Text>
         </View>
 
         <View style={styles.card}>
           {data.reason ? <Row label="Reason" value={data.reason} /> : null}
+          {data.expectedBy && display.tone === 'progress' ? (
+            <Row label="Expected by" value={new Date(data.expectedBy).toLocaleDateString()} />
+          ) : null}
+          {data.bankReference ? <Row label="Bank reference" value={data.bankReference} /> : null}
           {data.orderId ? <Row label="Order" value={data.orderId.slice(-8)} /> : null}
           {data.paymentId ? (
             <Row label="Payment" value={data.paymentId.slice(-8)} />
@@ -134,6 +140,8 @@ const styles = StyleSheet.create({
   label: { color: authTheme.textMuted, fontSize: 12, fontWeight: '600' },
   amount: { color: authTheme.text, fontSize: 32, fontWeight: '800' },
   status: { color: authTheme.brand, fontWeight: '700' },
+  statusProblem: { color: '#DC2626' },
+  detail: { color: authTheme.textMuted, fontSize: 13, lineHeight: 19 },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
