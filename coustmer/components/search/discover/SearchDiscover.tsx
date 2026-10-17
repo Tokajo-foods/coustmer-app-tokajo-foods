@@ -7,7 +7,6 @@ import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { useSearchDiscovery } from '@/lib/search/use-search-discovery';
 
 import { searchColors } from '../search-styles';
-import { CravingRail } from './CravingRail';
 import { DishRail } from './DishRail';
 import { NearbyRestaurantList } from './NearbyRestaurantList';
 import { RecentChips } from './RecentChips';
@@ -24,7 +23,7 @@ type Props = {
 /** Search landing: recent searches, then suggestions from restaurants in range only. */
 export function SearchDiscover({ recent, onSearch, onRemoveRecent, onClearRecent, onDish, onRestaurant }: Props) {
   const d = useSearchDiscovery();
-  const nothingNearby = !d.loading && d.hasLocation && !d.cravings.length && !d.dishes.length && !d.restaurants.length;
+  const nothingNearby = !d.loading && d.hasLocation && !d.dishes.length && !d.restaurants.length;
 
   return (
     <ScrollView {...PREMIUM_SCROLL} contentContainerStyle={styles.content}>
@@ -34,7 +33,6 @@ export function SearchDiscover({ recent, onSearch, onRemoveRecent, onClearRecent
           body="We'll suggest dishes and restaurants that deliver to you." />
       ) : null}
       {d.loading ? <DiscoverSkeleton /> : null}
-      <CravingRail items={d.cravings} onPick={onSearch} />
       <DishRail items={d.dishes} onPick={onDish} />
       <NearbyRestaurantList items={d.restaurants} onPick={onRestaurant} />
       {nothingNearby ? (
@@ -60,12 +58,10 @@ function DiscoverSkeleton() {
     <View style={styles.skeleton}>
       <View style={[styles.bone, styles.titleBone]} />
       <View style={styles.row}>
-        {[0, 1, 2, 3, 4].map((i) => <View key={i} style={[styles.bone, styles.disc]} />)}
-      </View>
-      <View style={[styles.bone, styles.titleBone, { marginTop: 26 }]} />
-      <View style={styles.row}>
         {[0, 1, 2].map((i) => <View key={i} style={[styles.bone, styles.card]} />)}
       </View>
+      <View style={[styles.bone, styles.titleBone, { marginTop: 26 }]} />
+      {[0, 1, 2].map((i) => <View key={i} style={[styles.bone, styles.listRow]} />)}
     </View>
   );
 }
@@ -88,6 +84,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 14, overflow: 'hidden' },
   bone: { backgroundColor: '#F1F5F9' },
   titleBone: { width: 180, height: 14, borderRadius: 7, marginBottom: 14 },
-  disc: { width: 68, height: 68, borderRadius: 34 },
+  listRow: { height: 64, borderRadius: 14, marginBottom: 12 },
   card: { width: 148, height: 168, borderRadius: 16 },
 });
