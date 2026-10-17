@@ -85,7 +85,6 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
 
   const html = useMemo(() => {
     if (!session) return '';
-    const amountPaise = Math.round(Number(session.amount) * 100);
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -110,7 +109,6 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
       var options = {
         key: "${esc(session.keyId)}",
         order_id: "${esc(session.orderId)}",
-        amount: ${amountPaise},
         currency: "${esc(session.currency) || 'INR'}",
         name: "Tokajo Foods",
         description: "${esc(session.description) || 'Order payment'}",

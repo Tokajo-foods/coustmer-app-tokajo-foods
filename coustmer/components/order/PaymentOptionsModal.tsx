@@ -48,6 +48,8 @@ type Props = {
   onPay: (method: string) => void;
   savedMethods?: SavedPaymentMethod[];
   wallet?: WalletSummary;
+  /** cart-service `walletShortfall` — ₹ the wallet is short of the full bill */
+  walletShortfall?: number | null;
 };
 
 /** Circular crop + yellow fill — no white left/right bars from square asset */
@@ -100,6 +102,7 @@ export function PaymentOptionsModal({
   addressText,
   savedMethods,
   wallet,
+  walletShortfall,
 }: Props) {
   const router = useRouter();
 
@@ -107,11 +110,10 @@ export function PaymentOptionsModal({
   const savedUpis = savedMethods?.filter((m) => m.type === 'upi') || [];
 
   const handleWalletSelect = () => {
-    if (wallet && wallet.balance + 0.009 < total) {
-      const diff = total - wallet.balance;
+    if (walletShortfall != null && walletShortfall > 0) {
       Alert.alert(
         'Insufficient Balance',
-        `Tokajo wallet must cover the full bill. You need ${formatInr(diff)} more.`,
+        `Tokajo wallet must cover the full bill. You need ${formatInr(walletShortfall)} more.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {

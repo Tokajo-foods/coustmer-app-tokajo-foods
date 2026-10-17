@@ -98,6 +98,7 @@ export type Cart = {
   deliveryFee?: number;
   tax?: number;
   platformFee?: number;
+  taxesAndCharges?: number;
   packagingCharge?: number;
   rainFee?: number;
   /** Signed whole-rupee adjustment from cart-service. */

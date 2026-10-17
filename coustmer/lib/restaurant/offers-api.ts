@@ -189,37 +189,3 @@ export function isOfferValid(offer: Offer): boolean {
   
   return now >= validFrom && now <= validUntil;
 }
-
-export function canUseOffer(offer: Offer, orderAmount: number): boolean {
-  if (!isOfferValid(offer)) return false;
-  if (offer.minOrderAmount && orderAmount < offer.minOrderAmount) return false;
-  if (offer.usageLimit && offer.usageCount && offer.usageCount >= offer.usageLimit) return false;
-  return true;
-}
-
-export function calculateOfferDiscount(offer: Offer, orderAmount: number): number {
-  if (!canUseOffer(offer, orderAmount)) return 0;
-  
-  let discount = 0;
-  
-  switch (offer.type) {
-    case 'percentage':
-      discount = (orderAmount * offer.value) / 100;
-      break;
-    case 'fixed':
-      discount = offer.value;
-      break;
-    case 'freeDelivery':
-      // Handled separately in delivery fee calculation
-      discount = 0;
-      break;
-    default:
-      discount = 0;
-  }
-  
-  if (offer.maxDiscountAmount && discount > offer.maxDiscountAmount) {
-    discount = offer.maxDiscountAmount;
-  }
-  
-  return Math.min(discount, orderAmount);
-}

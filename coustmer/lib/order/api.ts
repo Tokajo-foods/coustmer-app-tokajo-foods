@@ -804,17 +804,17 @@ export const orderApi = {
   getCancellationQuote: async (orderId: string): Promise<CancellationQuote> => {
     const res = await request<unknown>(`${ORDERS_BASE}/${orderId}/cancellation-quote`);
     const d = asRecord(res.data ?? res);
-    const total = Number(d.total ?? d.orderAmount ?? d.amount ?? 0);
+    const total = Number(d.orderTotal ?? d.total ?? d.orderAmount ?? d.amount ?? 0);
     const refundable = Number(
-      d.refundable ?? d.refundAmount ?? d.refund ?? d.refundableAmount ?? total
+      d.refundable ?? d.refundAmount ?? d.refund ?? d.refundableAmount ?? 0
     );
     const nonRefundable = Number(
-      d.nonRefundable ?? d.nonRefundableAmount ?? d.deduction ?? (total - refundable)
+      d.fee ?? d.nonRefundable ?? d.nonRefundableAmount ?? d.deduction ?? 0
     );
     return {
-      refundable: Number.isFinite(refundable) ? refundable : total,
+      refundable: Number.isFinite(refundable) ? refundable : 0,
       nonRefundable: Number.isFinite(nonRefundable) ? nonRefundable : 0,
-      total: Number.isFinite(total) ? total : refundable + nonRefundable,
+      total: Number.isFinite(total) ? total : 0,
       reason: (d.reason as string) || (d.policy as string) || undefined,
       canCancel: d.canCancel !== false,
       message: (d.message as string) || undefined,

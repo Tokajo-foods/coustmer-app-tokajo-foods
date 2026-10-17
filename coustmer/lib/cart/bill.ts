@@ -31,6 +31,9 @@ export type BillBreakdown = {
   totalBeforeWallet: number | null;
   /** Amount to pay now — server value, display as-is. */
   grandTotal: number;
+  /** Server wallet balance / rupees short of the full bill; null for guests. */
+  walletBalance: number | null;
+  walletShortfall: number | null;
   deliveryFeeMax: number;
   deliveryDistanceKm: number | null;
   deliveryDistanceCharge: number;
@@ -104,11 +107,7 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
   const roundOff = num(raw.roundOff);
   const totalBeforeWallet = pickNullableNumber(raw.totalBeforeWallet);
 
-  let surgeExtra = 0;
-  const preSurge = deliveryFeeBase + deliveryDistanceCharge;
-  if (deliveryFee > preSurge + 0.009) {
-    surgeExtra = Math.round((deliveryFee - preSurge) * 100) / 100;
-  }
+  const surgeExtra = num(raw.deliverySurgeAmount);
 
   const chargeLines: BillChargeLine[] = [];
 
@@ -133,7 +132,7 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
     });
   }
 
-  const taxesAndChargesTotal = Math.round((restaurantTaxAmount + platformFee) * 100) / 100;
+  const taxesAndChargesTotal = num(raw.taxesAndCharges);
 
   const deliveryTypeRaw = String(raw.deliveryType ?? 'delivery').toLowerCase();
   const deliveryType: 'delivery' | 'takeaway' =
@@ -167,6 +166,8 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
     roundOff,
     totalBeforeWallet,
     grandTotal,
+    walletBalance: pickNullableNumber(raw.walletBalance),
+    walletShortfall: pickNullableNumber(raw.walletShortfall),
     taxesAndChargesTotal,
     chargeLines,
     superFreeDelivery: raw.superFreeDelivery === true,

@@ -68,7 +68,6 @@ import { extractCityFromAddress, normalizeCityName } from '@/lib/location/format
 import { checkoutBlockCopy } from '@/lib/cart/checkout-block';
 import {
   ensureWalletCoversCheckout,
-  payableBeforeWallet,
 } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr, formatLineTotal } from '@/lib/format/money';
@@ -298,7 +297,6 @@ export function CartScreen() {
     serverCart: apiCart,
     deliveryType: normalizedDeliveryType,
     paymentMethod,
-    walletBalance: Number(wallet.data?.balance ?? 0),
   });
 
   // Validate cart on open so delivery fee is persisted on server (GET /cart/bill needs it).
@@ -351,10 +349,7 @@ export function CartScreen() {
   const selectPaymentMethod = async (method: string) => {
     if (method === 'wallet') {
       try {
-        await ensureWalletCoversCheckout({
-          payableBeforeWallet: payableBeforeWallet(billBreakdown),
-          walletBalance: Number(wallet.data?.balance ?? 0),
-        });
+        await ensureWalletCoversCheckout();
         void liveBill.refetch();
       } catch (err) {
         Alert.alert(
@@ -632,10 +627,7 @@ export function CartScreen() {
       }
 
       if (mappedMethod === 'wallet') {
-        await ensureWalletCoversCheckout({
-          payableBeforeWallet: payableBeforeWallet(billBreakdown),
-          walletBalance: Number(wallet.data?.balance ?? 0),
-        });
+        await ensureWalletCoversCheckout();
         void liveBill.refetch();
       }
 
@@ -1367,6 +1359,7 @@ export function CartScreen() {
           onPay={(m) => void selectPaymentMethod(m)}
           itemCount={itemCount}
           total={totalBeforeWallet}
+          walletShortfall={billBreakdown.walletShortfall}
           savings={billBreakdown.discount}
           restaurantName={restaurant?.name || ''}
           deliveryTime={restaurant?.deliveryTime}

@@ -322,6 +322,8 @@ export function mapCart(data: unknown): Cart {
 
   const platformFee =
     pickFiniteNumber(nestedCart.platformFee, pricing.platformFee) ?? 0;
+  const taxesAndCharges =
+    pickFiniteNumber(nestedCart.taxesAndCharges, pricing.taxesAndCharges) ?? 0;
   const packagingCharge =
     pickFiniteNumber(
       nestedCart.packagingCharge,
@@ -377,6 +379,7 @@ export function mapCart(data: unknown): Cart {
     deliveryFee: Number.isFinite(deliveryFee) ? deliveryFee : 0,
     tax: Number.isFinite(tax) ? tax : 0,
     platformFee,
+    taxesAndCharges,
     packagingCharge,
     rainFee,
     roundOff,

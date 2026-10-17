@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 
 import { mapBillBreakdown, type BillBreakdown } from '@/lib/cart/bill';
-import { payableBeforeWallet } from '@/lib/cart/ensure-wallet-checkout';
 import type { Cart } from '@/lib/cart/types';
 
 type Input = {
@@ -11,7 +10,6 @@ type Input = {
   serverCart: Cart | undefined;
   deliveryType: 'delivery' | 'takeaway';
   paymentMethod: string;
-  walletBalance: number;
 };
 
 /**
@@ -23,7 +21,6 @@ export function useCheckoutTotals({
   serverCart,
   deliveryType,
   paymentMethod,
-  walletBalance,
 }: Input) {
   const bill = useMemo<BillBreakdown>(() => {
     if (liveBill) return liveBill;
@@ -34,6 +31,7 @@ export function useCheckoutTotals({
       taxAmount: serverCart?.tax ?? 0,
       packagingCharge: serverCart?.packagingCharge ?? 0,
       platformFee: serverCart?.platformFee ?? 0,
+      taxesAndCharges: serverCart?.taxesAndCharges ?? 0,
       rainFee: serverCart?.rainFee ?? 0,
       tipAmount: serverCart?.tip ?? 0,
       discount: serverCart?.discount ?? 0,
@@ -46,16 +44,12 @@ export function useCheckoutTotals({
     });
   }, [liveBill, serverCart, deliveryType]);
 
-  const totalBeforeWallet = payableBeforeWallet(bill);
-  const walletCoversBill =
-    paymentMethod === 'wallet' && walletBalance + 0.009 >= totalBeforeWallet;
+  const totalBeforeWallet = bill.totalBeforeWallet ?? bill.grandTotal;
+  /** Server says the wallet can pay the whole bill (`walletShortfall === 0`). */
+  const walletCoversBill = paymentMethod === 'wallet' && bill.walletShortfall === 0;
 
   /** What the customer pays now via the selected method. */
-  const payable = walletCoversBill
-    ? bill.walletApplied > 0
-      ? bill.grandTotal
-      : 0
-    : bill.grandTotal;
+  const payable = walletCoversBill ? 0 : bill.grandTotal;
 
   return { bill, payable, totalBeforeWallet };
 }

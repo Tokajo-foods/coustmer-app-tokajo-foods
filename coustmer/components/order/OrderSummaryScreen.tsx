@@ -45,7 +45,6 @@ import {
 } from '@/lib/checkout/payment-display';
 import {
   ensureWalletCoversCheckout,
-  payableBeforeWallet,
 } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr, formatLineTotal } from '@/lib/format/money';
@@ -154,7 +153,6 @@ export function OrderSummaryScreen() {
     serverCart: cartData,
     deliveryType: normalizedDeliveryType,
     paymentMethod,
-    walletBalance: Number(wallet.data?.balance ?? 0),
   });
 
   const displayName =
@@ -224,10 +222,7 @@ export function OrderSummaryScreen() {
       }
 
       if (mappedMethod === 'wallet') {
-        await ensureWalletCoversCheckout({
-          payableBeforeWallet: payableBeforeWallet(billBreakdown),
-          walletBalance: Number(wallet.data?.balance ?? 0),
-        });
+        await ensureWalletCoversCheckout();
         void bill.refetch();
       }
 
@@ -604,10 +599,7 @@ export function OrderSummaryScreen() {
         onSelectMethod={async (m) => {
           if (m === 'wallet') {
             try {
-              await ensureWalletCoversCheckout({
-                payableBeforeWallet: payableBeforeWallet(billBreakdown),
-                walletBalance: Number(wallet.data?.balance ?? 0),
-              });
+              await ensureWalletCoversCheckout();
               void bill.refetch();
             } catch (err) {
               Alert.alert(
@@ -623,10 +615,7 @@ export function OrderSummaryScreen() {
         onPay={async (m) => {
           if (m === 'wallet') {
             try {
-              await ensureWalletCoversCheckout({
-                payableBeforeWallet: payableBeforeWallet(billBreakdown),
-                walletBalance: Number(wallet.data?.balance ?? 0),
-              });
+              await ensureWalletCoversCheckout();
               void bill.refetch();
             } catch (err) {
               Alert.alert(
@@ -641,6 +630,7 @@ export function OrderSummaryScreen() {
         }}
         itemCount={itemCount}
         total={totalBeforeWallet}
+          walletShortfall={billBreakdown.walletShortfall}
         savings={billBreakdown.discount}
         restaurantName={restaurant?.name || ''}
         addressLabel={location?.label || 'Delivery'}
