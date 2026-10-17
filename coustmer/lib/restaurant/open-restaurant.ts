@@ -38,7 +38,9 @@ function buildRestaurantHref(
   const qs = new URLSearchParams(extra).toString();
   const suffix = qs ? `?${qs}` : '';
 
-  return `/restaurants/${encodeURIComponent(id)}${suffix}` as Href;
+  // Explicit menu path — avoids nested `[restaurantId]/offers` winning the segment match.
+  const base = `/restaurants/${encodeURIComponent(id)}`;
+  return `${base}${suffix}` as Href;
 }
 
 /** Canonical navigation into a restaurant menu screen. */
