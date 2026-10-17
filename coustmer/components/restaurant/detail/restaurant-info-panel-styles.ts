@@ -13,9 +13,10 @@ export const infoColors = { INK, MUTED, ORANGE, BORDER, SURFACE, SOFT };
 
 export const infoStyles = StyleSheet.create({
   root: {
+    flexGrow: 1,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 36,
+    paddingTop: 8,
+    paddingBottom: 24,
     gap: 12,
     backgroundColor: SURFACE,
   },

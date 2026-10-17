@@ -20,6 +20,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -87,6 +88,7 @@ type MenuFilter = MenuFilterId;
 export function RestaurantDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const params = useLocalSearchParams<{
     restaurantId?: string;
     slug?: string;
@@ -493,6 +495,7 @@ export function RestaurantDetailScreen() {
         onScroll={onScroll}
         contentContainerStyle={{
           paddingBottom: 120 + insets.bottom,
+          ...(tab === 'Info' ? { flexGrow: 1 } : null),
         }}
       >
         {/* Hero */}
@@ -792,6 +795,7 @@ export function RestaurantDetailScreen() {
 
         {tab === 'Info' ? (
           <RestaurantInfoPanel
+            fillMinHeight={Math.max(420, windowHeight - 300)}
             restaurant={r}
             restaurantName={restaurantName}
             description={infoDescription}

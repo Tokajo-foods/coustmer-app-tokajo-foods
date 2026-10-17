@@ -55,6 +55,8 @@ export type RestaurantInfoPanelProps = {
     closeTime: string;
     reason?: string;
   }[];
+  /** Keeps white Info background flush to the bottom of the screen while scrolling. */
+  fillMinHeight?: number;
 };
 
 function SectionTitle({ title }: { title: string }) {
@@ -150,6 +152,7 @@ export function RestaurantInfoPanel({
   timings,
   holidays,
   specialHours,
+  fillMinHeight,
 }: RestaurantInfoPanelProps) {
   const { ORANGE, MUTED } = infoColors;
 
@@ -218,7 +221,14 @@ export function RestaurantInfoPanel({
   const weeklyHours = buildWeeklyHours(timings, r.timings, todayKey);
 
   return (
-    <View style={styles.root}>
+    <View
+      style={[
+        styles.root,
+        fillMinHeight != null && fillMinHeight > 0
+          ? { minHeight: fillMinHeight, flexGrow: 1 }
+          : null,
+      ]}
+    >
       <RestaurantInfoOutletCard
         kitchenClosed={kitchenClosed}
         openNow={openNow}
@@ -233,8 +243,6 @@ export function RestaurantInfoPanel({
         onToggleNotifyOpen={onToggleNotifyOpen}
       />
 
-      <RestaurantInfoWeeklyHours rows={weeklyHours} />
-
       <View style={styles.card}>
         <SectionTitle title={`About ${restaurantName}`} />
         <Text style={styles.body}>{description}</Text>
@@ -248,6 +256,8 @@ export function RestaurantInfoPanel({
           </View>
         ) : null}
       </View>
+
+      <RestaurantInfoWeeklyHours rows={weeklyHours} />
 
       <View style={styles.card}>
         <View style={styles.sectionHead}>
