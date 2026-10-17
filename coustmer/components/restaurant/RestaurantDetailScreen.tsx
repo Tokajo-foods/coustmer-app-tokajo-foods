@@ -391,6 +391,16 @@ export function RestaurantDetailScreen() {
       : [];
   }, [categories, visibleItems, isSearching]);
 
+  const categoryChips = useMemo(
+    () =>
+      grouped.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        count: cat.items.length,
+      })),
+    [grouped]
+  );
+
   const onSearchChange = (text: string) => {
     setQuery(text);
     if (text.trim()) {
@@ -597,16 +607,6 @@ export function RestaurantDetailScreen() {
       setVegMode('all');
     }
   };
-
-  const categoryChips = useMemo(
-    () =>
-      grouped.map((cat) => ({
-        id: cat.id,
-        name: cat.name,
-        count: cat.items.length,
-      })),
-    [grouped]
-  );
 
   const categoryRail = (
     <RestaurantCategoryRail
