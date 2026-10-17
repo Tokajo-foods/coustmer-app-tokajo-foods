@@ -33,7 +33,6 @@ import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { RestaurantCategoryRail } from '@/components/restaurant/detail/RestaurantCategoryRail';
 import { RestaurantDetailTabs } from '@/components/restaurant/detail/RestaurantDetailTabs';
 import type { RestaurantDetailTab } from '@/components/restaurant/detail/RestaurantDetailTabs';
-import { RestaurantMenuAutocomplete } from '@/components/restaurant/detail/RestaurantMenuAutocomplete';
 import {
   RestaurantMenuSearchBar,
   type MenuFilterId,
@@ -41,11 +40,7 @@ import {
 import { RestaurantPopularPicks } from '@/components/restaurant/detail/RestaurantPopularPicks';
 import { RestaurantShareSheet } from '@/components/restaurant/RestaurantShareSheet';
 import { useRestaurantShareGate } from '@/lib/restaurant/use-restaurant-share-gate';
-import {
-  featuredMenuSuggestions,
-  filterMenuPool,
-  rankMenuSearch,
-} from '@/lib/restaurant/menu-search';
+import { openRestaurantMenuSearch } from '@/lib/restaurant/open-menu-search';
 import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { MenuItemDetailSheet } from '@/components/restaurant/MenuItemDetailSheet';
 import { RestaurantReviewsPanel } from '@/components/review/RestaurantReviewsPanel';
@@ -145,13 +140,11 @@ export function RestaurantDetailScreen() {
 
   const [tab, setTab] = useState<TabId>('Menu');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [query, setQuery] = useState('');
   const [activeCat, setActiveCat] = useState<string>('popular');
   const [stickyCats, setStickyCats] = useState(false);
   const [menuFilter, setMenuFilter] = useState<MenuFilter>(
     vegOnly ? 'veg' : 'all'
   );
-  const [searchFocused, setSearchFocused] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const shareFlag = Array.isArray(params.share) ? params.share[0] : params.share;
   const fromShare = shareFlag === '1' || shareFlag === 'true';
@@ -176,24 +169,12 @@ export function RestaurantDetailScreen() {
   const unavailableSet = new Set(unavailableIds ?? []);
   const alerts = useKitchenAlerts({ enabled: Boolean(token && id) });
   const notifyOpen = useNotifyOpen(id);
-  const needle = query.trim().toLowerCase();
-  const isSearching = needle.length > 0;
-
   const goBack = () => navigateBack(router, '/home');
 
   const addItem = (item: MenuItem) => {
     // Always open detail sheet so restaurant-configured sizes / add-ons can be chosen.
     setSelectedItem(item);
   };
-
-  const menuSearchPool = useMemo(
-    () =>
-      filterMenuPool(menu.items, {
-        vegOnly,
-        menuFilter,
-      }),
-    [menu.items, vegOnly, menuFilter]
-  );
 
   const visibleItems = useMemo(() => {
     let items = menu.items;
@@ -277,24 +258,6 @@ export function RestaurantDetailScreen() {
     return picks.length >= 3 ? picks : pool.slice(0, 8);
   }, [menu.recommended, menu.items, visibleItems, vegOnly, menuFilter]);
 
-  const searchResults = useMemo(() => {
-    if (!isSearching) return [];
-    return rankMenuSearch(menuSearchPool, query.trim(), { limit: 80 });
-  }, [isSearching, menuSearchPool, query]);
-
-  const autocompleteSuggestions = useMemo(() => {
-    if (!needle) {
-      return featuredMenuSuggestions(menuSearchPool, menu.recommended, 6);
-    }
-    return rankMenuSearch(menuSearchPool, query.trim(), { limit: 6 });
-  }, [needle, menuSearchPool, menu.recommended, query]);
-
-  const showAutocomplete =
-    tab === 'Menu' &&
-    (searchFocused || isSearching) &&
-    autocompleteSuggestions.length > 0 &&
-    !menu.isLoading;
-
   const categories = useMemo(() => {
     if (menu.categories.length) return menu.categories;
     const names = new Map<string, string>();
@@ -307,8 +270,6 @@ export function RestaurantDetailScreen() {
   }, [menu.categories, visibleItems]);
 
   const grouped = useMemo(() => {
-    if (isSearching) return [];
-
     if (!categories.length) {
       return visibleItems.length
         ? [{ id: 'all', name: 'Full menu', items: visibleItems }]
@@ -339,7 +300,7 @@ export function RestaurantDetailScreen() {
     return visibleItems.length
       ? [{ id: 'all', name: 'Full menu', items: visibleItems }]
       : [];
-  }, [categories, visibleItems, isSearching]);
+  }, [categories, visibleItems]);
 
   const categoryChips = useMemo(
     () =>
@@ -351,22 +312,10 @@ export function RestaurantDetailScreen() {
     [grouped]
   );
 
-  const onSearchChange = (text: string) => {
-    setQuery(text);
-    if (text.trim()) {
-      setTab('Menu');
-      setActiveCat('popular');
-    }
-  };
-
-  const clearSearch = () => {
-    setQuery('');
-  };
-
   const stickyRef = useRef(false);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
-    const next = y > 280 && tab === 'Menu' && !isSearching;
+    const next = y > 280 && tab === 'Menu';
     if (next === stickyRef.current) return;
     stickyRef.current = next;
     setStickyCats(next);
@@ -702,39 +651,13 @@ export function RestaurantDetailScreen() {
         </View>
 
         <RestaurantMenuSearchBar
-          query={query}
-          onQueryChange={onSearchChange}
-          onSearchFocus={() => {
-            setTab('Menu');
-            setSearchFocused(true);
-          }}
-          onSearchBlur={() => {
-            setTimeout(() => setSearchFocused(false), 240);
-          }}
-          onClearSearch={clearSearch}
           menuFilter={menuFilter}
           onMenuFilter={applyMenuFilter}
           vegOnly={vegOnly}
           restaurantName={restaurantName}
-        />
-
-        <RestaurantMenuAutocomplete
-          visible={showAutocomplete}
-          query={query}
-          restaurantName={restaurantName}
-          suggestions={autocompleteSuggestions}
-          totalMatches={searchResults.length}
-          onSelectItem={(item) => {
-            setQuery(item.name);
+          onOpenSearch={() => {
             setTab('Menu');
-            setActiveCat('popular');
-            setSelectedItem(item);
-            setSearchFocused(false);
-          }}
-          onFillQuery={(text) => {
-            setQuery(text);
-            setTab('Menu');
-            setSearchFocused(false);
+            openRestaurantMenuSearch(router, id, restaurantName);
           }}
         />
 
@@ -746,45 +669,7 @@ export function RestaurantDetailScreen() {
               menuOffsetY.current = e.nativeEvent.layout.y;
             }}
           >
-            {isSearching ? (
-              <View style={styles.searchResultsBlock}>
-                <View style={styles.sectionHead}>
-                  <Text style={styles.sectionTitle}>
-                    {searchResults.length} result
-                    {searchResults.length === 1 ? '' : 's'}
-                  </Text>
-                  <Text style={styles.sectionSub}>
-                    Dishes at {restaurantName} matching “{query.trim()}”
-                  </Text>
-                </View>
-
-                {menu.isLoading ? (
-                  <LoadingView label="Loading menu…" />
-                ) : searchResults.length === 0 ? (
-                  <View style={styles.emptyMenu}>
-                    <Search color={MUTED} size={26} />
-                    <Text style={styles.emptyTitle}>No dishes found</Text>
-                    <Text style={styles.emptySub}>
-                      Try another name, or clear search to browse the full menu.
-                    </Text>
-                    <Pressable style={styles.clearSearchBtn} onPress={clearSearch}>
-                      <Text style={styles.clearSearchBtnText}>Clear search</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  searchResults.map((item) => (
-                    <MenuItemRow
-                      key={item.id}
-                      item={item}
-                      onPress={() => setSelectedItem(item)}
-                      onAdd={() => addItem(item)}
-                      unavailable={unavailableSet.has(item.id)}
-                    />
-                  ))
-                )}
-              </View>
-            ) : (
-              <>
+            <>
                 <View style={styles.menuSectionCard}>
                   {categoryRail}
 
@@ -862,7 +747,6 @@ export function RestaurantDetailScreen() {
                 )}
                 </View>
               </>
-            )}
           </View>
         ) : null}
 
@@ -1216,7 +1100,7 @@ export function RestaurantDetailScreen() {
       </ScrollView>
 
       {/* Sticky category strip */}
-      {stickyCats && !isSearching ? (
+      {stickyCats ? (
         <View
           style={[styles.stickyCats, { paddingTop: insets.top + 6 }]}
           pointerEvents="box-none"

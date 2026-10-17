@@ -1,6 +1,6 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Leaf, Search, X } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Leaf, Search } from 'lucide-react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
@@ -20,27 +20,20 @@ const FILTER_CHIPS: Array<{ id: MenuFilterId; label: string; vegIcon?: boolean }
 ];
 
 type Props = {
-  query: string;
-  onQueryChange: (text: string) => void;
-  onSearchFocus: () => void;
-  onSearchBlur: () => void;
-  onClearSearch: () => void;
   menuFilter: MenuFilterId;
   onMenuFilter: (id: MenuFilterId) => void;
   vegOnly: boolean;
   restaurantName?: string;
+  /** Opens full-screen in-menu search (filters stay on menu page only). */
+  onOpenSearch: () => void;
 };
 
 export function RestaurantMenuSearchBar({
-  query,
-  onQueryChange,
-  onSearchFocus,
-  onSearchBlur,
-  onClearSearch,
   menuFilter,
   onMenuFilter,
   vegOnly,
   restaurantName,
+  onOpenSearch,
 }: Props) {
   const scope = restaurantName?.trim() || 'this restaurant';
   const placeholder =
@@ -50,28 +43,10 @@ export function RestaurantMenuSearchBar({
 
   return (
     <View style={styles.card}>
-      <View style={styles.searchRow}>
+      <Pressable style={styles.searchRow} onPress={onOpenSearch}>
         <Search color={MUTED} size={18} strokeWidth={2.2} />
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={onQueryChange}
-          onFocus={onSearchFocus}
-          onBlur={onSearchBlur}
-          placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-          clearButtonMode="never"
-          blurOnSubmit={false}
-        />
-        {query ? (
-          <Pressable onPress={onClearSearch} hitSlop={8} style={styles.clearBtn}>
-            <X color={MUTED} size={16} />
-          </Pressable>
-        ) : null}
-      </View>
+        <Text style={styles.searchPlaceholder}>{placeholder}</Text>
+      </Pressable>
 
       <View style={styles.divider} />
 
@@ -126,20 +101,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
   },
-  searchInput: {
+  searchPlaceholder: {
     flex: 1,
     fontFamily: fonts.uiMedium,
     fontSize: 15,
-    color: INK,
-    paddingVertical: 0,
-  },
-  clearBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
+    color: '#94A3B8',
   },
   divider: {
     height: StyleSheet.hairlineWidth,

@@ -9,6 +9,16 @@ export default function RestaurantsLayout() {
         ...PREMIUM_STACK_OPTIONS,
         headerShown: false,
       }}
-    />
+    >
+      <Stack.Screen
+        name="[restaurantId]/menu-search"
+        options={{
+          animation: 'slide_from_bottom',
+          animationDuration: 320,
+          presentation: 'modal',
+          gestureEnabled: true,
+        }}
+      />
+    </Stack>
   );
 }
