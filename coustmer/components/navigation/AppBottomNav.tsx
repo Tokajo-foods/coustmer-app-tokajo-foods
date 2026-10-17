@@ -138,8 +138,8 @@ function TabButton({
         <View style={[styles.iconSlot, active && styles.iconSlotActive]}>
           <Icon
             color={active ? ORANGE : IDLE_COLOR}
-            size={22}
-            strokeWidth={active ? 2.5 : 1.9}
+            size={20}
+            strokeWidth={active ? 2.4 : 1.8}
             fill={active && tab.fillWhenActive ? ORANGE : 'transparent'}
           />
         </View>
@@ -191,8 +191,8 @@ export function AppBottomNav() {
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 28,
-    right: 28,
+    left: 40,
+    right: 40,
     bottom: 0,
     zIndex: 50,
   },
@@ -201,42 +201,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
-    borderRadius: 32,
+    borderRadius: 30,
     paddingHorizontal: 4,
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderWidth: 1,
-    borderColor: '#F3E8DE',
-    shadowColor: '#B4541A',
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 14,
+    paddingTop: 7,
+    paddingBottom: 7,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(249, 115, 22, 0.18)',
+    shadowColor: '#7C2D12',
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 18,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 52,
+    minWidth: 48,
   },
   tabInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
     paddingVertical: 2,
   },
   iconSlot: {
-    width: 46,
-    height: 30,
-    borderRadius: 15,
+    width: 42,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconSlotActive: {
-    backgroundColor: '#FFF1E6',
+    backgroundColor: '#FFEBDA',
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.2,
     fontFamily: fonts.uiMedium,
     color: IDLE_COLOR,
   },
