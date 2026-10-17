@@ -118,8 +118,6 @@ export function SearchScreen() {
               onSearch={performSearch}
               onRemoveRecent={(term) => removeLocalRecentSearch(term).then(setRecentSearches)}
               onClearRecent={() => clearLocalRecentSearches().then(() => setRecentSearches([]))}
-              onDish={(dish) => openRestaurant(dish.restaurantId, dish.id)}
-              onRestaurant={(r) => openRestaurant(r.id)}
             />
           ) : null}
           {showingSuggestions ? (
