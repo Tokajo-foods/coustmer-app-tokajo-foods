@@ -25,6 +25,11 @@ export type BillBreakdown = {
   couponCode: string | null;
   walletApplied: number;
   loyaltyDiscount: number;
+  /** Signed whole-rupee adjustment from the server (e.g. +0.05). */
+  roundOff: number;
+  /** Server whole-rupee bill before wallet; null on older payloads. */
+  totalBeforeWallet: number | null;
+  /** Amount to pay now — server value, display as-is. */
   grandTotal: number;
   deliveryFeeMax: number;
   deliveryDistanceKm: number | null;
@@ -96,6 +101,8 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
   const walletApplied = num(raw.walletApplied, raw.walletDeduction);
   const loyaltyDiscount = num(raw.loyaltyDiscount, raw.loyaltyDeduction);
   const grandTotal = num(raw.grandTotal, raw.total, raw.payableAmount, raw.toPay);
+  const roundOff = num(raw.roundOff);
+  const totalBeforeWallet = pickNullableNumber(raw.totalBeforeWallet);
 
   let surgeExtra = 0;
   const preSurge = deliveryFeeBase + deliveryDistanceCharge;
@@ -126,7 +133,7 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
     });
   }
 
-  const taxesAndChargesTotal = restaurantTaxAmount + platformFee;
+  const taxesAndChargesTotal = Math.round((restaurantTaxAmount + platformFee) * 100) / 100;
 
   const deliveryTypeRaw = String(raw.deliveryType ?? 'delivery').toLowerCase();
   const deliveryType: 'delivery' | 'takeaway' =
@@ -157,6 +164,8 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
     couponCode: (raw.couponCode as string) ?? null,
     walletApplied,
     loyaltyDiscount,
+    roundOff,
+    totalBeforeWallet,
     grandTotal,
     taxesAndChargesTotal,
     chargeLines,

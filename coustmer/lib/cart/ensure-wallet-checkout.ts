@@ -1,5 +1,6 @@
 import { cartApi } from '@/lib/cart/api';
 import type { Cart } from '@/lib/cart/types';
+import { formatInr } from '@/lib/format/money';
 
 /**
  * Full-bill Tokajo wallet only — applies server cover until grandTotal is ₹0.
@@ -14,7 +15,7 @@ export async function ensureWalletCoversCheckout(input: {
   if (need > 0.009 && input.walletBalance + 0.009 < need) {
     const short = Math.ceil((need - input.walletBalance) * 100) / 100;
     throw new Error(
-      `Wallet does not cover the full bill. Add ₹${short.toFixed(2)} or choose another payment method.`
+      `Wallet does not cover the full bill. Add ${formatInr(short)} or choose another payment method.`
     );
   }
 
@@ -29,10 +30,15 @@ export async function ensureWalletCoversCheckout(input: {
   return cart;
 }
 
+/** Server `totalBeforeWallet` (whole rupees); older payloads fall back to grandTotal + wallet. */
 export function payableBeforeWallet(bill: {
   grandTotal?: number;
   walletApplied?: number;
+  totalBeforeWallet?: number | null;
 }): number {
+  if (bill.totalBeforeWallet != null && Number.isFinite(bill.totalBeforeWallet)) {
+    return Math.max(0, bill.totalBeforeWallet);
+  }
   return (
     Math.round(
       (Math.max(0, Number(bill.grandTotal) || 0) +

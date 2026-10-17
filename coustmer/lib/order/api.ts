@@ -16,6 +16,7 @@ import type {
   ReportIssuePayload,
   TipPayload,
 } from '@/lib/order/types';
+import { mapOrderBillLines } from '@/lib/order/bill-lines';
 import { createIdempotencyKey } from '@/lib/order/idempotency';
 import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
@@ -160,6 +161,7 @@ function mapOrderItem(raw: Record<string, unknown>) {
     menuItemId: String(raw.menuItemId ?? raw.itemId ?? raw._id ?? raw.id ?? ''),
     name: String(raw.name ?? raw.itemName ?? raw.title ?? 'Item'),
     price,
+    itemTotal: line > 0 ? line : undefined,
     quantity: Number(raw.quantity ?? raw.qty ?? 1),
     isVeg: raw.isVeg !== undefined ? Boolean(raw.isVeg) : undefined,
     imageUrl: (raw.imageUrl as string) || (raw.image as string) || undefined,
@@ -324,28 +326,20 @@ export function mapOrder(data: Record<string, unknown>): Order {
   const rainFee =
     pickNum(customerBill?.rainFee, data.rainFee, pricing?.rainFee) ?? 0;
 
-  let total =
-    pickNum(
-      customerBill?.grandTotal,
-      data.total,
-      data.grandTotal,
-      data.totalAmount,
-      data.amount,
-      data.payableAmount,
-      data.toPay,
-      pricing?.total,
-      pricing?.grandTotal,
-      pricing?.payableAmount
-    ) ??
-    subtotal + packagingCharge + platformFee + deliveryFee + tax + rainFee + tip - discount;
-
-  // Derive tax from grand total only when the API omitted a customer bill slice.
-  if (!customerBill && tax <= 0 && Number.isFinite(total) && total > 0) {
-    const withoutTax =
-      subtotal + packagingCharge + platformFee + deliveryFee + rainFee + tip - discount;
-    const implied = Math.round((total - withoutTax) * 100) / 100;
-    if (implied > 0.009) tax = implied;
-  }
+  // Payable comes only from order-service (centralized bill) — never summed here.
+  const total = pickNum(
+    customerBill?.grandTotal,
+    data.customerPayable,
+    data.grandTotal,
+    data.total,
+    data.totalAmount,
+    data.payableAmount,
+    pricing?.grandTotal,
+    pricing?.total
+  );
+  const roundOff = pickNum(customerBill?.roundOff, data.roundOff) ?? 0;
+  const walletUsed = pickNum(customerBill?.walletUsed, data.walletUsed) ?? 0;
+  const billLines = mapOrderBillLines(customerBill?.lines);
 
   return {
     id: String(data._id ?? data.id ?? ''),
@@ -375,7 +369,10 @@ export function mapOrder(data: Record<string, unknown>): Order {
       ((data.coupon as { code?: string } | undefined)?.code) ||
       ((data.promo as { code?: string } | undefined)?.code) ||
       undefined,
-    total: Number.isFinite(total) ? total : undefined,
+    roundOff,
+    walletUsed,
+    billLines,
+    total: total != null && Number.isFinite(total) ? total : undefined,
     paymentMethod: (data.paymentMethod as string) || (data.paymentMode as string) || undefined,
     paymentStatus: (data.paymentStatus as string) || undefined,
     deliveryAddress: mapAddress(

@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { fonts } from '@/constants/typography';
+import { formatInr } from '@/lib/format/money';
 import type { SavedPaymentMethod, WalletSummary } from '@/lib/payment/types';
 
 const ORANGE = '#F97316';
@@ -110,7 +111,7 @@ export function PaymentOptionsModal({
       const diff = total - wallet.balance;
       Alert.alert(
         'Insufficient Balance',
-        `Tokajo wallet must cover the full bill. You need ₹${diff.toFixed(0)} more.`,
+        `Tokajo wallet must cover the full bill. You need ${formatInr(diff)} more.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -143,13 +144,12 @@ export function PaymentOptionsModal({
             <View style={styles.headerContent}>
               <Text style={styles.headerTitle}>Payment Options</Text>
               <Text style={styles.headerSubtitle}>
-                {itemCount} item{itemCount !== 1 ? 's' : ''} • Total: ₹
-                {total.toFixed(0)}
+                {itemCount} item{itemCount !== 1 ? 's' : ''} • Total: {formatInr(total)}
                 {savings > 0 ? (
                   <>
                     {' • '}
                     <Text style={styles.savingsText}>
-                      Savings of ₹{savings.toFixed(0)}
+                      Savings of {formatInr(savings)}
                     </Text>
                   </>
                 ) : null}
@@ -196,7 +196,7 @@ export function PaymentOptionsModal({
                 </Text>
                 <Text style={styles.upiPromoDesc}>
                   {wallet
-                    ? `Balance ₹${wallet.balance.toFixed(0)} · pays the full bill`
+                    ? `Balance ${formatInr(wallet.balance)} · pays the full bill`
                     : 'Pay the full bill with your Tokajo balance'}
                 </Text>
                 <Pressable

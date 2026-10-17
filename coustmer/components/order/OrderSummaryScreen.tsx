@@ -43,11 +43,12 @@ import {
   paymentMethodHint,
   paymentMethodLabel,
 } from '@/lib/checkout/payment-display';
-import { mapBillBreakdown } from '@/lib/cart/bill';
 import {
   ensureWalletCoversCheckout,
   payableBeforeWallet,
 } from '@/lib/cart/ensure-wallet-checkout';
+import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
+import { formatInr } from '@/lib/format/money';
 import { useCart, useCartBill } from '@/lib/cart/hooks';
 import { formatScheduledForDisplay } from '@/lib/cart/schedule';
 import { useCreateOrder } from '@/lib/order/hooks';
@@ -87,7 +88,6 @@ export function OrderSummaryScreen() {
   const restaurant = useCartStore((s) => s.restaurant);
   const items = useCartStore((s) => s.items);
   const tip = useCartStore((s) => s.tip);
-  const discount = useCartStore((s) => s.discount);
   const couponCode = useCartStore((s) => s.couponCode);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const scheduledFor = useCartStore((s) => s.scheduledFor);
@@ -145,31 +145,17 @@ export function OrderSummaryScreen() {
 
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
 
-  const billBreakdown = useMemo(() => {
-    if (bill.data) return bill.data;
-    return mapBillBreakdown({
-      itemsSubtotal: cartData?.subtotal ?? 0,
-      deliveryFee: cartData?.deliveryFee ?? 0,
-      taxAmount: cartData?.tax ?? 0,
-      packagingCharge: cartData?.packagingCharge ?? 0,
-      platformFee: cartData?.platformFee ?? 0,
-      rainFee: cartData?.rainFee ?? 0,
-      tipAmount: tip,
-      discount: cartData?.discount ?? discount ?? 0,
-      grandTotal: cartData?.total ?? 0,
-      deliveryType: normalizedDeliveryType,
-    });
-  }, [bill.data, cartData, tip, discount, normalizedDeliveryType]);
-
-  const payable =
-    paymentMethod === 'wallet' &&
-    Number(wallet.data?.balance ?? 0) + 0.009 >= payableBeforeWallet(billBreakdown)
-      ? billBreakdown.walletApplied > 0
-        ? billBreakdown.grandTotal
-        : 0
-      : billBreakdown.grandTotal > 0
-        ? billBreakdown.grandTotal
-        : cartData?.total ?? 0;
+  const {
+    bill: billBreakdown,
+    payable,
+    totalBeforeWallet,
+  } = useCheckoutTotals({
+    liveBill: bill.data,
+    serverCart: cartData,
+    deliveryType: normalizedDeliveryType,
+    paymentMethod,
+    walletBalance: Number(wallet.data?.balance ?? 0),
+  });
 
   const displayName =
     profile.data?.displayName ||
@@ -500,7 +486,7 @@ export function OrderSummaryScreen() {
                 </Text>
                 <Text style={styles.itemQty}>×{item.quantity}</Text>
                 <Text style={styles.itemPrice}>
-                  ₹{(item.price * item.quantity).toFixed(0)}
+                  {formatInr(item.itemTotal ?? item.price * item.quantity)}
                 </Text>
               </View>
             ))}
@@ -578,7 +564,6 @@ export function OrderSummaryScreen() {
               bill={billBreakdown}
               itemCount={itemCount}
               couponCode={couponCode ?? billBreakdown.couponCode}
-              displayTip={tip}
               fallbackTotal={payable}
               hasDeliveryPin={Boolean(billPin) || isTakeaway}
               billLoading={bill.isLoading && !billBreakdown.billReady}
@@ -592,7 +577,7 @@ export function OrderSummaryScreen() {
         <View style={styles.footerTotalRow}>
           <View>
             <Text style={styles.footerTotalLabel}>To pay</Text>
-            <Text style={styles.footerTotalValue}>₹{payable.toFixed(2)}</Text>
+            <Text style={styles.footerTotalValue}>{formatInr(payable)}</Text>
           </View>
           <Text style={styles.footerMethod} numberOfLines={1}>
             {paymentMethodLabel(paymentMethod, paymentMethods.data)}
@@ -655,7 +640,7 @@ export function OrderSummaryScreen() {
           setPaymentModalOpen(false);
         }}
         itemCount={itemCount}
-        total={payableBeforeWallet(billBreakdown) || payable}
+        total={totalBeforeWallet}
         savings={billBreakdown.discount}
         restaurantName={restaurant?.name || ''}
         addressLabel={location?.label || 'Delivery'}
@@ -668,7 +653,7 @@ export function OrderSummaryScreen() {
         phase={orderPlacementPhase}
         addressLabel={location?.label || 'Delivery'}
         addressText={location?.formattedAddress || ''}
-        savings={discount}
+        savings={billBreakdown.discount}
       />
 
       <PaymentGatewayWebView

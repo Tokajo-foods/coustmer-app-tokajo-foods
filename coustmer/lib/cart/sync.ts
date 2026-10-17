@@ -27,6 +27,7 @@ export function applyServerCartToStore(cart: Cart) {
     name: item.name,
     price: item.price,
     basePrice: item.basePrice,
+    itemTotal: item.itemTotal,
     quantity: item.quantity,
     isVeg: item.isVeg,
     imageUrl: item.imageUrl,

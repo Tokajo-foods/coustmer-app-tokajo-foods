@@ -15,6 +15,8 @@ export type CartItem = {
   /** Unit price including selected modifiers. */
   price: number;
   basePrice?: number;
+  /** Server line total; cleared on local quantity edits until the cart syncs. */
+  itemTotal?: number;
   quantity: number;
   isVeg?: boolean;
   imageUrl?: string;
@@ -134,7 +136,7 @@ export const useCartStore = create<CartState>()(
           items: existing
             ? state.items.map((i) =>
                 i.id === existing.id
-                  ? { ...i, quantity: i.quantity + qty }
+                  ? { ...i, quantity: i.quantity + qty, itemTotal: undefined }
                   : i
               )
             : [
@@ -169,7 +171,7 @@ export const useCartStore = create<CartState>()(
           }
           return {
             items: state.items.map((i) =>
-              (i.id === id || i.menuItemId === id) ? { ...i, quantity } : i
+              (i.id === id || i.menuItemId === id) ? { ...i, quantity, itemTotal: undefined } : i
             ),
             serverTotal: null,
           };
@@ -178,7 +180,9 @@ export const useCartStore = create<CartState>()(
       increment: (id) =>
         set((state) => ({
           items: state.items.map((i) =>
-            (i.id === id || i.menuItemId === id) ? { ...i, quantity: i.quantity + 1 } : i
+            (i.id === id || i.menuItemId === id)
+              ? { ...i, quantity: i.quantity + 1, itemTotal: undefined }
+              : i
           ),
           serverTotal: null,
         })),
@@ -187,7 +191,9 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           const items = state.items
             .map((i) =>
-              (i.id === id || i.menuItemId === id) ? { ...i, quantity: i.quantity - 1 } : i
+              (i.id === id || i.menuItemId === id)
+                ? { ...i, quantity: i.quantity - 1, itemTotal: undefined }
+                : i
             )
             .filter((i) => i.quantity > 0);
           return {

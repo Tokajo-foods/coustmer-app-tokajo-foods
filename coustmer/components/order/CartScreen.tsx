@@ -66,11 +66,12 @@ import type { DeliveryLocationResult } from '@/components/location/DeliveryLocat
 import { parseDropPin } from '@/lib/location/drop-pin';
 import { extractCityFromAddress, normalizeCityName } from '@/lib/location/format';
 import { checkoutBlockCopy } from '@/lib/cart/checkout-block';
-import { mapBillBreakdown, DEFAULT_DELIVERY_FEE } from '@/lib/cart/bill';
 import {
   ensureWalletCoversCheckout,
   payableBeforeWallet,
 } from '@/lib/cart/ensure-wallet-checkout';
+import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
+import { formatInr } from '@/lib/format/money';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import {
@@ -149,6 +150,7 @@ function CartItemCard({
     id: string;
     name: string;
     price: number;
+    itemTotal?: number;
     quantity: number;
     imageUrl?: string;
     isVeg?: boolean;
@@ -180,10 +182,10 @@ function CartItemCard({
             {modifierLabel}
           </Text>
         ) : null}
-        <Text style={styles.itemUnitPrice}>₹{item.price.toFixed(0)} each</Text>
+        <Text style={styles.itemUnitPrice}>{formatInr(item.price)} each</Text>
         <View style={styles.itemBottomRow}>
           <Text style={styles.itemPrice}>
-            ₹{(item.price * item.quantity).toFixed(0)}
+            {formatInr(item.itemTotal ?? item.price * item.quantity)}
           </Text>
           <QuantityStepper
             quantity={item.quantity}
@@ -210,20 +212,13 @@ export function CartScreen() {
   const restaurant = useCartStore((s) => s.restaurant);
   const items = useCartStore((s) => s.items);
   const specialInstructions = useCartStore((s) => s.specialInstructions);
-  const discount = useCartStore((s) => s.discount);
   const couponCode = useCartStore((s) => s.couponCode);
-  const deliveryFee = useCartStore((s) => s.deliveryFee);
-  const tax = useCartStore((s) => s.tax);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const scheduledFor = useCartStore((s) => s.scheduledFor);
   const clearLocal = useCartStore((s) => s.clearCart);
   const tip = useCartStore((s) => s.tip);
   const setTip = useCartStore((s) => s.setTip);
   const setDeliveryTypeLocal = useCartStore((s) => s.setDeliveryType);
-  const subtotal = useCartStore((s) => s.subtotal());
-  const estimatedTotal = useCartStore((s) => s.estimatedTotal());
-  const serverTotal = useCartStore((s) => s.serverTotal);
-
   const location = useDeliveryLocationStore((s) => s.location);
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
   const profile = useUserProfile();
@@ -292,47 +287,17 @@ export function CartScreen() {
 
   const couponApplied = Boolean(couponCode);
 
-  const cachedDeliveryFee = Math.max(
-    Number(deliveryFee) || 0,
-    Number(apiCart?.deliveryFee) || 0
-  );
-
-  // Bill: live /cart/bill with store fallback for instant qty/tip updates.
-  const billSubtotal = subtotal;
-  const displayTip = Math.max(0, Number(tip) || 0);
-
-  const billBreakdown = useMemo(() => {
-    if (liveBill.data) return liveBill.data;
-
-    const fee =
-      cachedDeliveryFee > 0 ? cachedDeliveryFee : 0;
-
-    return mapBillBreakdown({
-      itemsSubtotal: billSubtotal,
-      deliveryFee: fee,
-      deliveryFeeBase: fee > 0 ? DEFAULT_DELIVERY_FEE : undefined,
-      deliveryType: normalizedDeliveryType,
-      taxAmount: tax ?? apiCart?.tax ?? 0,
-      packagingCharge: (apiCart as { packagingCharge?: number })?.packagingCharge ?? 0,
-      platformFee: (apiCart as { platformFee?: number })?.platformFee,
-      tipAmount: displayTip,
-      discount: discount ?? apiCart?.discount ?? 0,
-      grandTotal: serverTotal ?? estimatedTotal,
-      superFreeDelivery: (apiCart as { superFreeDelivery?: boolean })?.superFreeDelivery,
-      serviceable: fee > 0 ? true : undefined,
-    });
-  }, [
-    liveBill.data,
-    billSubtotal,
-    cachedDeliveryFee,
-    normalizedDeliveryType,
-    tax,
-    apiCart,
-    displayTip,
-    discount,
-    serverTotal,
-    estimatedTotal,
-  ]);
+  const {
+    bill: billBreakdown,
+    payable: displayTotal,
+    totalBeforeWallet,
+  } = useCheckoutTotals({
+    liveBill: liveBill.data,
+    serverCart: apiCart,
+    deliveryType: normalizedDeliveryType,
+    paymentMethod,
+    walletBalance: Number(wallet.data?.balance ?? 0),
+  });
 
   // Validate cart on open so delivery fee is persisted on server (GET /cart/bill needs it).
   useEffect(() => {
@@ -360,36 +325,6 @@ export function CartScreen() {
     billPin?.lng,
     normalizedDeliveryType,
   ]);
-
-  const feeForTotal =
-    billBreakdown.billReady && billBreakdown.deliveryFee > 0
-      ? billBreakdown.deliveryFee
-      : cachedDeliveryFee > 0
-      ? cachedDeliveryFee
-      : !liveBill.isLoading && (liveBill.isError || !billBreakdown.billReady) && billPin
-      ? DEFAULT_DELIVERY_FEE
-      : 0;
-
-  const displayTotal = Math.max(
-    0,
-    paymentMethod === 'wallet' &&
-      Number(wallet.data?.balance ?? 0) + 0.009 >=
-        payableBeforeWallet(billBreakdown)
-      ? billBreakdown.walletApplied > 0
-        ? billBreakdown.grandTotal
-        : 0
-      : billBreakdown.grandTotal > 0
-        ? billBreakdown.grandTotal
-        : Number(estimatedTotal) ||
-            Math.round(
-              (billSubtotal +
-                feeForTotal +
-                billBreakdown.taxesAndChargesTotal +
-                displayTip -
-                billBreakdown.discount) *
-                100
-            ) / 100
-  );
 
   const displayDiscount = billBreakdown.discount;
 
@@ -597,7 +532,7 @@ export function CartScreen() {
       if (currentOrder) {
         try {
           if (paymentUrl.includes('test') || paymentUrl.includes('httpbin')) {
-            const simulatedResult = simulatePaymentSuccess(currentOrder.id, currentOrder.total ?? estimatedTotal);
+            const simulatedResult = simulatePaymentSuccess(currentOrder.id, currentOrder.total ?? displayTotal);
             console.log('Simulated payment result:', simulatedResult);
           } else {
             await verifyPayment.mutateAsync({
@@ -1017,7 +952,7 @@ export function CartScreen() {
       Alert.alert(
         'Promo applied',
         cart.discount > 0
-          ? `${saved} applied · ₹${Math.round(cart.discount)} off`
+          ? `${saved} applied · ${formatInr(cart.discount)} off`
           : `${saved} applied to your cart`
       );
     } catch (e) {
@@ -1347,7 +1282,6 @@ export function CartScreen() {
             bill={billBreakdown}
             itemCount={items.reduce((n, i) => n + i.quantity, 0)}
             couponCode={couponCode}
-            displayTip={displayTip}
             fallbackTotal={displayTotal}
             hasDeliveryPin={Boolean(billPin) || normalizedDeliveryType === 'takeaway'}
             billLoading={liveBill.isLoading && !billBreakdown.billReady}
@@ -1371,9 +1305,7 @@ export function CartScreen() {
             activeOpacity={0.9}
           >
             <View>
-              <Text style={styles.checkoutPrice}>
-                ₹{displayTotal.toFixed(2)}
-              </Text>
+              <Text style={styles.checkoutPrice}>{formatInr(displayTotal)}</Text>
               <Text style={styles.checkoutSub}>TOTAL</Text>
             </View>
             <View style={styles.checkoutLabelWrap}>
@@ -1432,7 +1364,7 @@ export function CartScreen() {
           onSelectMethod={(m) => void selectPaymentMethod(m)}
           onPay={(m) => void selectPaymentMethod(m)}
           itemCount={itemCount}
-          total={payableBeforeWallet(billBreakdown) || displayTotal}
+          total={totalBeforeWallet}
           savings={billBreakdown.discount}
           restaurantName={restaurant?.name || ''}
           deliveryTime={restaurant?.deliveryTime}
@@ -1447,7 +1379,7 @@ export function CartScreen() {
           phase={orderPlacementPhase}
           addressLabel={addressLabel}
           addressText={addressLine}
-          savings={discount}
+          savings={billBreakdown.discount}
         />
 
         {/* ── Payment Gateway WebView ─────────────────────────────── */}
@@ -1456,7 +1388,7 @@ export function CartScreen() {
           onClose={handlePaymentGatewayClose}
           paymentUrl={paymentUrl}
           onPaymentComplete={handlePaymentComplete}
-          orderAmount={currentOrder?.total ?? estimatedTotal}
+          orderAmount={currentOrder?.total ?? displayTotal}
           orderNumber={currentOrder?.orderNumber}
         />
 
@@ -1494,7 +1426,7 @@ export function CartScreen() {
           restaurantId={restaurant?.id}
           lat={location?.lat}
           lng={location?.lng}
-          subtotal={subtotal}
+          subtotal={billBreakdown.itemsSubtotal}
           onApplied={(code) => {
             setVoucherCode(code);
             setCouponPickerOpen(false);

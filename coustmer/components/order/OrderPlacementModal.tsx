@@ -13,6 +13,8 @@ import Animated, {
 import { Check, Home, MapPin, Percent } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { formatInr } from '@/lib/format/money';
+
 export type PlacementPhase = 'none' | 'placing' | 'placed';
 
 interface Props {
@@ -74,7 +76,7 @@ export function OrderPlacementModal({ phase, addressLabel, addressText, savings 
             <View style={styles.savingsIcon}>
               <Percent color="#FFFFFF" size={12} strokeWidth={3} />
             </View>
-            <Text style={styles.savingsText}>₹{savings.toFixed(0)} saved on this order</Text>
+            <Text style={styles.savingsText}>{formatInr(savings)} saved on this order</Text>
           </View>
         )}
 

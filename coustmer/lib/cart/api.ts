@@ -167,6 +167,7 @@ function mapLineItem(raw: Record<string, unknown>): CartLineItem {
     name: String(raw.name ?? raw.itemName ?? raw.title ?? 'Item'),
     price: unitFromTotal > 0 ? unitFromTotal : basePrice + modifiersTotal,
     basePrice,
+    itemTotal: itemTotal > 0 ? itemTotal : undefined,
     quantity,
     isVeg: raw.isVeg !== undefined ? Boolean(raw.isVeg) : undefined,
     imageUrl: (raw.imageUrl as string) || (raw.image as string) || undefined,
@@ -356,25 +357,23 @@ export function mapCart(data: unknown): Cart {
     pickFiniteNumber(nestedCart.rainFee, nestedCart.rainCharge, pricing.rainFee) ??
     0;
 
+  // Payable comes only from cart-service (whole rupees after round off) — never summed here.
   const total =
     pickFiniteNumber(
-      nestedCart.total,
       nestedCart.grandTotal,
+      nestedCart.total,
       nestedCart.payableAmount,
       nestedCart.toPay,
       nestedCart.amountPayable,
-      pricing.total,
       pricing.grandTotal,
+      pricing.total,
       pricing.payableAmount
-    ) ??
-    subtotal +
-      tip +
-      deliveryFee +
-      tax +
-      platformFee +
-      packagingCharge +
-      rainFee -
-      discount;
+    ) ?? 0;
+  const roundOff = pickFiniteNumber(nestedCart.roundOff, pricing.roundOff) ?? 0;
+  const totalBeforeWallet =
+    pickFiniteNumber(nestedCart.totalBeforeWallet, pricing.totalBeforeWallet) ?? null;
+  const walletApplied =
+    pickFiniteNumber(nestedCart.walletApplied, pricing.walletApplied) ?? 0;
 
   return {
     id: String(nestedCart._id ?? nestedCart.id ?? nestedCart.cartId ?? '') || undefined,
@@ -405,9 +404,10 @@ export function mapCart(data: unknown): Cart {
     platformFee,
     packagingCharge,
     rainFee,
-    total: Number.isFinite(total)
-      ? total
-      : subtotal + tip + deliveryFee + tax + platformFee + packagingCharge + rainFee - discount,
+    roundOff,
+    totalBeforeWallet,
+    walletApplied,
+    total: Number.isFinite(total) ? total : 0,
     coupon: mapCoupon(nestedCart.coupon ?? nestedCart.promo ?? nestedCart.appliedCoupon),
     specialInstructions:
       (nestedCart.specialInstructions as string) ||

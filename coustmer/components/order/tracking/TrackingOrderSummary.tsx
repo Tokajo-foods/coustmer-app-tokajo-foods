@@ -3,9 +3,11 @@ import { ChevronRight, MapPin, Store } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
+import { OrderBillRows } from '@/components/order/OrderBillRows';
 import { RestaurantChatEntry } from '@/components/order/RestaurantChatEntry';
-import { GREEN, INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_DARK, ORANGE_SOFT } from '@/components/order/tracking/tracking-theme';
+import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_DARK, ORANGE_SOFT } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
+import { formatInr } from '@/lib/format/money';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
 import type { Order } from '@/lib/order/types';
 
@@ -21,37 +23,11 @@ function addressOf(o: Order): string {
   return a?.formattedAddress || [a?.street, a?.area, a?.city].filter(Boolean).join(', ') || 'Delivery address';
 }
 
-function BillLine({ label, value, free, green }: { label: string; value: number; free?: boolean; green?: boolean }) {
-  return (
-    <View style={styles.billLine}>
-      <Text style={[styles.billLabel, green && { color: GREEN }]}>{label}</Text>
-      {free ? (
-        <Text style={[styles.billValue, { color: GREEN }]}>FREE</Text>
-      ) : (
-        <Text style={[styles.billValue, green && { color: GREEN }]}>
-          {green ? `−₹${Math.abs(value).toFixed(2)}` : `₹${Number(value).toFixed(2)}`}
-        </Text>
-      )}
-    </View>
-  );
-}
-
 export function TrackingOrderSummary({ order, active }: { order: Order; active: boolean }) {
   const router = useRouter();
   const items = order.items ?? [];
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
-  const subtotal = typeof order.subtotal === 'number' ? order.subtotal : items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const deliveryFee = Number(order.deliveryFee ?? 0);
-  const packagingCharge = Number(order.packagingCharge ?? 0);
-  const platformFee = Number(order.platformFee ?? 0);
-  const tip = Number(order.tip ?? 0);
-  const discount = Number(order.discount ?? 0);
-  const rainFee = Number(order.rainFee ?? 0);
-  const tax = Number(order.tax ?? 0);
-  const total =
-    typeof order.total === 'number' && order.total > 0
-      ? order.total
-      : Math.max(0, Math.round((subtotal + packagingCharge + platformFee + deliveryFee + tax + rainFee + tip - discount) * 100) / 100);
+  const total = Number(order.total ?? 0);
   const coupon = couponOf(order);
   const restaurantName = order.restaurantName || 'Restaurant';
   const cod = String(order.paymentMethod ?? '').toLowerCase() === 'cod';
@@ -86,7 +62,7 @@ export function TrackingOrderSummary({ order, active }: { order: Order; active: 
                 <Text style={styles.qtyText}>{item.quantity}×</Text>
               </View>
               <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-              <Text style={styles.itemPrice}>₹{(item.price * item.quantity).toFixed(2)}</Text>
+              <Text style={styles.itemPrice}>{formatInr(item.itemTotal ?? item.price * item.quantity)}</Text>
             </View>
           </View>
         ))}
@@ -98,20 +74,17 @@ export function TrackingOrderSummary({ order, active }: { order: Order; active: 
               <Text style={styles.billItemsPillText}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</Text>
             </View>
           </View>
-          <BillLine label="Item total" value={subtotal} />
-          {packagingCharge > 0 ? <BillLine label="Packaging" value={packagingCharge} /> : null}
-          {platformFee > 0 ? <BillLine label="Platform fee" value={platformFee} /> : null}
-          <BillLine label="Delivery fee" value={deliveryFee} free={deliveryFee <= 0} />
-          {rainFee > 0 ? <BillLine label="Rain fee" value={rainFee} /> : null}
-          {discount > 0 ? (
-            <BillLine label={coupon ? `Promo · ${coupon.toUpperCase()}` : 'Promo discount'} value={-discount} green />
-          ) : null}
-          {tax > 0 ? <BillLine label="Taxes & charges" value={tax} /> : null}
-          {tip > 0 ? <BillLine label="Partner tip" value={tip} /> : null}
+          <OrderBillRows
+            order={order}
+            couponCode={coupon}
+            rowStyle={styles.billLine}
+            labelStyle={styles.billLabel}
+            valueStyle={styles.billValue}
+          />
           <View style={styles.totalRule} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{active && cod ? 'To pay' : 'Paid'}</Text>
-            <Text style={styles.totalValue}>₹{total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>{formatInr(total)}</Text>
           </View>
           {order.paymentMethod ? <Text style={styles.billPayNote}>{paymentMethodLabel(order.paymentMethod)}</Text> : null}
         </View>

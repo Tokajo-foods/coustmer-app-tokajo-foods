@@ -5,6 +5,7 @@ import { Info } from 'lucide-react-native';
 import { fonts } from '@/constants/typography';
 import type { BillBreakdown, BillChargeLine } from '@/lib/cart/bill';
 import { DEFAULT_DELIVERY_FEE } from '@/lib/cart/bill';
+import { formatInr, formatSignedInr } from '@/lib/format/money';
 
 const TEXT = '#0B1220';
 const TEXT_SEC = '#64748B';
@@ -18,9 +19,7 @@ type Props = {
   bill: BillBreakdown;
   itemCount: number;
   couponCode?: string | null;
-  /** Local tip override for instant UI while syncing */
-  displayTip?: number;
-  /** Fallback total when grandTotal from bill is 0 */
+  /** Server total from GET /cart when the bill query has not loaded yet */
   fallbackTotal?: number;
   /** Whether drop pin is set (for delivery fee pending state) */
   hasDeliveryPin?: boolean;
@@ -32,18 +31,14 @@ export function BillDetailsSection({
   bill,
   itemCount,
   couponCode,
-  displayTip,
   fallbackTotal,
   hasDeliveryPin = true,
   billLoading = false,
   billError = false,
 }: Props) {
   const [taxesExpanded, setTaxesExpanded] = useState(false);
-  const tip = displayTip ?? bill.tipAmount;
-  const total =
-    bill.grandTotal > 0
-      ? bill.grandTotal
-      : Math.max(0, fallbackTotal ?? 0);
+  const tip = bill.tipAmount;
+  const total = bill.billReady ? bill.grandTotal : Math.max(0, fallbackTotal ?? bill.grandTotal);
   // Promo / loyalty only — wallet is a payment, not a saving.
   const savings = bill.discount + bill.loyaltyDiscount;
 
@@ -93,6 +88,13 @@ export function BillDetailsSection({
         <BillRow label="Loyalty redeemed" value={-bill.loyaltyDiscount} green />
       ) : null}
 
+      {Math.abs(bill.roundOff) >= 0.005 ? (
+        <View style={styles.billRow}>
+          <Text style={styles.billLabel}>Round off</Text>
+          <Text style={styles.billValue}>{formatSignedInr(bill.roundOff)}</Text>
+        </View>
+      ) : null}
+
       {bill.walletApplied > 0 ? (
         <BillRow label="Paid via Tokajo wallet" value={-bill.walletApplied} />
       ) : null}
@@ -102,13 +104,13 @@ export function BillDetailsSection({
       {savings > 0 ? (
         <View style={styles.savingsBox}>
           <Text style={styles.savingsTitle}>Your savings</Text>
-          <Text style={styles.savingsValue}>₹{savings.toFixed(2)}</Text>
+          <Text style={styles.savingsValue}>{formatInr(savings)}</Text>
         </View>
       ) : null}
 
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>To pay</Text>
-        <Text style={styles.totalValue}>₹{total.toFixed(2)}</Text>
+        <Text style={styles.totalValue}>{formatInr(total)}</Text>
       </View>
 
       {bill.walletApplied > 0 && total <= 0.009 ? (
@@ -155,7 +157,7 @@ function TaxesRow({
             </TouchableOpacity>
           ) : null}
         </View>
-        <Text style={styles.billValue}>₹{Math.max(0, total).toFixed(2)}</Text>
+        <Text style={styles.billValue}>{formatInr(Math.max(0, total))}</Text>
       </View>
 
       {expanded && lines.length > 0 ? (
@@ -168,7 +170,7 @@ function TaxesRow({
                   <Text style={styles.taxDetailHint}>{line.hint}</Text>
                 ) : null}
               </View>
-              <Text style={styles.taxDetailValue}>₹{line.value.toFixed(2)}</Text>
+              <Text style={styles.taxDetailValue}>{formatInr(line.value)}</Text>
             </View>
           ))}
         </View>
@@ -200,7 +202,7 @@ function DeliveryFeeRow({
         <Text style={styles.billLabel}>Delivery fee</Text>
         <View style={styles.deliveryFeeRight}>
           <Text style={[styles.billValue, styles.strikeMuted]}>
-            {bill.deliveryFeeBase > 0 ? `₹${bill.deliveryFeeBase.toFixed(0)}` : `₹${DEFAULT_DELIVERY_FEE}`}
+            {formatInr(bill.deliveryFeeBase > 0 ? bill.deliveryFeeBase : DEFAULT_DELIVERY_FEE)}
           </Text>
           <Text style={[styles.billValue, { color: GREEN }]}>FREE</Text>
           <Text style={styles.waiverHint}>Super</Text>
@@ -237,7 +239,7 @@ function DeliveryFeeRow({
     return (
       <View style={styles.billRow}>
         <Text style={styles.billLabel}>Delivery fee{km}</Text>
-        <Text style={styles.billValue}>₹{bill.deliveryFee.toFixed(2)}</Text>
+        <Text style={styles.billValue}>{formatInr(bill.deliveryFee)}</Text>
       </View>
     );
   }
@@ -266,7 +268,7 @@ function DeliveryFeeRow({
       <View style={styles.billRow}>
         <Text style={styles.billLabel}>Delivery fee</Text>
         <View style={styles.deliveryFeeRight}>
-          <Text style={styles.billValue}>₹{base.toFixed(0)}</Text>
+          <Text style={styles.billValue}>{formatInr(base)}</Text>
           <Text style={styles.waiverHint}>est.</Text>
         </View>
       </View>
@@ -294,8 +296,7 @@ function BillRow({
   let right = placeholder ?? '—';
   if (value !== 0 || !placeholder) {
     if (allowFree && value === 0) right = 'FREE';
-    else if (value < 0) right = `−₹${Math.abs(value).toFixed(2)}`;
-    else right = `₹${value.toFixed(2)}`;
+    else right = formatInr(value);
   }
 
   return (

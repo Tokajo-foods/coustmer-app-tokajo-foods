@@ -29,6 +29,8 @@ export type OrderItem = {
   menuItemId?: string;
   name: string;
   price: number;
+  /** Server line total including modifiers. */
+  itemTotal?: number;
   quantity: number;
   isVeg?: boolean;
   imageUrl?: string;
@@ -87,6 +89,13 @@ export type OrderInvoice = {
   raw?: unknown;
 };
 
+export type OrderBillLine = {
+  key: string;
+  label: string;
+  amount: number;
+  sign: 'add' | 'subtract';
+};
+
 export type Order = {
   id: string;
   orderNumber?: string;
@@ -103,6 +112,12 @@ export type Order = {
   tip?: number;
   couponCode?: string;
   rainFee?: number;
+  /** Signed whole-rupee adjustment from order-service. */
+  roundOff?: number;
+  walletUsed?: number;
+  /** Server customer bill lines (order-service `bill.customer.lines`), in display order. */
+  billLines?: OrderBillLine[];
+  /** Amount the customer pays (order-service `bill.customer.grandTotal`). */
   total?: number;
   paymentMethod?: string;
   paymentStatus?: string;

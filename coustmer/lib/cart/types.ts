@@ -30,6 +30,8 @@ export type CartLineItem = {
   price: number;
   /** Base menu price before modifiers (when known). */
   basePrice?: number;
+  /** Server line total (unit + modifiers) × quantity. */
+  itemTotal?: number;
   quantity: number;
   isVeg?: boolean;
   imageUrl?: string;
@@ -98,6 +100,12 @@ export type Cart = {
   platformFee?: number;
   packagingCharge?: number;
   rainFee?: number;
+  /** Signed whole-rupee adjustment from cart-service. */
+  roundOff?: number;
+  /** Whole-rupee bill before Tokajo wallet. */
+  totalBeforeWallet?: number | null;
+  walletApplied?: number;
+  /** Amount to pay now (cart-service grandTotal). */
   total: number;
   coupon?: CartCoupon | null;
   specialInstructions?: string;

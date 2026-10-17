@@ -33,11 +33,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingView, ErrorView } from '@/components/common/StateViews';
+import { OrderBillRows } from '@/components/order/OrderBillRows';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { RetryOnlinePayment } from '@/components/payment/RetryOnlinePayment';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
+import { formatInr } from '@/lib/format/money';
 import {
   useCancelOrder,
   useCancelScheduledOrder,
@@ -70,7 +72,6 @@ const LINE = '#E5E7EB';
 const WHITE = '#FFFFFF';
 const GREEN = '#059669';
 const BG = '#F3F4F6';
-const TAX_RATE = 0.05;
 
 function formatWhen(iso?: string) {
   if (!iso) return '';
@@ -153,13 +154,7 @@ export function OrderDetailScreen() {
 
   const orderIdLabel = data.orderNumber || data.id.slice(-8).toUpperCase();
   const itemCount = data.items.reduce((s, i) => s + i.quantity, 0);
-  const subtotal =
-    typeof data.subtotal === 'number'
-      ? data.subtotal
-      : data.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const deliveryFee = Number(data.deliveryFee ?? 0);
   const tip = Number(data.tip ?? 0);
-  const discount = Number(data.discount ?? 0);
   const couponCode =
     data.couponCode ||
     (typeof data.raw?.couponCode === 'string'
@@ -167,35 +162,7 @@ export function OrderDetailScreen() {
       : undefined) ||
     (typeof data.raw?.promoCode === 'string' ? data.raw.promoCode : undefined);
 
-  const tax = (() => {
-    const fromApi = Number(data.tax ?? 0);
-    if (fromApi > 0.009) return Math.round(fromApi * 100) / 100;
-    if (typeof data.total === 'number' && data.total > 0) {
-      const withoutTax = subtotal + deliveryFee + tip - discount;
-      const implied = Math.round((data.total - withoutTax) * 100) / 100;
-      if (implied > 0.009) return implied;
-    }
-    if (subtotal > 0) return Math.round(subtotal * TAX_RATE * 100) / 100;
-    return 0;
-  })();
-
-  const total = (() => {
-    if (typeof data.total === 'number' && data.total > 0) {
-      const withoutTax = subtotal + deliveryFee + tip - discount;
-      if (tax > 0 && Math.abs(data.total - withoutTax) < 0.02) {
-        return Math.round((withoutTax + tax) * 100) / 100;
-      }
-      return data.total;
-    }
-    return Math.max(
-      0,
-      Math.round((subtotal + deliveryFee + tax + tip - discount) * 100) / 100
-    );
-  })();
-
-  const taxIsFivePercent =
-    tax > 0 &&
-    Math.abs(tax - Math.round(subtotal * TAX_RATE * 100) / 100) < 0.05;
+  const total = Number(data.total ?? 0);
 
   const isActive = isActiveOrderStatus(data.status);
   const completed = canRateOrder(data.status);
@@ -234,7 +201,7 @@ export function OrderDetailScreen() {
           if (message) {
             quoteMsg = message;
           } else if (refundable > 0) {
-            quoteMsg = `You'll receive a refund of ₹${refundable.toFixed(0)}.${nonRefundable > 0 ? ` ₹${nonRefundable.toFixed(0)} is non-refundable.` : ''}`;
+            quoteMsg = `You'll receive a refund of ${formatInr(refundable)}.${nonRefundable > 0 ? ` ${formatInr(nonRefundable)} is non-refundable.` : ''}`;
           } else {
             quoteMsg = 'No refund will be issued for this cancellation.';
           }
@@ -642,7 +609,7 @@ export function OrderDetailScreen() {
                     </View>
                   </View>
                   <Text style={[styles.itemPrice, isSelected && { color: '#DC2626' }]}>
-                    ₹{(item.price * item.quantity).toFixed(2)}
+                    {formatInr(item.itemTotal ?? item.price * item.quantity)}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -669,34 +636,17 @@ export function OrderDetailScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardEyebrow}>BILL DETAILS</Text>
-          <BillLine label={`Item total (${itemCount})`} value={subtotal} />
-          <BillLine
-            label="Delivery fee"
-            value={deliveryFee}
-            free={deliveryFee <= 0}
+          <OrderBillRows
+            order={data}
+            couponCode={couponCode ? String(couponCode) : undefined}
+            rowStyle={styles.billLine}
+            labelStyle={styles.billLabel}
+            valueStyle={styles.billValue}
           />
-          {discount > 0 ? (
-            <BillLine
-              label={
-                couponCode
-                  ? `Promo · ${String(couponCode).toUpperCase()}`
-                  : 'Promo discount'
-              }
-              value={-discount}
-              green
-            />
-          ) : null}
-          <BillLine
-            label={
-              taxIsFivePercent ? 'Taxes & charges (5%)' : 'Taxes & charges'
-            }
-            value={tax}
-          />
-          {tip > 0 ? <BillLine label="Partner tip" value={tip} /> : null}
           <View style={styles.totalRule} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Grand total</Text>
-            <Text style={styles.totalValue}>₹{total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>{formatInr(total)}</Text>
           </View>
           {data.paymentMethod ? (
             <Text style={styles.payNote}>
@@ -741,7 +691,7 @@ export function OrderDetailScreen() {
               <Text style={styles.tipTitle}>Add delivery tip</Text>
             </View>
             <Text style={styles.tipSub}>
-              Current tip ₹{tip.toFixed(0)}. Change before the restaurant accepts.
+              Current tip {formatInr(tip)}. Change before the restaurant accepts.
             </Text>
             <View style={styles.tipRow}>
               {[0, 20, 30, 50].map((amount) => (
@@ -860,33 +810,6 @@ export function OrderDetailScreen() {
           </Pressable>
         )}
       </View>
-    </View>
-  );
-}
-
-function BillLine({
-  label,
-  value,
-  free,
-  green,
-}: {
-  label: string;
-  value: number;
-  free?: boolean;
-  green?: boolean;
-}) {
-  return (
-    <View style={styles.billLine}>
-      <Text style={[styles.billLabel, green && { color: GREEN }]}>{label}</Text>
-      {free ? (
-        <Text style={[styles.billValue, { color: GREEN }]}>FREE</Text>
-      ) : (
-        <Text style={[styles.billValue, green && { color: GREEN }]}>
-          {green
-            ? `−₹${Math.abs(value).toFixed(2)}`
-            : `₹${Number(value).toFixed(2)}`}
-        </Text>
-      )}
     </View>
   );
 }
