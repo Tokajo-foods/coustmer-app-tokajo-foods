@@ -1,4 +1,4 @@
-import { Clock, Search, TrendingUp, X } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
@@ -10,44 +10,16 @@ import { DishRow, RestaurantRow, ResultSkeleton, SuggestionRow } from './SearchR
 
 const { muted: MUTED, orange: ORANGE } = searchColors;
 
-export function RecentSearches({
-  terms,
-  onPick,
-  onRemove,
-  onClear,
-}: {
-  terms: string[];
-  onPick: (term: string) => void;
-  onRemove: (term: string) => void;
-  onClear: () => void;
-}) {
-  return (
-    <View style={s.section}>
-      <View style={s.sectionHeader}>
-        <Text style={s.sectionTitle}>Recent searches</Text>
-        <Pressable onPress={onClear} hitSlop={8}>
-          <Text style={s.clearBtn}>Clear all</Text>
-        </Pressable>
-      </View>
-      {terms.map((term) => (
-        <Pressable key={term} style={s.recentRow} onPress={() => onPick(term)}>
-          <Clock color={MUTED} size={14} strokeWidth={2} />
-          <Text style={s.recentText}>{term}</Text>
-          <Pressable onPress={() => onRemove(term)} hitSlop={8} style={s.recentRemove} accessibilityLabel={`Remove ${term}`}>
-            <X color={MUTED} size={12} />
-          </Pressable>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 export function SuggestionList({
+  query,
   items,
   onPick,
+  onSearchAll,
 }: {
+  query: string;
   items: SearchSuggestion[];
   onPick: (item: SearchSuggestion) => void;
+  onSearchAll: () => void;
 }) {
   return (
     <FlatList
@@ -56,6 +28,16 @@ export function SuggestionList({
       {...PREMIUM_LIST}
       keyboardShouldPersistTaps="handled"
       style={s.list}
+      ListHeaderComponent={
+        <Pressable style={s.searchAllRow} onPress={onSearchAll} android_ripple={{ color: '#F1F5F9' }}>
+          <View style={s.searchAllIcon}>
+            <Search color={ORANGE} size={15} strokeWidth={2.6} />
+          </View>
+          <Text style={s.searchAllText} numberOfLines={1}>
+            Search for <Text style={s.searchAllQuery}>“{query.trim()}”</Text>
+          </Text>
+        </Pressable>
+      }
       renderItem={({ item }) => <SuggestionRow item={item} onPress={onPick} />}
     />
   );
@@ -116,15 +98,5 @@ export function SearchResults({
         return <DishRow dish={item.data} onPress={() => onDish(item.data)} />;
       }}
     />
-  );
-}
-
-export function SearchIdle() {
-  return (
-    <View style={s.idleWrap}>
-      <TrendingUp color={ORANGE} size={36} strokeWidth={1.8} />
-      <Text style={s.idleText}>Search for your favourite food</Text>
-      <Text style={s.idleSubtext}>Restaurants, dishes, cuisines — find anything</Text>
-    </View>
   );
 }

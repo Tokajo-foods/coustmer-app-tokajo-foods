@@ -20,7 +20,8 @@ import { useDeliveryCoords } from '@/store/delivery-location-store';
 
 import { SearchHeader } from './SearchHeader';
 import { SearchMorphGhost } from './SearchMorphGhost';
-import { RecentSearches, SearchIdle, SearchResults, SuggestionList } from './SearchSections';
+import { SearchDiscover } from './discover/SearchDiscover';
+import { SearchResults, SuggestionList } from './SearchSections';
 import { searchStyles as s } from './search-styles';
 
 /** search-service radius is meters; discovery radius is km. */
@@ -88,8 +89,8 @@ export function SearchScreen() {
 
   const showingResults = submitted && debouncedQuery.length >= 1;
   const suggestionItems = suggestions.data?.suggestions ?? [];
-  const showingSuggestions = !submitted && debouncedQuery.length >= 1 && suggestionItems.length > 0;
-  const showingRecents = !submitted && debouncedQuery.length === 0 && recentSearches.length > 0;
+  const showingSuggestions = !submitted && query.trim().length >= 1;
+  const showingDiscover = !submitted && query.trim().length === 0;
 
   return (
     <View ref={morph.rootRef} collapsable={false} style={s.root}>
@@ -111,15 +112,24 @@ export function SearchScreen() {
           onBack={goBack}
         />
         <Animated.View style={[s.body, morph.bodyStyle]}>
-          {showingRecents ? (
-            <RecentSearches
-              terms={recentSearches}
-              onPick={performSearch}
-              onRemove={(term) => removeLocalRecentSearch(term).then(setRecentSearches)}
-              onClear={() => clearLocalRecentSearches().then(() => setRecentSearches([]))}
+          {showingDiscover ? (
+            <SearchDiscover
+              recent={recentSearches}
+              onSearch={performSearch}
+              onRemoveRecent={(term) => removeLocalRecentSearch(term).then(setRecentSearches)}
+              onClearRecent={() => clearLocalRecentSearches().then(() => setRecentSearches([]))}
+              onDish={(dish) => openRestaurant(dish.restaurantId, dish.id)}
+              onRestaurant={(r) => openRestaurant(r.id)}
             />
           ) : null}
-          {showingSuggestions ? <SuggestionList items={suggestionItems} onPick={openSuggestion} /> : null}
+          {showingSuggestions ? (
+            <SuggestionList
+              query={query}
+              items={suggestionItems}
+              onPick={openSuggestion}
+              onSearchAll={() => performSearch(query)}
+            />
+          ) : null}
           {showingResults ? (
             <SearchResults
               query={query}
@@ -130,7 +140,6 @@ export function SearchScreen() {
               onDish={(d) => openRestaurant(d.restaurantId, d.id)}
             />
           ) : null}
-          {!showingRecents && !showingSuggestions && !showingResults ? <SearchIdle /> : null}
         </Animated.View>
       </SafeAreaView>
       <SearchMorphGhost morph={morph} />

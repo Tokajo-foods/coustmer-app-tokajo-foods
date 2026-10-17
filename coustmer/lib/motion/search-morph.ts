@@ -45,8 +45,8 @@ export function useSearchSourceHidden(): boolean {
 }
 
 export const SEARCH_MORPH = {
-  openMs: 420,
-  closeMs: 300,
+  openMs: 480,
+  closeMs: 340,
   openEasing: Easing.bezier(0.22, 1, 0.36, 1),
   closeEasing: Easing.bezier(0.4, 0, 0.2, 1),
   /** Home pill look → search bar look. */

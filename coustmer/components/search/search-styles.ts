@@ -58,6 +58,25 @@ export const searchStyles = StyleSheet.create({
   recentRemove: { padding: 4 },
 
   list: { flex: 1 },
+  searchAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: border,
+  },
+  searchAllIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#FFF1E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchAllText: { flex: 1, fontFamily: fonts.ui, fontSize: 14, color: muted },
+  searchAllQuery: { fontFamily: fonts.uiSemi, color: ink },
   resultsList: { paddingBottom: 100 },
   resultSectionHeader: {
     fontFamily: fonts.displayBold,
