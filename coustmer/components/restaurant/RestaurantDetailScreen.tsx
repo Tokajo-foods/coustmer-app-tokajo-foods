@@ -3,14 +3,11 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  Bell,
-  BellOff,
   ChevronLeft,
   Clock,
   MapPin,
   Search,
   Share2,
-  ShieldCheck,
   Star,
   Tag,
   UtensilsCrossed,
@@ -32,6 +29,7 @@ import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { RestaurantCategoryRail } from '@/components/restaurant/detail/RestaurantCategoryRail';
 import { RestaurantDetailTabs } from '@/components/restaurant/detail/RestaurantDetailTabs';
+import { RestaurantInfoPanel } from '@/components/restaurant/detail/RestaurantInfoPanel';
 import type { RestaurantDetailTab } from '@/components/restaurant/detail/RestaurantDetailTabs';
 import {
   RestaurantMenuSearchBar,
@@ -83,16 +81,6 @@ import { useVegPreferenceStore } from '@/store/veg-preference-store';
 const ORANGE = '#F97316';
 const INK = '#0B1220';
 const MUTED = '#64748B';
-const WEEKDAYS = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-] as const;
-
 type TabId = RestaurantDetailTab;
 type MenuFilter = MenuFilterId;
 
@@ -407,12 +395,6 @@ export function RestaurantDetailScreen() {
   const infoFssaiFull =
     (hygiene.data?.fssaiLicense ?? r.fssaiLicense ?? '').trim() || undefined;
   const showInfoFssaiOrHygiene = Boolean(infoFssaiFull) || showHygieneScore;
-  const infoComplianceTitle =
-    infoFssaiFull && showHygieneScore
-      ? 'FSSAI & hygiene'
-      : infoFssaiFull
-        ? 'FSSAI license'
-        : 'Hygiene';
   const cover = r.coverUrl || r.imageUrl || '';
   const logo = r.logoUrl || r.imageUrl;
   const restaurantName = r.name || 'Restaurant';
@@ -455,6 +437,9 @@ export function RestaurantDetailScreen() {
     (r.cuisines || []).slice(0, 3).join(' · ') ||
     (r.menuCategories || []).slice(0, 2).join(' · ') ||
     null;
+  const infoDescription =
+    r.description ||
+    `${restaurantName} serves ${(cuisineLine ?? 'great food').toLowerCase()}. Order fresh favourites with live tracking.`;
   const offerBadges = restaurantOfferBadges(r);
 
   // Prefer live timings API; never assume Open when status is unknown.
@@ -806,247 +791,33 @@ export function RestaurantDetailScreen() {
         ) : null}
 
         {tab === 'Info' ? (
-          <View style={styles.panelPad}>
-            <Text style={styles.infoLabel}>About</Text>
-            <Text style={styles.infoBody}>
-              {r.description ||
-                `${restaurantName} serves ${cuisineLine.toLowerCase()}. Order fresh favourites with live tracking.`}
-            </Text>
-
-            {(r.cuisines?.length || 0) > 0 ? (
-              <>
-                <Text style={[styles.infoLabel, { marginTop: 18 }]}>Cuisines</Text>
-                <View style={styles.infoChips}>
-                  {r.cuisines!.slice(0, 8).map((c) => (
-                    <View key={c} style={styles.infoChip}>
-                      <Text style={styles.infoChipText}>{c}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            ) : null}
-
-            <Text style={[styles.infoLabel, { marginTop: 18 }]}>Address</Text>
-            <Text style={styles.infoBody}>{locationText}</Text>
-
-            <View style={styles.infoMetaGrid}>
-              {typeof r.costForTwo === 'number' ||
-              typeof r.priceForTwo === 'number' ? (
-                <View style={styles.infoMetaCard}>
-                  <Text style={styles.infoMetaLabel}>Cost for two</Text>
-                  <Text style={styles.infoMetaValue}>
-                    ₹{r.costForTwo ?? r.priceForTwo}
-                    {r.priceRange ? ` · ${r.priceRange}` : ''}
-                  </Text>
-                </View>
-              ) : null}
-              {eta ? (
-                <View style={styles.infoMetaCard}>
-                  <Text style={styles.infoMetaLabel}>Prep / delivery</Text>
-                  <Text style={styles.infoMetaValue}>{eta}</Text>
-                </View>
-              ) : null}
-              {typeof r.distance === 'number' ? (
-                <View style={styles.infoMetaCard}>
-                  <Text style={styles.infoMetaLabel}>Distance</Text>
-                  <Text style={styles.infoMetaValue}>
-                    {r.distance.toFixed(1)} km
-                  </Text>
-                </View>
-              ) : null}
-              {typeof r.minOrderValue === 'number' && r.minOrderValue > 0 ? (
-                <View style={styles.infoMetaCard}>
-                  <Text style={styles.infoMetaLabel}>Min order</Text>
-                  <Text style={styles.infoMetaValue}>₹{r.minOrderValue}</Text>
-                </View>
-              ) : null}
-              {typeof r.freeDeliveryThreshold === 'number' &&
-              r.freeDeliveryThreshold > 0 ? (
-                <View style={styles.infoMetaCard}>
-                  <Text style={styles.infoMetaLabel}>Free delivery</Text>
-                  <Text style={styles.infoMetaValue}>
-                    above ₹{r.freeDeliveryThreshold}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-
-            <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-              Outlet status
-            </Text>
-            <Text style={styles.infoBody}>
-              {kitchenClosed
-                ? nextOpenLabel
-                  ? `Currently closed · opens ${nextOpenLabel}`
-                  : 'Currently closed / offline'
-                : openNow
-                  ? 'Open now · accepting orders'
-                  : 'Hours may vary'}
-              {r.isPureVeg ? ' · Pure veg' : ''}
-              {showHygieneScore ? ` · Hygiene ${infoHygieneScore}` : ''}
-            </Text>
-
-            {kitchenClosed && token ? (
-              <Pressable
-                style={styles.notifyBtn}
-                onPress={() => {
-                  if (watchingOpen) notifyOpen.unsubscribe.mutate();
-                  else notifyOpen.subscribe.mutate();
-                }}
-                disabled={
-                  notifyOpen.subscribe.isPending ||
-                  notifyOpen.unsubscribe.isPending
-                }
-              >
-                {watchingOpen ? (
-                  <BellOff color="#9A3412" size={16} />
-                ) : (
-                  <Bell color="#9A3412" size={16} />
-                )}
-                <Text style={styles.notifyBtnText}>
-                  {watchingOpen
-                    ? 'Stop kitchen-open alert'
-                    : 'Notify me when this kitchen opens'}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            <Text style={[styles.infoLabel, { marginTop: 18 }]}>Payments</Text>
-            <Text style={styles.infoBody}>
-              {[
-                r.isOnlinePayment !== false ? 'Online payment' : null,
-                r.isCashOnDelivery !== false ? 'Cash on delivery' : null,
-                r.acceptScheduledOrders ? 'Scheduled orders' : null,
-              ]
-                .filter(Boolean)
-                .join(' · ') || 'Standard payment options'}
-            </Text>
-
-            {timings.data?.slots && Object.keys(timings.data.slots).length ? (
-              <>
-                <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-                  Weekly timings (IST)
-                </Text>
-                {[
-                  ...WEEKDAYS.filter((day) => timings.data?.slots?.[day] != null),
-                  ...Object.keys(timings.data.slots).filter(
-                    (day) =>
-                      !WEEKDAYS.includes(
-                        day.toLowerCase() as (typeof WEEKDAYS)[number]
-                      )
-                  ),
-                ].map((day) => {
-                  const value = timings.data?.slots?.[day];
-                  const slotText = Array.isArray(value)
-                    ? value
-                        .map(
-                          (s) =>
-                            s.label ||
-                            (s.open && s.close ? `${s.open}–${s.close}` : s.open)
-                        )
-                        .filter(Boolean)
-                        .join(', ')
-                    : String(value ?? '');
-                  return (
-                    <View key={day} style={styles.timingRow}>
-                      <Text style={styles.timingDay}>
-                        {day.charAt(0).toUpperCase() + day.slice(1)}
-                      </Text>
-                      <Text style={styles.timingValue}>
-                        {slotText || 'Closed'}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </>
-            ) : r.timings ? (
-              <>
-                <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-                  Weekly timings
-                </Text>
-                {Object.entries(r.timings).map(([day, value]) => {
-                  const dayInfo =
-                    value && typeof value === 'object'
-                      ? (value as Record<string, unknown>)
-                      : {};
-                  const open = dayInfo.isOpen === true;
-                  const slots = Array.isArray(dayInfo.slots)
-                    ? (dayInfo.slots as { open?: string; close?: string }[])
-                    : [];
-                  const slotText = slots
-                    .map((s) =>
-                      s.open && s.close ? `${s.open}–${s.close}` : null
-                    )
-                    .filter(Boolean)
-                    .join(', ');
-                  return (
-                    <View key={day} style={styles.timingRow}>
-                      <Text style={styles.timingDay}>
-                        {day.charAt(0).toUpperCase() + day.slice(1)}
-                      </Text>
-                      <Text style={styles.timingValue}>
-                        {open ? slotText || 'Open' : 'Closed'}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </>
-            ) : null}
-
-            {(holidays.data?.length ?? 0) > 0 ? (
-              <>
-                <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-                  Upcoming closed dates
-                </Text>
-                {holidays.data!.slice(0, 5).map((h) => (
-                  <View key={h.date} style={styles.timingRow}>
-                    <Text style={styles.timingDay}>{h.date}</Text>
-                    <Text style={styles.timingValue}>
-                      {h.reason || 'Closed'}
-                    </Text>
-                  </View>
-                ))}
-              </>
-            ) : null}
-
-            {(specialHours.data?.length ?? 0) > 0 ? (
-              <>
-                <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-                  Special hours
-                </Text>
-                {specialHours.data!.slice(0, 5).map((sh) => (
-                  <View key={sh.date} style={styles.timingRow}>
-                    <Text style={styles.timingDay}>{sh.date}</Text>
-                    <Text style={styles.timingValue}>
-                      {sh.openTime}–{sh.closeTime}
-                      {sh.reason ? ` (${sh.reason})` : ''}
-                    </Text>
-                  </View>
-                ))}
-              </>
-            ) : null}
-
-            {showInfoFssaiOrHygiene ? (
-              <>
-                <Text style={[styles.infoLabel, { marginTop: 18 }]}>
-                  {infoComplianceTitle}
-                </Text>
-                <View style={styles.hygieneRow}>
-                  <ShieldCheck color="#15803D" size={16} />
-                  <Text style={styles.infoBody}>
-                    {[
-                      infoFssaiFull ? `FSSAI ${infoFssaiFull}` : null,
-                      showHygieneScore
-                        ? `Hygiene score ${infoHygieneScore}`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
-                </View>
-              </>
-            ) : null}
-          </View>
+          <RestaurantInfoPanel
+            restaurant={r}
+            restaurantName={restaurantName}
+            description={infoDescription}
+            locationText={locationText}
+            eta={eta}
+            distanceKm={distanceKm ?? r.distance}
+            kitchenClosed={kitchenClosed}
+            nextOpenLabel={nextOpenLabel}
+            openNow={openNow}
+            showHygieneScore={showHygieneScore}
+            infoHygieneScore={infoHygieneScore}
+            infoFssaiFull={infoFssaiFull}
+            showInfoFssaiOrHygiene={showInfoFssaiOrHygiene}
+            token={token}
+            watchingOpen={watchingOpen}
+            notifyPending={
+              notifyOpen.subscribe.isPending || notifyOpen.unsubscribe.isPending
+            }
+            onToggleNotifyOpen={() => {
+              if (watchingOpen) notifyOpen.unsubscribe.mutate();
+              else notifyOpen.subscribe.mutate();
+            }}
+            timings={timings.data}
+            holidays={holidays.data ?? []}
+            specialHours={specialHours.data ?? []}
+          />
         ) : null}
       </ScrollView>
 
@@ -1253,30 +1024,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiBold,
     fontSize: 11,
     color: '#15803D',
-  },
-  notifyBtn: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFF7ED',
-    borderWidth: 1,
-    borderColor: '#FED7AA',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  notifyBtnText: {
-    fontFamily: fonts.uiBold,
-    fontSize: 13,
-    color: '#9A3412',
-  },
-  hygieneRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: 6,
   },
   metaRow: {
     flexDirection: 'row',
@@ -1686,84 +1433,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiMedium,
     fontSize: 13,
     color: MUTED,
-  },
-  infoLabel: {
-    fontFamily: fonts.uiBold,
-    fontSize: 12,
-    color: ORANGE,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  infoBody: {
-    marginTop: 6,
-    fontFamily: fonts.uiMedium,
-    fontSize: 15,
-    color: INK,
-    lineHeight: 22,
-  },
-  infoChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
-  },
-  infoChip: {
-    backgroundColor: '#FFF7ED',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#FED7AA',
-  },
-  infoChipText: {
-    fontFamily: fonts.uiMedium,
-    fontSize: 12,
-    color: '#9A3412',
-  },
-  infoMetaGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 16,
-  },
-  infoMetaCard: {
-    width: '47%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  infoMetaLabel: {
-    fontFamily: fonts.uiMedium,
-    fontSize: 11,
-    color: MUTED,
-  },
-  infoMetaValue: {
-    marginTop: 4,
-    fontFamily: fonts.uiBold,
-    fontSize: 14,
-    color: INK,
-  },
-  timingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E2E8F0',
-  },
-  timingDay: {
-    fontFamily: fonts.uiMedium,
-    fontSize: 13,
-    color: MUTED,
-    width: 100,
-  },
-  timingValue: {
-    flex: 1,
-    textAlign: 'right',
-    fontFamily: fonts.uiMedium,
-    fontSize: 13,
-    color: INK,
   },
   stickyCats: {
     position: 'absolute',
