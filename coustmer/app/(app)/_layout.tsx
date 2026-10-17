@@ -42,7 +42,6 @@ export default function AppLayout() {
             presentation: 'transparentModal',
           }}
         />
-        <Stack.Screen name="restaurants" options={{ headerShown: false }} />
       </Stack>
       <AppBottomNav />
       <ReplaceCartModal />
