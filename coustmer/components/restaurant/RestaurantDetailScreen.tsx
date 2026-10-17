@@ -24,6 +24,12 @@ import {
   View,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import {
+  RESTAURANT_DETAIL_TAB_ENTERING,
+  RESTAURANT_DETAIL_TAB_EXITING,
+  RESTAURANT_MENU_FILTER_ENTERING,
+  RESTAURANT_MENU_FILTER_EXITING,
+} from '@/lib/motion/restaurant-detail-motion';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
@@ -634,6 +640,12 @@ export function RestaurantDetailScreen() {
 
         <RestaurantDetailTabs active={tab} onChange={setTab} />
 
+        <Animated.View
+          key={tab}
+          entering={RESTAURANT_DETAIL_TAB_ENTERING}
+          exiting={RESTAURANT_DETAIL_TAB_EXITING}
+          style={tab === 'Info' ? { flexGrow: 1 } : undefined}
+        >
         {tab === 'Menu' ? (
           <View
             onLayout={(e) => {
@@ -670,35 +682,41 @@ export function RestaurantDetailScreen() {
                     ) : null}
                   </View>
                 ) : (
-                  grouped.map((cat, sectionIndex) => (
-                    <Animated.View
-                      key={cat.id}
-                      entering={FadeInDown.delay(80 + sectionIndex * 40).duration(360)}
-                      onLayout={onSectionLayout(cat.id)}
-                      style={styles.categoryBlock}
-                    >
-                      <View style={styles.categoryHead}>
-                        <Text style={styles.categoryTitle}>{cat.name}</Text>
-                        <Text style={styles.categorySub}>
-                          {cat.items.length} dish
-                          {cat.items.length === 1 ? '' : 'es'}
-                        </Text>
-                      </View>
+                  <Animated.View
+                    key={menuFilter}
+                    entering={RESTAURANT_MENU_FILTER_ENTERING}
+                    exiting={RESTAURANT_MENU_FILTER_EXITING}
+                  >
+                    {grouped.map((cat, sectionIndex) => (
+                      <Animated.View
+                        key={cat.id}
+                        entering={FadeInDown.delay(60 + sectionIndex * 35).duration(320)}
+                        onLayout={onSectionLayout(cat.id)}
+                        style={styles.categoryBlock}
+                      >
+                        <View style={styles.categoryHead}>
+                          <Text style={styles.categoryTitle}>{cat.name}</Text>
+                          <Text style={styles.categorySub}>
+                            {cat.items.length} dish
+                            {cat.items.length === 1 ? '' : 'es'}
+                          </Text>
+                        </View>
 
-                      <View style={styles.menuList}>
-                        {cat.items.map((item, itemIndex) => (
-                          <MenuItemRow
-                            key={item.id}
-                            item={item}
-                            onPress={() => setSelectedItem(item)}
-                            onAdd={() => addItem(item)}
-                            unavailable={unavailableSet.has(item.id)}
-                            showDivider={itemIndex < cat.items.length - 1}
-                          />
-                        ))}
-                      </View>
-                    </Animated.View>
-                  ))
+                        <View style={styles.menuList}>
+                          {cat.items.map((item, itemIndex) => (
+                            <MenuItemRow
+                              key={item.id}
+                              item={item}
+                              onPress={() => setSelectedItem(item)}
+                              onAdd={() => addItem(item)}
+                              unavailable={unavailableSet.has(item.id)}
+                              showDivider={itemIndex < cat.items.length - 1}
+                            />
+                          ))}
+                        </View>
+                      </Animated.View>
+                    ))}
+                  </Animated.View>
                 )}
                 </View>
               </>
@@ -823,6 +841,7 @@ export function RestaurantDetailScreen() {
             specialHours={specialHours.data ?? []}
           />
         ) : null}
+        </Animated.View>
       </ScrollView>
 
       {/* Sticky category strip */}

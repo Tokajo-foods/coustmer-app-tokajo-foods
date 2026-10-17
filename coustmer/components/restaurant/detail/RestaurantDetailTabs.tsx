@@ -1,9 +1,14 @@
 import { Pressable } from '@/components/common/Pressable';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { fonts } from '@/constants/typography';
 
-const ORANGE = '#F97316';
 const INK = '#0B1220';
 const MUTED = '#94A3B8';
 
@@ -17,8 +22,34 @@ type Props = {
 };
 
 export function RestaurantDetailTabs({ active, onChange }: Props) {
+  const activeIndex = TABS.indexOf(active);
+  const indicatorX = useSharedValue(activeIndex);
+  const tabWidth = useSharedValue(0);
+
+  useEffect(() => {
+    indicatorX.value = withSpring(activeIndex, {
+      damping: 20,
+      stiffness: 320,
+      mass: 0.8,
+    });
+  }, [activeIndex, indicatorX]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    width: tabWidth.value,
+    transform: [{ translateX: indicatorX.value * tabWidth.value }],
+  }));
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      onLayout={(e) => {
+        const inner = e.nativeEvent.layout.width - 8;
+        tabWidth.value = inner / TABS.length;
+      }}
+    >
+      <View style={styles.track} pointerEvents="none">
+        <Animated.View style={[styles.indicator, indicatorStyle]} />
+      </View>
       {TABS.map((t) => {
         const on = active === t;
         return (
@@ -28,7 +59,6 @@ export function RestaurantDetailTabs({ active, onChange }: Props) {
             onPress={() => onChange(t)}
           >
             <Text style={[styles.tabText, on && styles.tabTextOn]}>{t}</Text>
-            {on ? <View style={styles.underline} /> : null}
           </Pressable>
         );
       })}
@@ -48,12 +78,28 @@ const styles = StyleSheet.create({
     borderColor: '#E8EDF3',
     paddingHorizontal: 4,
     paddingVertical: 4,
+    position: 'relative',
+  },
+  track: {
+    ...StyleSheet.absoluteFillObject,
+    margin: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  indicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 10,
-    position: 'relative',
+    zIndex: 1,
   },
   tabText: {
     fontFamily: fonts.uiSemi,
@@ -63,14 +109,5 @@ const styles = StyleSheet.create({
   tabTextOn: {
     fontFamily: fonts.uiBold,
     color: INK,
-  },
-  underline: {
-    position: 'absolute',
-    bottom: 4,
-    left: '18%',
-    right: '18%',
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: ORANGE,
   },
 });
