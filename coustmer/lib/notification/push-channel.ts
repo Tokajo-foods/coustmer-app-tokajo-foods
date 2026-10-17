@@ -2,20 +2,47 @@ import { Platform } from 'react-native';
 
 type NotificationsModule = typeof import('expo-notifications');
 
-/** Backend sends customer pushes on this id; keep in sync with notification-service. */
+/** Ids the backend sends (notification-service `customerPushStyle.ts`); keep in sync. */
 export const ORDER_UPDATES_CHANNEL = 'order-updates';
+export const OFFERS_CHANNEL = 'offers';
+export const LIVE_ORDER_CATEGORY = 'order_live';
+export const OFFER_CATEGORY = 'offer';
+export const TRACK_ACTION = 'track';
+export const VIEW_OFFER_ACTION = 'view_offer';
 
-/** Android 8+: without a high-importance channel, order pushes land silently in the shade. */
-export async function ensureOrderUpdatesChannel(N: NotificationsModule): Promise<void> {
-  if (Platform.OS !== 'android') return;
-  await N.setNotificationChannelAsync(ORDER_UPDATES_CHANNEL, {
-    name: 'Order updates',
-    description: 'Rider and delivery progress for your orders',
-    importance: N.AndroidImportance.MAX,
-    sound: 'default',
-    vibrationPattern: [0, 250, 150, 250],
-    lightColor: '#FF6A00',
-    lockscreenVisibility: N.AndroidNotificationVisibility.PUBLIC,
-    showBadge: true,
-  });
+const BRAND = '#F97316';
+
+/**
+ * Android 8+ channels: order progress rings loud, offers stay quiet in the shade.
+ * Also registers the "Track order" / "View offer" buttons on both platforms.
+ */
+export async function ensureCustomerPushSetup(N: NotificationsModule): Promise<void> {
+  if (Platform.OS === 'android') {
+    await N.setNotificationChannelAsync(ORDER_UPDATES_CHANNEL, {
+      name: 'Order updates',
+      description: 'Order confirmation, cooking, rider and delivery progress',
+      importance: N.AndroidImportance.MAX,
+      sound: 'default',
+      vibrationPattern: [0, 250, 150, 250],
+      lightColor: BRAND,
+      lockscreenVisibility: N.AndroidNotificationVisibility.PUBLIC,
+      showBadge: true,
+    });
+    await N.setNotificationChannelAsync(OFFERS_CHANNEL, {
+      name: 'Offers & announcements',
+      description: 'Deals, coupons and news from TOKAJO FOODS',
+      importance: N.AndroidImportance.DEFAULT,
+      sound: 'default',
+      lightColor: BRAND,
+      lockscreenVisibility: N.AndroidNotificationVisibility.PUBLIC,
+      showBadge: true,
+    });
+  }
+
+  await N.setNotificationCategoryAsync(LIVE_ORDER_CATEGORY, [
+    { identifier: TRACK_ACTION, buttonTitle: 'Track order', options: { opensAppToForeground: true } },
+  ]);
+  await N.setNotificationCategoryAsync(OFFER_CATEGORY, [
+    { identifier: VIEW_OFFER_ACTION, buttonTitle: 'View offer', options: { opensAppToForeground: true } },
+  ]);
 }

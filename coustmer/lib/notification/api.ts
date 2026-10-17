@@ -138,7 +138,7 @@ function mapNotification(raw: Record<string, unknown>): AppNotification {
     imageUrl:
       (raw.imageUrl as string) ||
       (raw.image as string) ||
-      (raw.iconUrl as string) ||
+      (typeof nestedData?.imageUrl === 'string' ? nestedData.imageUrl : '') ||
       undefined,
   };
 }
@@ -168,10 +168,22 @@ function mapDevice(raw: Record<string, unknown>): NotificationDevice {
 function mapPrefs(raw: unknown): NotificationPreferences {
   const r = asRecord(raw);
   return {
-    orders: r.orders !== false,
-    offers: r.offers !== false,
-    whatsapp: r.whatsapp !== false,
+    orders: r.ordersPush !== false,
+    offers: r.offersPush !== false && r.promoPush !== false,
+    whatsapp: r.whatsapp === true,
   };
+}
+
+/** Server fields: ordersPush · offersPush + promoPush (one "Offers" switch) · whatsapp. */
+function toPrefsBody(payload: Partial<NotificationPreferences>): Record<string, boolean> {
+  const body: Record<string, boolean> = {};
+  if (payload.orders !== undefined) body.ordersPush = payload.orders;
+  if (payload.offers !== undefined) {
+    body.offersPush = payload.offers;
+    body.promoPush = payload.offers;
+  }
+  if (payload.whatsapp !== undefined) body.whatsapp = payload.whatsapp;
+  return body;
 }
 
 export const notificationApi = {
@@ -296,7 +308,7 @@ export const notificationApi = {
   updatePreferences: async (payload: Partial<NotificationPreferences>): Promise<NotificationPreferences> => {
     const res = await request<unknown>(`${NOTIFICATION_SERVICE}/preferences`, {
       method: 'PUT',
-      body: payload,
+      body: toPrefsBody(payload),
     });
     return mapPrefs(res.data);
   },

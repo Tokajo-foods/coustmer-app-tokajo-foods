@@ -14,6 +14,8 @@ const TRACKING_STATUSES = new Set([
   'out_for_delivery',
 ]);
 
+const PROMO_CATEGORIES = new Set(['offer', 'offers', 'promo', 'promotion', 'marketing']);
+
 function str(value: unknown): string {
   if (typeof value === 'string') return value.trim();
   if (value == null) return '';
@@ -52,6 +54,13 @@ export function routeForNotificationData(raw: unknown): NotificationRoute | null
   const paymentId = str(data.paymentId ?? data.payment_id ?? data.payment);
   if (paymentId) {
     return { pathname: '/payments/[paymentId]', params: { paymentId } };
+  }
+  const category = str(data.category);
+  if (PROMO_CATEGORIES.has(category)) {
+    return { pathname: '/deals', params: {} };
+  }
+  if (category === 'announcement') {
+    return { pathname: '/notifications', params: {} };
   }
   return null;
 }

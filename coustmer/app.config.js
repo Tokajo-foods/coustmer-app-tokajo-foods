@@ -57,8 +57,8 @@ const config = {
     [
       'expo-notifications',
       {
-        icon: './assets/icon.png',
-        color: '#FF6A00',
+        icon: './assets/notification-icon.png',
+        color: '#F97316',
         sounds: ['./assets/sounds/incoming_call.wav'],
         mode: 'production',
       },

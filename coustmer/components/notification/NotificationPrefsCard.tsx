@@ -1,7 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
 import { authTheme } from '@/constants/auth-theme';
+import { getApiErrorMessage } from '@/lib/errors';
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
@@ -27,7 +28,12 @@ export function NotificationPrefsCard({ enabled }: { enabled: boolean }) {
           <Pressable
             key={key}
             style={styles.prefRow}
-            onPress={() => updatePrefs.mutate({ [key]: !value })}
+            onPress={() =>
+              updatePrefs.mutate(
+                { [key]: !value },
+                { onError: (e) => Alert.alert('Could not update', getApiErrorMessage(e)) }
+              )
+            }
             disabled={updatePrefs.isPending}
           >
             <Text style={styles.prefLabel}>{label}</Text>

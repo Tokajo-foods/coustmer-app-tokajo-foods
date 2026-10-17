@@ -24,6 +24,7 @@ import {
 import { KitchenAlertsBlock } from '@/components/notification/KitchenAlertsBlock';
 import { NotificationPrefsCard } from '@/components/notification/NotificationPrefsCard';
 import { NotificationRow } from '@/components/notification/NotificationRow';
+import { PushPermissionBanner } from '@/components/notification/PushPermissionBanner';
 import { hubStyles as styles } from '@/components/notification/notifications-hub-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -32,9 +33,6 @@ import {
   useDeleteNotification,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
-  useNotificationDevices,
-  useNotificationServiceHealth,
-  useNotificationServiceReady,
   useNotifications,
   useUnreadNotificationCount,
 } from '@/lib/notification/hooks';
@@ -72,9 +70,6 @@ export function NotificationsHubScreen() {
   const markAllRead = useMarkAllNotificationsRead();
   const deleteOne = useDeleteNotification();
   const clearAll = useClearAllNotifications();
-  const health = useNotificationServiceHealth(true);
-  const ready = useNotificationServiceReady(true);
-  const devices = useNotificationDevices(authed);
 
   const notifications = listQuery.data?.notifications ?? [];
   const count = unreadCount.data ?? 0;
@@ -90,7 +85,7 @@ export function NotificationsHubScreen() {
       markRead.mutate(item.id);
     }
     const route = routeForNotificationData(item.data);
-    if (route) router.push(route as never);
+    if (route && route.pathname !== '/notifications') router.push(route as never);
   };
 
   const onDelete = (item: AppNotification) => {
@@ -204,20 +199,7 @@ export function NotificationsHubScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.metaCard}>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaTitle}>Service</Text>
-            <Text style={styles.metaValue}>
-              {health.data && ready.data ? 'LIVE' : 'DEGRADED'}
-            </Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaTitle}>Devices</Text>
-            <Text style={styles.metaValue}>
-              {devices.data?.length ?? 0}
-            </Text>
-          </View>
-        </View>
+        <PushPermissionBanner />
 
         <NotificationPrefsCard enabled={authed} />
 

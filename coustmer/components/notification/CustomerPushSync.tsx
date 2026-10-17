@@ -6,9 +6,11 @@ import { Platform } from 'react-native';
 import { isCallPush } from '@/lib/call/call-push';
 import { notificationKeys } from '@/lib/notification/hooks';
 import { loadNotifications } from '@/lib/notification/load-notifications';
-import { ensureOrderUpdatesChannel } from '@/lib/notification/push-channel';
+import { ensureCustomerPushSetup } from '@/lib/notification/push-channel';
 import { registerCustomerPushDevice } from '@/lib/notification/push-device';
 import { routeForNotificationData } from '@/lib/notification/push-route';
+import { useBadgeSync } from '@/lib/notification/use-badge-sync';
+import { orderKeys } from '@/lib/order/hooks';
 import { usePricingSync } from '@/lib/pricing/use-pricing-sync';
 import { useSocketEvent } from '@/lib/socket/hooks';
 import { useAuthStore } from '@/store/auth-store';
@@ -19,8 +21,8 @@ type NotificationResponse = import('expo-notifications').NotificationResponse;
 const handledResponses = new Set<string>();
 
 /**
- * Registers the customer push token, keeps the inbox and server pricing live,
- * and opens the right screen on tap.
+ * Registers the customer push token, keeps the inbox, badge and server pricing live,
+ * and opens the right screen on tap or action button ("Track order", "View offer").
  */
 export function CustomerPushSync() {
   const token = useAuthStore((s) => s.token);
@@ -31,6 +33,7 @@ export function CustomerPushSync() {
     void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
   });
   usePricingSync();
+  useBadgeSync(Boolean(token));
 
   useEffect(() => {
     if (!token || Platform.OS === 'web') return;
@@ -42,13 +45,23 @@ export function CustomerPushSync() {
     };
 
     const open = (response: NotificationResponse): boolean => {
-      const id = response.notification.request.identifier;
+      const id = `${response.notification.request.identifier}:${response.actionIdentifier}`;
       if (handledResponses.has(id)) return false;
       const route = routeForNotificationData(response.notification.request.content.data);
       if (!route) return false;
       handledResponses.add(id);
       router.push(route as never);
       return true;
+    };
+
+    const onReceived = (data: unknown) => {
+      void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      const orderId = data && typeof data === 'object' ? (data as { orderId?: unknown }).orderId : null;
+      if (typeof orderId === 'string' && orderId) {
+        void queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId) });
+        void queryClient.invalidateQueries({ queryKey: orderKeys.tracking(orderId) });
+        void queryClient.invalidateQueries({ queryKey: orderKeys.active() });
+      }
     };
 
     void (async () => {
@@ -61,18 +74,16 @@ export function CustomerPushSync() {
             return {
               shouldShowAlert: show,
               shouldPlaySound: show,
-              shouldSetBadge: false,
+              shouldSetBadge: show,
               shouldShowBanner: show,
               shouldShowList: show,
             };
           },
         });
-        await ensureOrderUpdatesChannel(N);
+        await ensureCustomerPushSetup(N);
 
         track(N.addNotificationResponseReceivedListener((res) => { open(res); }));
-        track(N.addNotificationReceivedListener(() => {
-          void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-        }));
+        track(N.addNotificationReceivedListener((n) => onReceived(n.request.content.data)));
         const last = await N.getLastNotificationResponseAsync().catch(() => null);
         if (last && !cancelled && open(last)) {
           await N.clearLastNotificationResponseAsync?.().catch(() => undefined);
