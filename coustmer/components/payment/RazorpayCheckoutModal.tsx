@@ -1,6 +1,6 @@
 import { Pressable } from '@/components/common/Pressable';
 import { X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,7 @@ import { WebView } from 'react-native-webview';
 
 import { authTheme } from '@/constants/auth-theme';
 import { formatInr } from '@/lib/format/money';
+import { isNativeRazorpayAvailable, openNativeRazorpay } from '@/lib/payment/razorpay-native';
 
 export type RazorpayResult = {
   gatewayPaymentId?: string;
@@ -76,12 +77,24 @@ function openUpiApp(url: string): boolean {
 }
 
 /**
- * Razorpay Standard Checkout rendered inside a WebView. The backend `initiate`
- * returns the live key + order id (only when the keys are present in the env),
- * so this screen goes live automatically the moment credentials are added.
+ * Razorpay checkout. Dev-client / EAS builds use the native SDK (real UPI intent to
+ * GPay / PhonePe / Paytm); Expo Go falls back to Standard Checkout in a WebView.
+ * Key + order id always come from the backend `initiate` response.
  */
 export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: Props) {
   const [loading, setLoading] = useState(true);
+  const native = useMemo(() => isNativeRazorpayAvailable(), []);
+  const openedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!native || !visible || !session) {
+      if (!visible) openedFor.current = null;
+      return;
+    }
+    if (openedFor.current === session.orderId) return;
+    openedFor.current = session.orderId;
+    void openNativeRazorpay(session).then(({ success, data }) => onResult(success, data));
+  }, [native, visible, session, onResult]);
 
   const html = useMemo(() => {
     if (!session) return '';
@@ -185,6 +198,8 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
       // ignore malformed messages
     }
   };
+
+  if (native) return null;
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">

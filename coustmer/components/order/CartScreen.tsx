@@ -60,28 +60,19 @@ import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
 import { GroupOrderSheet } from '@/components/order/GroupOrderSheet';
 import { CouponPickerSheet } from '@/components/order/CouponPickerSheet';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
-import { useCreateOrder } from '@/lib/order/hooks';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import type { DeliveryLocationResult } from '@/components/location/DeliveryLocationPicker';
-import { parseDropPin } from '@/lib/location/drop-pin';
 import { extractCityFromAddress, normalizeCityName } from '@/lib/location/format';
-import { checkoutBlockCopy } from '@/lib/cart/checkout-block';
 import {
   ensureWalletCoversCheckout,
 } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr, formatLineTotal } from '@/lib/format/money';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
-import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import {
-  useInitiatePayment,
   usePaymentMethods,
   usePaymentWallet,
-  useVerifyPayment,
 } from '@/lib/payment/hooks';
-import { needsOnlinePayment } from '@/lib/payment/types';
-import { generateTestPaymentUrl, simulatePaymentSuccess } from '@/lib/payment/test-urls';
-import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
@@ -89,8 +80,6 @@ import {
   paymentMethodHint,
   paymentMethodLabel,
 } from '@/lib/checkout/payment-display';
-import { OrderPlacementModal, PlacementPhase } from '@/components/order/OrderPlacementModal';
-import { PaymentGatewayWebView } from '@/components/payment/PaymentGatewayWebView';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
 const BG = '#F4F5F7';
@@ -207,12 +196,10 @@ export function CartScreen() {
   const params = useLocalSearchParams<{ checkoutNow?: string }>();
   const insets = useSafeAreaInsets();
   const token = useAuthStore((s) => s.token);
-  const authUser = useAuthStore((s) => s.user);
   const isLoggedIn = Boolean(token);
 
   const restaurant = useCartStore((s) => s.restaurant);
   const items = useCartStore((s) => s.items);
-  const specialInstructions = useCartStore((s) => s.specialInstructions);
   const couponCode = useCartStore((s) => s.couponCode);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const scheduledFor = useCartStore((s) => s.scheduledFor);
@@ -222,11 +209,8 @@ export function CartScreen() {
   const setDeliveryTypeLocal = useCartStore((s) => s.setDeliveryType);
   const location = useDeliveryLocationStore((s) => s.location);
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
-  const profile = useUserProfile();
   const paymentMethods = usePaymentMethods();
   const wallet = usePaymentWallet();
-
-  const [orderPlacementPhase, setOrderPlacementPhase] = useState<PlacementPhase>('none');
 
   const remoteCart = useCart();
   const apiCart = remoteCart.data;
@@ -265,18 +249,9 @@ export function CartScreen() {
   const validateCart = useValidateCart();
   const saveCart = useSaveCart();
 
-  const createOrder = useCreateOrder();
-  const initiatePayment = useInitiatePayment();
-  const verifyPayment = useVerifyPayment();
-
   const paymentMethod = useCartStore((s) => s.paymentMethod);
   const setPaymentMethod = useCartStore((s) => s.setPaymentMethod);
-  const [paying, setPaying] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-
-  const [paymentGatewayOpen, setPaymentGatewayOpen] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState('');
-  const [currentOrder, setCurrentOrder] = useState<any>(null);
 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -327,20 +302,6 @@ export function CartScreen() {
   ]);
 
   const displayDiscount = billBreakdown.discount;
-
-  const displayName =
-    profile.data?.displayName ||
-    [profile.data?.firstName, profile.data?.lastName].filter(Boolean).join(' ') ||
-    authUser?.firstName ||
-    'Guest';
-
-  const phoneDigits = (
-    profile.data?.phone ||
-    authUser?.phone ||
-    ''
-  ).replace(/\D/g, '');
-  const phone =
-    phoneDigits.length >= 10 ? phoneDigits.slice(-10) : phoneDigits || '—';
 
   const addressLabel = location?.label || 'Home';
   const addressLine = location?.formattedAddress || 'Add a delivery address';
@@ -521,283 +482,6 @@ export function CartScreen() {
   const handleScheduleNow = () => handleScheduleSlot(null);
   const handleSchedulePick = (startIso: string) => handleScheduleSlot(startIso);
 
-  const handlePaymentComplete = async (success: boolean, data?: any) => {
-    setPaymentGatewayOpen(false);
-
-    if (success) {
-      setOrderPlacementPhase('placed');
-      if (currentOrder) {
-        try {
-          if (paymentUrl.includes('test') || paymentUrl.includes('httpbin')) {
-            const simulatedResult = simulatePaymentSuccess(currentOrder.id, currentOrder.total ?? displayTotal);
-            console.log('Simulated payment result:', simulatedResult);
-          } else {
-            await verifyPayment.mutateAsync({
-              paymentId: data?.paymentId || 'unknown',
-              orderId: currentOrder.id,
-              gatewayPaymentId: data?.gatewayPaymentId || data?.paymentId,
-              gatewayOrderId: data?.gatewayOrderId,
-              gatewaySignature:
-                data?.gatewaySignature || data?.razorpay_signature,
-              razorpay_payment_id: data?.razorpay_payment_id,
-              razorpay_order_id: data?.razorpay_order_id,
-              razorpay_signature: data?.razorpay_signature,
-              signature: data?.gatewaySignature || data?.razorpay_signature,
-              status: 'success',
-            });
-          }
-        } catch (verifyError) {
-          console.warn('Payment verification failed:', verifyError);
-        }
-      }
-
-      await new Promise((r) => setTimeout(r, 1500));
-      router.replace({
-        pathname: '/orders/[orderId]/tracking',
-        params: { orderId: currentOrder?.id || '', newOrder: 'true' },
-      });
-      setOrderPlacementPhase('none');
-    } else {
-      Alert.alert(
-        'Payment Failed',
-        'Your payment could not be processed.',
-        [
-          {
-            text: 'Try Again',
-            onPress: () => {
-              if (paymentUrl) setPaymentGatewayOpen(true);
-            },
-          },
-          { text: 'Contact Support', onPress: () => router.push('/support') },
-        ]
-      );
-    }
-  };
-
-  const handlePaymentGatewayClose = () => {
-    Alert.alert(
-      'Cancel Payment?',
-      'Your order has been placed and can be paid later.',
-      [
-        { text: 'Continue Payment', style: 'cancel' },
-        {
-          text: 'Cancel Payment',
-          onPress: () => {
-            setPaymentGatewayOpen(false);
-            if (currentOrder) {
-              router.replace({
-                pathname: '/orders/[orderId]/tracking',
-                params: { orderId: currentOrder.id, newOrder: 'true' },
-              });
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const placeOrder = async () => {
-    if (!location) {
-      Alert.alert('Address Missing', 'Please select a delivery address');
-      return;
-    }
-
-    setPaying(true);
-    setOrderPlacementPhase('placing');
-    try {
-      const parsedAddress = parseDeliveryAddress({
-        formattedAddress: location.formattedAddress,
-        label: location.label,
-        city: location.city,
-        lat: location.lat,
-        lng: location.lng,
-      });
-
-      let mappedMethod = paymentMethod;
-      let mappedMethodId: string | undefined = undefined;
-
-      if (paymentMethod === 'paytm_upi' || paymentMethod === 'gpay') {
-        mappedMethod = 'upi';
-      } else if (paymentMethods.data?.some((m) => m.id === paymentMethod)) {
-        const saved = paymentMethods.data.find((m) => m.id === paymentMethod);
-        if (saved) {
-          mappedMethod = saved.type;
-          mappedMethodId = saved.id;
-        }
-      }
-
-      if (mappedMethod === 'wallet') {
-        await ensureWalletCoversCheckout();
-        void liveBill.refetch();
-      }
-
-      const payload = {
-        restaurantId: restaurant!.id,
-        restaurantName: restaurant!.name,
-        items: items.map((item) => ({
-          menuItemId: item.menuItemId || item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          specialInstructions: item.specialInstructions,
-        })),
-        deliveryAddress: {
-          label: parsedAddress.label,
-          formattedAddress: parsedAddress.formattedAddress,
-          street: parsedAddress.street,
-          area: parsedAddress.area,
-          city: parsedAddress.city,
-          state: parsedAddress.state,
-          pincode: parsedAddress.pincode,
-          contactName: displayName,
-          contactPhone: phone.replace(/\D/g, ''),
-          lat: parsedAddress.lat,
-          lng: parsedAddress.lng,
-        },
-        addressId: location.savedAddressId,
-        paymentMethod: mappedMethod,
-        deliveryType,
-        fulfillmentType: deliveryType,
-        specialInstructions: specialInstructions || undefined,
-        tip: tip > 0 ? tip : 0,
-        deliveryTip: tip > 0 ? tip : 0,
-        scheduledFor: scheduledFor ?? undefined,
-        isScheduled: Boolean(scheduledFor),
-      };
-
-      const order = await createOrder.mutateAsync(payload as any);
-      setCurrentOrder(order);
-      const amount = order.total ?? displayTotal;
-
-      if (!needsOnlinePayment(mappedMethod)) {
-        setOrderPlacementPhase('placed');
-        await new Promise((r) => setTimeout(r, 1500));
-        router.replace({
-          pathname: '/orders/[orderId]/tracking',
-          params: { orderId: order.id, newOrder: 'true' },
-        });
-        setOrderPlacementPhase('none');
-        return;
-      }
-
-      let paymentUrlToOpen: string | undefined = undefined;
-      let payment: any = null;
-
-      if (order.raw && typeof order.raw.paymentUrl === 'string') {
-        paymentUrlToOpen = order.raw.paymentUrl;
-      } else if (order.raw) {
-        paymentUrlToOpen =
-          (order.raw.checkoutUrl as string | undefined) ||
-          (order.raw.redirectUrl as string | undefined) ||
-          (order.raw.gatewayUrl as string | undefined) ||
-          (order.raw.url as string | undefined);
-      }
-
-      if (!paymentUrlToOpen) {
-        try {
-          payment = await initiatePayment.mutateAsync({
-            orderId: order.id,
-            amount,
-            currency: 'INR',
-            method: mappedMethod as any,
-            methodId: mappedMethodId,
-            description: `Order ${order.orderNumber || order.id}`,
-          });
-
-          paymentUrlToOpen =
-            payment.paymentUrl ||
-            payment.checkoutUrl ||
-            payment.redirectUrl ||
-            payment.gatewayUrl ||
-            payment.url;
-        } catch (initiateError) {
-          console.error('Payment initiate failed:', initiateError);
-          Alert.alert(
-            'Payment Configuration Issue',
-            'Payment gateway not properly configured.',
-            [
-              {
-                text: 'Test Payment',
-                onPress: () => {
-                  const testUrl = generateTestPaymentUrl('razorpay', {
-                    orderId: order.id,
-                    amount,
-                    currency: 'INR',
-                    description: `Test Order ${order.orderNumber || order.id}`,
-                  });
-                  setPaymentUrl(testUrl);
-                  setPaymentGatewayOpen(true);
-                  setOrderPlacementPhase('none');
-                },
-              },
-              {
-                text: 'Cash on Delivery',
-                onPress: async () => {
-                  setOrderPlacementPhase('placed');
-                  await new Promise((r) => setTimeout(r, 1000));
-                  router.replace({
-                    pathname: '/orders/[orderId]/tracking',
-                    params: { orderId: order.id, newOrder: 'true' },
-                  });
-                  setOrderPlacementPhase('none');
-                },
-              },
-              { text: 'Contact Support', onPress: () => router.push('/support') },
-            ]
-          );
-          return;
-        }
-      }
-
-      if (paymentUrlToOpen && paymentUrlToOpen.startsWith('http')) {
-        setPaymentUrl(paymentUrlToOpen);
-        setPaymentGatewayOpen(true);
-        setOrderPlacementPhase('none');
-        return;
-      }
-
-      Alert.alert(
-        'Payment Issue',
-        'No payment URL found.',
-        [
-          {
-            text: 'Test Payment',
-            onPress: () => {
-              const testUrl = generateTestPaymentUrl('razorpay', {
-                orderId: order.id,
-                amount,
-                currency: 'INR',
-                description: `Test Order ${order.orderNumber || order.id}`,
-              });
-              setPaymentUrl(testUrl);
-              setPaymentGatewayOpen(true);
-              setOrderPlacementPhase('none');
-            },
-          },
-          {
-            text: 'Cash on Delivery',
-            onPress: async () => {
-              setOrderPlacementPhase('placed');
-              await new Promise((r) => setTimeout(r, 1000));
-              router.replace({
-                pathname: '/orders/[orderId]/tracking',
-                params: { orderId: order.id, newOrder: 'true' },
-              });
-              setOrderPlacementPhase('none');
-            },
-          },
-          { text: 'Contact Support', onPress: () => router.push('/support') },
-        ]
-      );
-    } catch (err: any) {
-      console.error('Order placement error:', err);
-      Alert.alert('Checkout Failed', err.message || 'Could not place order');
-      setOrderPlacementPhase('none');
-    } finally {
-      setPaying(false);
-    }
-  };
-
   const handleClear = () => {
     setMenuOpen(false);
     Alert.alert('Clear cart?', 'Remove all items from your cart.', [
@@ -839,85 +523,6 @@ export function CartScreen() {
     } catch (e) {
       Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again');
     }
-  };
-
-  const handleCheckout = async () => {
-    try {
-      // Ensure tip is on the backend cart before validate / place order
-      if (isLoggedIn && tip >= 0) {
-        try {
-          await updateTip.mutateAsync({ tip });
-        } catch (tipErr) {
-          if (tip > 0) {
-            Alert.alert(
-              'Tip not saved',
-              tipErr instanceof Error
-                ? tipErr.message
-                : 'Could not add tip to the server bill. Try again or remove the tip.'
-            );
-            return;
-          }
-        }
-      }
-
-      const isDelivery = deliveryType !== 'takeaway';
-      const pin = parseDropPin(location?.lat, location?.lng);
-      if (isDelivery && !pin) {
-        Alert.alert(
-          'Drop a pin for delivery',
-          'We need your exact map pin to check if we deliver here and to calculate the fee.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Set pin', onPress: () => setLocationOpen(true) },
-          ]
-        );
-        return;
-      }
-
-      const result = await validateCart.mutateAsync(pin ?? {});
-      if (result.cart) {
-        applyServerCartToStore(result.cart);
-      }
-      if (!result.valid) {
-        const code = result.code || result.issues[0]?.code;
-        const needsPin =
-          code === 'DROP_PIN_REQUIRED' ||
-          (result.message ?? '').toLowerCase().includes('drop pin');
-        const msg =
-          result.issues.map((i) => i.message).join('\n') ||
-          result.message ||
-          'Cart validation failed';
-        if (needsPin) {
-          Alert.alert(
-            'Drop a pin for delivery',
-            'Your cart has no delivery pin yet. Open the map and drop your pin, then try again.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Set pin', onPress: () => setLocationOpen(true) },
-            ]
-          );
-        } else {
-          const copy = checkoutBlockCopy(code, msg);
-          Alert.alert(copy.title, copy.message, [
-            { text: 'OK' },
-            ...(code === 'OUT_OF_ZONE'
-              ? [{ text: 'Change pin', onPress: () => setLocationOpen(true) }]
-              : []),
-          ]);
-        }
-        void remoteCart.refetch();
-        return;
-      }
-    } catch (e) {
-      Alert.alert(
-        'Could not validate cart',
-        e instanceof Error
-          ? e.message
-          : 'Check your connection and try again before placing the order.'
-      );
-      return;
-    }
-    placeOrder();
   };
 
   useEffect(() => {
@@ -1367,24 +972,6 @@ export function CartScreen() {
           addressText={addressLine}
           savedMethods={paymentMethods.data}
           wallet={wallet.data}
-        />
-
-        {/* ── Order Placement Modal ───────────────────────────────── */}
-        <OrderPlacementModal
-          phase={orderPlacementPhase}
-          addressLabel={addressLabel}
-          addressText={addressLine}
-          savings={billBreakdown.discount}
-        />
-
-        {/* ── Payment Gateway WebView ─────────────────────────────── */}
-        <PaymentGatewayWebView
-          visible={paymentGatewayOpen}
-          onClose={handlePaymentGatewayClose}
-          paymentUrl={paymentUrl}
-          onPaymentComplete={handlePaymentComplete}
-          orderAmount={currentOrder?.total ?? displayTotal}
-          orderNumber={currentOrder?.orderNumber}
         />
 
         <DeliveryLocationPicker

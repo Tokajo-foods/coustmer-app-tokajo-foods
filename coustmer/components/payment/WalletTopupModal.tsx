@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
-import { ArrowLeft, CreditCard, IndianRupee } from 'lucide-react-native';
+import { ArrowLeft, IndianRupee } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert,
   FlatList,
@@ -14,15 +14,19 @@ import { Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authTheme } from '@/constants/auth-theme';
-import { useWalletTopup } from '@/lib/payment/hooks';
-import type { SavedPaymentMethod } from '@/lib/payment/types';
+import {
+  RazorpayCheckoutModal,
+  type RazorpayResult,
+  type RazorpaySession,
+} from '@/components/payment/RazorpayCheckoutModal';
 import { formatInr } from '@/lib/format/money';
+import { useStartWalletTopup, useVerifyWalletTopup } from '@/lib/payment/hooks';
+import type { WalletTopupMethod } from '@/lib/payment/wallet-topup-api';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   currentBalance: number;
-  savedMethods?: SavedPaymentMethod[];
 };
 
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
@@ -31,12 +35,14 @@ export function WalletTopupModal({
   visible,
   onClose,
   currentBalance,
-  savedMethods,
 }: Props) {
   const [amount, setAmount] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<string>('upi');
+  const [selectedMethod, setSelectedMethod] = useState<WalletTopupMethod>('upi');
+  const [session, setSession] = useState<RazorpaySession | null>(null);
 
-  const topup = useWalletTopup();
+  const startTopup = useStartWalletTopup();
+  const verifyTopup = useVerifyWalletTopup();
+  const busy = startTopup.isPending || verifyTopup.isPending;
 
   const resetForm = () => {
     setAmount('');
@@ -62,20 +68,55 @@ export function WalletTopupModal({
     }
 
     try {
-      await topup.mutateAsync({
+      const started = await startTopup.mutateAsync({
         amount: topupAmount,
-        method: selectedMethod as any,
+        method: selectedMethod,
       });
-      
-      handleClose();
-      Alert.alert(
-        'Top-up Initiated',
-        `${formatInr(topupAmount)} will be added to your wallet once payment is complete.`
-      );
+      setSession({
+        keyId: started.keyId,
+        orderId: started.gatewayOrderId,
+        amount: started.amount,
+        currency: started.currency,
+        paymentId: started.paymentId,
+        description: 'Wallet top-up',
+      });
     } catch (error) {
       Alert.alert(
         'Top-up Failed',
-        error instanceof Error ? error.message : 'Failed to initiate top-up'
+        error instanceof Error ? error.message : 'Failed to start top-up'
+      );
+    }
+  };
+
+  const handleCheckoutResult = async (success: boolean, data: RazorpayResult) => {
+    const current = session;
+    setSession(null);
+    if (!current) return;
+    if (!success) {
+      if (data.reason !== 'dismissed') {
+        Alert.alert('Payment failed', data.reason || 'Nothing was charged. Please try again.');
+      }
+      return;
+    }
+    try {
+      const result = await verifyTopup.mutateAsync({
+        paymentId: current.paymentId,
+        gatewayPaymentId: data.gatewayPaymentId ?? '',
+        gatewayOrderId: data.gatewayOrderId ?? current.orderId,
+        gatewaySignature: data.gatewaySignature ?? '',
+      });
+      handleClose();
+      Alert.alert(
+        result.userCredited ? 'Wallet topped up' : 'Payment received',
+        result.userCredited
+          ? `${formatInr(result.amount)} added to your wallet.`
+          : 'Your wallet will be credited in a few minutes.'
+      );
+    } catch {
+      handleClose();
+      Alert.alert(
+        'Payment received',
+        'We are confirming your payment. Your wallet will be credited automatically.'
       );
     }
   };
@@ -84,14 +125,10 @@ export function WalletTopupModal({
     setAmount(quickAmount.toString());
   };
 
-  const availableMethods = [
-    { id: 'upi', label: 'UPI (Recommended)', icon: '📱' },
-    { id: 'card', label: 'Add New Card', icon: '💳' },
-    ...(savedMethods?.map(method => ({
-      id: method.id,
-      label: method.label,
-      icon: method.type === 'card' ? '💳' : '📱',
-    })) ?? []),
+  const availableMethods: { id: WalletTopupMethod; label: string; icon: string }[] = [
+    { id: 'upi', label: 'UPI · GPay, PhonePe, Paytm', icon: '📱' },
+    { id: 'card', label: 'Credit / Debit card', icon: '💳' },
+    { id: 'netbanking', label: 'Netbanking', icon: '🏦' },
   ];
 
   return (
@@ -180,20 +217,26 @@ export function WalletTopupModal({
           <Pressable
             style={[
               styles.topupBtn,
-              (!amount || parseFloat(amount) < 10 || topup.isPending) &&
+              (!amount || parseFloat(amount) < 10 || busy) &&
                 styles.topupBtnDisabled,
             ]}
             onPress={handleTopup}
-            disabled={!amount || parseFloat(amount) < 10 || topup.isPending}
+            disabled={!amount || parseFloat(amount) < 10 || busy}
           >
             <Text style={styles.topupBtnText}>
-              {topup.isPending
+              {busy
                 ? 'Processing…'
                 : `Add ₹${amount || '0'} to Wallet`}
             </Text>
           </Pressable>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      <RazorpayCheckoutModal
+        visible={Boolean(session)}
+        session={session}
+        onClose={() => setSession(null)}
+        onResult={handleCheckoutResult}
+      />
     </Modal>
   );
 }

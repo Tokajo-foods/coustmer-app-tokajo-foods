@@ -12,7 +12,6 @@ import type {
   SavedPaymentMethod,
   VerifyPaymentPayload,
   WalletSummary,
-  WalletTopupPayload,
   WalletTransaction,
   WalletTransactionsResult,
 } from '@/lib/payment/types';
@@ -27,11 +26,12 @@ type Envelope<T> = {
   meta?: PaginationMeta;
 };
 
-async function request<T>(
+export async function request<T>(
   path: string,
   options: {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
+    headers?: Record<string, string>;
   } = {}
 ): Promise<Envelope<T>> {
   const { method = 'GET', body } = options;
@@ -43,12 +43,12 @@ async function request<T>(
       method,
       data: isMutating ? (body ?? {}) : body,
       withCredentials: true,
-      headers: isMutating
-        ? {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          }
-        : { Accept: 'application/json' },
+      headers: {
+        ...(isMutating
+          ? { 'Content-Type': 'application/json', Accept: 'application/json' }
+          : { Accept: 'application/json' }),
+        ...options.headers,
+      },
     });
 
     const payload = response.data as Envelope<T> | T;
@@ -436,46 +436,6 @@ export const paymentApi = {
   getWallet: async (): Promise<WalletSummary> => {
     const res = await request<Record<string, unknown>>(`${PAYMENTS_BASE}/wallet`);
     return mapWallet(asRecord(res.data ?? res));
-  },
-
-  /** POST /payments/wallet/topup */
-  topupWallet: async (payload: WalletTopupPayload): Promise<Payment | WalletSummary> => {
-    const bodies = [
-      {
-        amount: payload.amount,
-        method: payload.method ?? 'upi',
-        paymentMethod: payload.method ?? 'upi',
-        methodId: payload.methodId,
-        currency: payload.currency ?? 'INR',
-      },
-      {
-        amount: payload.amount,
-        payment_method: payload.method ?? 'upi',
-      },
-    ];
-
-    let lastError: Error | null = null;
-    for (const body of bodies) {
-      try {
-        const res = await request<Record<string, unknown>>(
-          `${PAYMENTS_BASE}/wallet/topup`,
-          { method: 'POST', body }
-        );
-        const data = asRecord(res.data ?? res);
-        // Topup may return a Payment (to complete) or updated wallet
-        if (
-          data.balance !== undefined ||
-          data.availableBalance !== undefined
-        ) {
-          return mapWallet(data);
-        }
-        return mapPayment(data);
-      } catch (error) {
-        lastError =
-          error instanceof Error ? error : new Error('Failed to top up wallet');
-      }
-    }
-    throw lastError ?? new Error('Failed to top up wallet');
   },
 
   /** GET /payments/wallet/transactions */

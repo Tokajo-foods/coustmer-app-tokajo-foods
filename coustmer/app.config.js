@@ -11,10 +11,6 @@ const firebaseMessagingSenderId =
   process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() || '';
 const firebaseStorageBucket =
   process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() || '';
-// Razorpay publishable key id. The backend returns the live key on `initiate`,
-// so this is only a fallback — set it once credentials are available.
-const razorpayKeyId = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID?.trim() || '';
-
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
   name: 'TOKAJO FOODS',
@@ -54,6 +50,7 @@ const config = {
     '@react-native-community/datetimepicker',
     './withMinSdkVersion.js',
     './plugins/with-eas-autolinking-cache.js',
+    './plugins/with-razorpay-upi.js',
     ['@livekit/react-native-expo-plugin', { android: { audioType: 'communication' } }],
     '@config-plugins/react-native-webrtc',
     'expo-audio',
@@ -89,6 +86,8 @@ const config = {
       NSMicrophoneUsageDescription:
         'Allow TOKAJO FOODS to use the microphone for in-app calls on an order. Your mobile number stays hidden.',
       UIBackgroundModes: ['audio', 'voip', 'remote-notification', 'fetch'],
+      // Razorpay UPI intent — lets checkout detect and open installed UPI apps.
+      LSApplicationQueriesSchemes: ['tez', 'phonepe', 'paytmmp', 'credpay', 'bhim', 'upi'],
       NSAppTransportSecurity: {
         NSAllowsArbitraryLoads: true,
       },
@@ -148,7 +147,6 @@ const config = {
     firebaseAppId,
     firebaseMessagingSenderId,
     firebaseStorageBucket,
-    razorpayKeyId,
   },
 };
 

@@ -38,7 +38,6 @@ import {
   type RazorpaySession,
 } from '@/components/payment/RazorpayCheckoutModal';
 import { PaymentFailedRefundModal } from '@/components/payment/PaymentFailedRefundModal';
-import Constants from 'expo-constants';
 import { fonts } from '@/constants/typography';
 import {
   paymentMethodHint,
@@ -60,14 +59,10 @@ import {
   useVerifyPayment,
 } from '@/lib/payment/hooks';
 import { needsOnlinePayment } from '@/lib/payment/types';
-import { generateTestPaymentUrl, simulatePaymentSuccess } from '@/lib/payment/test-urls';
 import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
-
-const RAZORPAY_KEY_FALLBACK =
-  (Constants.expoConfig?.extra as { razorpayKeyId?: string } | undefined)?.razorpayKeyId || '';
 
 const BG = '#F4F5F7';
 const WHITE = '#FFFFFF';
@@ -307,7 +302,7 @@ export function OrderSummaryScreen() {
           return;
         }
 
-        const key = payment.razorpayKey || RAZORPAY_KEY_FALLBACK;
+        const key = payment.razorpayKey;
         const rzpOrderId = payment.gatewayOrderId || payment.razorpayOrderId;
 
         if (key && rzpOrderId) {
@@ -418,21 +413,21 @@ export function OrderSummaryScreen() {
     }
 
     setOrderPlacementPhase('placed');
+    const paymentId = String(data?.paymentId ?? '');
     try {
-      if (paymentUrl.includes('test') || paymentUrl.includes('httpbin')) {
-        simulatePaymentSuccess(currentOrder.id, currentOrder.total ?? payable);
-      } else {
-        await verifyPayment.mutateAsync({
-          paymentId: String(data?.paymentId ?? 'unknown'),
-          orderId: currentOrder.id,
-          gatewayPaymentId: data?.gatewayPaymentId as string | undefined,
-          gatewayOrderId: data?.gatewayOrderId as string | undefined,
-          gatewaySignature: data?.gatewaySignature as string | undefined,
-          status: 'success',
-        });
-      }
+      await verifyPayment.mutateAsync({
+        paymentId,
+        orderId: currentOrder.id,
+        gatewayPaymentId: data?.gatewayPaymentId as string | undefined,
+        gatewayOrderId: data?.gatewayOrderId as string | undefined,
+        gatewaySignature: data?.gatewaySignature as string | undefined,
+        status: 'success',
+      });
     } catch {
-      // Order exists; tracking still works
+      setOrderPlacementPhase('none');
+      setFailedPaymentId(paymentId);
+      setRefundModalOpen(true);
+      return;
     }
 
     await new Promise((r) => setTimeout(r, 1000));

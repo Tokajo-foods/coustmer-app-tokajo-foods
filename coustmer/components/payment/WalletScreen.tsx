@@ -31,7 +31,6 @@ import {
   usePaymentMethods,
   usePaymentWallet,
   usePaymentWalletTransactions,
-  useWalletTopup,
 } from '@/lib/payment/hooks';
 import type { WalletTransaction } from '@/lib/payment/types';
 import { WalletTopupModal } from './WalletTopupModal';
@@ -163,7 +162,6 @@ export function WalletScreen() {
         visible={topupModalOpen}
         onClose={() => setTopupModalOpen(false)}
         currentBalance={walletData?.balance ?? 0}
-        savedMethods={methods.data}
       />
     </SafeAreaView>
   );

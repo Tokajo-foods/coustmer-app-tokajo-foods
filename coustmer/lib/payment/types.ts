@@ -125,13 +125,6 @@ export type WalletSummary = {
   [key: string]: unknown;
 };
 
-export type WalletTopupPayload = {
-  amount: number;
-  method?: PaymentMethodType;
-  methodId?: string;
-  currency?: string;
-};
-
 export type WalletTransaction = {
   id: string;
   type?: string;

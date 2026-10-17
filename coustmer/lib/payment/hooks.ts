@@ -10,8 +10,12 @@ import type {
   RequestRefundPayload,
   SavePaymentMethodPayload,
   VerifyPaymentPayload,
-  WalletTopupPayload,
 } from '@/lib/payment/types';
+import {
+  walletTopupApi,
+  type WalletTopupMethod,
+  type WalletTopupVerifyPayload,
+} from '@/lib/payment/wallet-topup-api';
 
 export const paymentKeys = {
   all: ['payment'] as const,
@@ -176,15 +180,22 @@ export function useSetDefaultPaymentMethod() {
   });
 }
 
-/** POST /payments/wallet/topup */
-export function useWalletTopup() {
+/** POST /payments/wallet/topup — returns a Razorpay session to open checkout. */
+export function useStartWalletTopup() {
+  return useMutation({
+    mutationFn: (payload: { amount: number; method: WalletTopupMethod }) =>
+      walletTopupApi.start(payload),
+  });
+}
+
+/** POST /payments/wallet/topup/verify — credits the wallet after checkout success. */
+export function useVerifyWalletTopup() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: WalletTopupPayload) => paymentApi.topupWallet(payload),
-    onSuccess: () => {
+    mutationFn: (payload: WalletTopupVerifyPayload) => walletTopupApi.verify(payload),
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.wallet() });
       queryClient.invalidateQueries({ queryKey: [...paymentKeys.all, 'wallet-tx'] });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.history() });
     },
   });
 }
