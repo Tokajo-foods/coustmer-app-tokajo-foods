@@ -464,6 +464,14 @@ export function mapRestaurantHygiene(data: Record<string, unknown>): RestaurantH
     data.hygiene && typeof data.hygiene === 'object'
       ? (data.hygiene as Record<string, unknown>)
       : data;
+  const licenseRaw = String(
+    nested.fssaiLicense ??
+      nested.fssaiNumber ??
+      nested.fssai ??
+      data.fssaiLicense ??
+      data.fssaiNumber ??
+      ''
+  ).trim();
   const maskedRaw = String(
     nested.fssaiMasked ??
       nested.fssaiLicenseMasked ??
@@ -473,6 +481,7 @@ export function mapRestaurantHygiene(data: Record<string, unknown>): RestaurantH
       ''
   ).trim();
   return {
+    fssaiLicense: licenseRaw || undefined,
     fssaiMasked: maskFssai(maskedRaw) || undefined,
     hygieneScore:
       typeof nested.hygieneScore === 'number'

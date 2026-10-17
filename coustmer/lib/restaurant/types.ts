@@ -164,6 +164,7 @@ export type RestaurantTimings = {
 };
 
 export type RestaurantHygiene = {
+  fssaiLicense?: string;
   fssaiMasked?: string;
   hygieneScore?: number;
   raw?: Record<string, unknown>;

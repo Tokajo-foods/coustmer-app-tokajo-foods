@@ -396,6 +396,16 @@ export function RestaurantDetailScreen() {
   }
 
   const r = restaurant.data;
+  const infoHygieneScore =
+    typeof hygiene.data?.hygieneScore === 'number'
+      ? hygiene.data.hygieneScore
+      : typeof r.hygieneScore === 'number'
+        ? r.hygieneScore
+        : undefined;
+  const showInfoHygiene =
+    typeof infoHygieneScore === 'number' && infoHygieneScore > 0;
+  const infoFssaiFull =
+    (hygiene.data?.fssaiLicense ?? r.fssaiLicense ?? '').trim() || undefined;
   const cover = r.coverUrl || r.imageUrl || '';
   const logo = r.logoUrl || r.imageUrl;
   const restaurantName = r.name || 'Restaurant';
@@ -852,15 +862,6 @@ export function RestaurantDetailScreen() {
                   </Text>
                 </View>
               ) : null}
-              {typeof r.maxDeliveryRadius === 'number' &&
-              r.maxDeliveryRadius > 0 ? (
-                <View style={styles.infoMetaCard}>
-                  <Text style={styles.infoMetaLabel}>Delivers within</Text>
-                  <Text style={styles.infoMetaValue}>
-                    {r.maxDeliveryRadius} km
-                  </Text>
-                </View>
-              ) : null}
             </View>
 
             <Text style={[styles.infoLabel, { marginTop: 18 }]}>
@@ -875,11 +876,7 @@ export function RestaurantDetailScreen() {
                   ? 'Open now · accepting orders'
                   : 'Hours may vary'}
               {r.isPureVeg ? ' · Pure veg' : ''}
-              {typeof hygiene.data?.hygieneScore === 'number'
-                ? ` · Hygiene ${hygiene.data.hygieneScore}`
-                : typeof r.hygieneScore === 'number'
-                  ? ` · Hygiene ${r.hygieneScore}`
-                  : ''}
+              {showInfoHygiene ? ` · Hygiene ${infoHygieneScore}` : ''}
             </Text>
 
             {kitchenClosed && token ? (
@@ -1022,8 +1019,7 @@ export function RestaurantDetailScreen() {
               </>
             ) : null}
 
-            {hygiene.data?.fssaiMasked ||
-            typeof hygiene.data?.hygieneScore === 'number' ? (
+            {showInfoHygiene ? (
               <>
                 <Text style={[styles.infoLabel, { marginTop: 18 }]}>
                   Hygiene
@@ -1032,12 +1028,8 @@ export function RestaurantDetailScreen() {
                   <ShieldCheck color="#15803D" size={16} />
                   <Text style={styles.infoBody}>
                     {[
-                      hygiene.data?.fssaiMasked
-                        ? `FSSAI ${hygiene.data.fssaiMasked}`
-                        : null,
-                      typeof hygiene.data?.hygieneScore === 'number'
-                        ? `Score ${hygiene.data.hygieneScore}`
-                        : null,
+                      infoFssaiFull ? `FSSAI ${infoFssaiFull}` : null,
+                      `Score ${infoHygieneScore}`,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
