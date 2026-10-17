@@ -92,7 +92,7 @@ export function RetryOnlinePayment({
       setSession({
         keyId: key,
         orderId: rzpOrderId,
-        amount,
+        amount: payment.amount || amount,
         currency: 'INR',
         paymentId: payment.id,
         description: `Order ${orderId}`,

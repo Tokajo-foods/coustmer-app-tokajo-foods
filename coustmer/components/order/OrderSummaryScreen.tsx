@@ -292,7 +292,7 @@ export function OrderSummaryScreen() {
           setRazorpaySession({
             keyId: key,
             orderId: rzpOrderId,
-            amount,
+            amount: payment.amount || amount,
             currency: 'INR',
             paymentId: payment.id,
             customerName: displayName,

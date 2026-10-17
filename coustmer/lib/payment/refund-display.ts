@@ -20,7 +20,7 @@ export function refundDisplay(refund: Refund): RefundDisplay {
     if (refund.fallbackMethod === 'wallet') {
       return {
         title: `${extra}Credited to your wallet`,
-        detail: "Your bank couldn't accept the refund, so the full amount was added to your wallet instead.",
+        detail: "Your original payment method couldn't receive this refund, so the full amount was added to your wallet instead.",
         tone: 'done',
       };
     }
@@ -44,6 +44,14 @@ export function refundDisplay(refund: Refund): RefundDisplay {
   }
   if (status === 'rejected') {
     return { title: 'Refund request declined', detail: 'See the reason below or contact Help.', tone: 'problem' };
+  }
+
+  if (refund.refundMethod === 'wallet') {
+    return {
+      title: `${extra}Wallet refund in progress`,
+      detail: 'Being added to your wallet. This usually takes a few minutes.',
+      tone: 'progress',
+    };
   }
 
   const by = formatDay(refund.expectedBy);
