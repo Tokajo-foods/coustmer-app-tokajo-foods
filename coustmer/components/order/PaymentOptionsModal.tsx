@@ -21,7 +21,6 @@ import type { SavedPaymentMethod, WalletSummary } from '@/lib/payment/types';
 
 const ORANGE = '#F97316';
 const ORANGE_DARK = '#EA580C';
-const ORANGE_SOFT = '#FFF7ED';
 const TOKAJO_YELLOW = '#FACC15';
 const TEXT = '#0B1220';
 const TEXT_SEC = '#64748B';
@@ -30,6 +29,7 @@ const WHITE = '#FFFFFF';
 
 const PAYTM_LOGO = require('../../assets/images/payment/paytm.png');
 const GPAY_LOGO = require('../../assets/images/payment/gpay.png');
+const PHONEPE_LOGO = require('../../assets/images/payment/phonepe.png');
 const TOKAJO_LOGO = require('../../assets/Logo.png');
 
 type Props = {
@@ -184,18 +184,6 @@ export function PaymentOptionsModal({
               </View>
             </View>
 
-            <Pressable style={styles.offersBanner}>
-              <View style={styles.offersLeft}>
-                <View style={styles.percentBadge}>
-                  <Text style={styles.percentText}>%</Text>
-                </View>
-                <Text style={styles.offersText}>
-                  Save more with payment offers
-                </Text>
-              </View>
-              <ChevronRight color={ORANGE} size={20} />
-            </Pressable>
-
             <LinearGradient
               colors={['#FB923C', '#F97316', '#EA580C']}
               start={{ x: 0, y: 0 }}
@@ -228,7 +216,7 @@ export function PaymentOptionsModal({
               </View>
             </LinearGradient>
 
-            <Text style={styles.sectionTitle}>Preferred Payment</Text>
+            <Text style={styles.sectionTitle}>UPI & wallets</Text>
             <View style={styles.cardGroup}>
               <Pressable
                 style={styles.cardItem}
@@ -242,8 +230,51 @@ export function PaymentOptionsModal({
                       contentFit="cover"
                     />
                   </View>
-                  <Text style={styles.cardItemText}>Paytm UPI</Text>
+                  <View style={styles.cardItemBody}>
+                    <Text style={styles.cardItemText}>Paytm UPI</Text>
+                    <Text style={styles.cardItemSubtext}>Pay via Paytm</Text>
+                  </View>
                   <SelectMark selected={selectedMethod === 'paytm_upi'} />
+                </View>
+              </Pressable>
+              <View style={styles.divider} />
+              <Pressable
+                style={styles.cardItem}
+                onPress={() => onSelectMethod('gpay')}
+              >
+                <View style={styles.cardRow}>
+                  <View style={styles.gpayIconBox}>
+                    <Image
+                      source={GPAY_LOGO}
+                      style={styles.gpayImage}
+                      contentFit="contain"
+                    />
+                  </View>
+                  <View style={styles.cardItemBody}>
+                    <Text style={styles.cardItemText}>Google Pay</Text>
+                    <Text style={styles.cardItemSubtext}>UPI apps</Text>
+                  </View>
+                  <SelectMark selected={selectedMethod === 'gpay'} />
+                </View>
+              </Pressable>
+              <View style={styles.divider} />
+              <Pressable
+                style={styles.cardItem}
+                onPress={() => onSelectMethod('phonepe')}
+              >
+                <View style={styles.cardRow}>
+                  <View style={styles.phonepeIconBox}>
+                    <Image
+                      source={PHONEPE_LOGO}
+                      style={styles.phonepeImage}
+                      contentFit="cover"
+                    />
+                  </View>
+                  <View style={styles.cardItemBody}>
+                    <Text style={styles.cardItemText}>PhonePe</Text>
+                    <Text style={styles.cardItemSubtext}>UPI apps</Text>
+                  </View>
+                  <SelectMark selected={selectedMethod === 'phonepe'} />
                 </View>
               </Pressable>
             </View>
@@ -280,58 +311,7 @@ export function PaymentOptionsModal({
               </>
             ) : null}
 
-            <Text style={styles.sectionTitle}>Tokajo Foods</Text>
-            <View style={styles.cardGroup}>
-              <Pressable style={styles.cardItem} onPress={handleWalletSelect}>
-                <View style={styles.cardRow}>
-                  <TokajoMark size={40} />
-                  <View style={[styles.cardItemBody, { marginLeft: 12 }]}>
-                    <Text style={styles.cardItemText}>Tokajo Foods Wallet</Text>
-                    <Text style={styles.cardItemSubtext}>
-                      {wallet
-                        ? `₹${wallet.balance.toFixed(0)} · full bill only`
-                        : 'Pays the full bill from your Tokajo balance'}
-                    </Text>
-                  </View>
-                  <SelectMark selected={selectedMethod === 'wallet'} />
-                </View>
-              </Pressable>
-            </View>
-
-            <Text style={styles.sectionTitle}>Pay by any UPI App</Text>
-            <View style={styles.cardGroup}>
-              <Pressable
-                style={styles.cardItem}
-                onPress={() => onSelectMethod('gpay')}
-              >
-                <View style={styles.cardRow}>
-                  <View style={styles.gpayIconBox}>
-                    <Image
-                      source={GPAY_LOGO}
-                      style={styles.gpayImage}
-                      contentFit="contain"
-                    />
-                  </View>
-                  <Text style={styles.cardItemText}>Google Pay</Text>
-                  <SelectMark selected={selectedMethod === 'gpay'} />
-                </View>
-              </Pressable>
-              <View style={styles.divider} />
-              <Pressable
-                style={styles.cardItem}
-                onPress={() => onSelectMethod('phonepe')}
-              >
-                <View style={styles.cardRow}>
-                  <View style={styles.phonepeIconBox}>
-                    <Text style={styles.phonepeMark}>Pe</Text>
-                  </View>
-                  <Text style={styles.cardItemText}>PhonePe</Text>
-                  <SelectMark selected={selectedMethod === 'phonepe'} />
-                </View>
-              </Pressable>
-            </View>
-
-            <Text style={styles.sectionTitle}>Credit & Debit Cards</Text>
+            <Text style={styles.sectionTitle}>Cards</Text>
             <View style={styles.cardGroup}>
               {savedCards.map((card) => (
                 <View key={card.id}>
@@ -379,7 +359,7 @@ export function PaymentOptionsModal({
               </Pressable>
             </View>
 
-            <Text style={styles.sectionTitle}>More Payment Options</Text>
+            <Text style={styles.sectionTitle}>More options</Text>
             <View style={styles.cardGroup}>
               <Pressable
                 style={styles.cardItem}
@@ -459,9 +439,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#F4F5F7',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#FAFAFA',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '92%',
     overflow: 'hidden',
   },
@@ -496,6 +476,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiBold,
   },
   scrollContent: {
+    paddingTop: 8,
     paddingBottom: 40,
   },
   addressStrip: {
@@ -546,45 +527,13 @@ const styles = StyleSheet.create({
     color: TEXT_SEC,
     fontFamily: fonts.ui,
   },
-  offersBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: ORANGE_SOFT,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginVertical: 8,
-  },
-  offersLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  percentBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  percentText: {
-    color: WHITE,
-    fontSize: 14,
-    fontFamily: fonts.uiBold,
-  },
-  offersText: {
-    color: ORANGE_DARK,
-    fontFamily: fonts.uiBold,
-    fontSize: 14,
-  },
   upiPromo: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 16,
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: 4,
+    marginBottom: 8,
     alignItems: 'center',
     justifyContent: 'space-between',
     overflow: 'hidden',
@@ -664,35 +613,41 @@ const styles = StyleSheet.create({
   phonepeIconBox: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 20,
     marginRight: 12,
+    overflow: 'hidden',
     backgroundColor: '#5F259F',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  phonepeMark: {
-    color: WHITE,
-    fontSize: 16,
-    fontFamily: fonts.uiBold,
+  phonepeImage: {
+    width: 40,
+    height: 40,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontFamily: fonts.displayBold,
-    color: TEXT,
+    fontSize: 12,
+    fontFamily: fonts.uiBold,
+    color: TEXT_SEC,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: 14,
+    marginBottom: 8,
   },
   cardGroup: {
     backgroundColor: WHITE,
-    borderRadius: 16,
+    borderRadius: 14,
     marginHorizontal: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: BORDER,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   cardItem: {
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   cardRow: {
     flexDirection: 'row',
