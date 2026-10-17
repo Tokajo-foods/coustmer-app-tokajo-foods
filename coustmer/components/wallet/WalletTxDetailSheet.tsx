@@ -1,4 +1,3 @@
-import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Copy, X } from 'lucide-react-native';
 import { useState } from 'react';
@@ -7,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { authTheme } from '@/constants/auth-theme';
+import { copyTextToClipboard } from '@/lib/clipboard/copy-text';
 import { formatInr } from '@/lib/format/money';
 import {
   CATEGORY_VISUALS,
@@ -36,7 +36,7 @@ export function WalletTxDetailSheet({ item, onClose }: Props) {
   const method = methodLabel(tx.paymentMethod);
 
   const copyId = async () => {
-    await Clipboard.setStringAsync(tx.transactionId);
+    if (!(await copyTextToClipboard(tx.transactionId))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
