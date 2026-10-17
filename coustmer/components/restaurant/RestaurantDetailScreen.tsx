@@ -37,7 +37,6 @@ import {
   RestaurantMenuSearchBar,
   type MenuFilterId,
 } from '@/components/restaurant/detail/RestaurantMenuSearchBar';
-import { RestaurantPopularPicks } from '@/components/restaurant/detail/RestaurantPopularPicks';
 import { RestaurantShareSheet } from '@/components/restaurant/RestaurantShareSheet';
 import { useRestaurantShareGate } from '@/lib/restaurant/use-restaurant-share-gate';
 import { openRestaurantMenuSearch } from '@/lib/restaurant/open-menu-search';
@@ -96,16 +95,6 @@ const WEEKDAYS = [
 
 type TabId = RestaurantDetailTab;
 type MenuFilter = MenuFilterId;
-
-function isBestseller(item: MenuItem, index: number) {
-  if (item.isBestSeller || item.isRecommended) return true;
-  const tags = (item.tags ?? []).map((t) => String(t).toLowerCase());
-  if (tags.some((t) => t.includes('best') || t.includes('popular') || t.includes('hit'))) {
-    return true;
-  }
-  // Only promote high-rated dishes when the API actually sent a rating.
-  return typeof item.rating === 'number' && item.rating >= 4.2 && index < 6;
-}
 
 export function RestaurantDetailScreen() {
   const router = useRouter();
@@ -234,29 +223,6 @@ export function RestaurantDetailScreen() {
     }
     return items;
   }, [menu.items, menu.recommended, menuFilter, vegOnly]);
-
-  const popularItems = useMemo(() => {
-    const recommended = (menu.recommended ?? []).filter((item) =>
-      vegOnly || menuFilter === 'veg' ? item.isVeg === true : true
-    );
-    if (recommended.length >= 2) return recommended.slice(0, 8);
-
-    const pool =
-      menuFilter === 'recommended' || menuFilter === 'bestsellers'
-        ? visibleItems
-        : menu.items.filter((item) =>
-            vegOnly || menuFilter === 'veg' ? item.isVeg === true : true
-          );
-
-    const scored = [...pool].sort((a, b) => {
-      const ar = a.rating ?? 0;
-      const br = b.rating ?? 0;
-      if (br !== ar) return br - ar;
-      return (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
-    });
-    const picks = scored.filter((_, i) => isBestseller(scored[i], i)).slice(0, 8);
-    return picks.length >= 3 ? picks : pool.slice(0, 8);
-  }, [menu.recommended, menu.items, visibleItems, vegOnly, menuFilter]);
 
   const categories = useMemo(() => {
     if (menu.categories.length) return menu.categories;
@@ -672,22 +638,6 @@ export function RestaurantDetailScreen() {
             <>
                 <View style={styles.menuSectionCard}>
                   {categoryRail}
-
-                <RestaurantPopularPicks
-                  title={
-                    (menu.recommended?.length ?? 0) >= 2
-                      ? 'Recommended'
-                      : 'Popular picks'
-                  }
-                  subtitle={
-                    (menu.recommended?.length ?? 0) >= 2
-                      ? 'Bestsellers from this kitchen'
-                      : 'Tap a dish to view or add'
-                  }
-                  items={popularItems}
-                  onPressItem={setSelectedItem}
-                  onAddItem={addItem}
-                />
 
                 {/* Menu by category */}
                 {menu.isLoading ? (
