@@ -1,22 +1,22 @@
 import type { ReactNode } from 'react';
-import { Pressable } from '@/components/common/Pressable';
 import {
   Banknote,
-  Bell,
-  BellOff,
   CalendarClock,
-  Clock,
   CreditCard,
-  IndianRupee,
-  Leaf,
   MapPin,
-  Navigation,
   ShieldCheck,
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import type { Restaurant, RestaurantTimings } from '@/lib/restaurant/types';
 
+import { RestaurantInfoOutletCard } from './RestaurantInfoOutletCard';
+import {
+  formatScheduleDay,
+  RestaurantInfoHoursList,
+  RestaurantInfoWeeklyHours,
+  type HoursRow,
+} from './RestaurantInfoWeeklyHours';
 import { infoColors, infoStyles as styles } from './restaurant-info-panel-styles';
 
 const WEEKDAYS = [
@@ -66,43 +66,67 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.statTile}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-    </View>
-  );
-}
+function buildWeeklyHours(
+  timings: RestaurantTimings | undefined,
+  legacy: Restaurant['timings'],
+  todayKey: string
+): HoursRow[] {
+  const byKey = new Map<string, HoursRow>();
 
-function ScheduleList({
-  rows,
-}: {
-  rows: { key: string; day: string; value: string; active?: boolean }[];
-}) {
-  return (
-    <View style={styles.scheduleList}>
-      {rows.map((row, i) => (
-        <View
-          key={row.key}
-          style={[
-            styles.scheduleRow,
-            i === rows.length - 1 ? styles.scheduleRowLast : null,
-          ]}
-        >
-          <Text style={styles.scheduleDay}>{row.day}</Text>
-          <Text
-            style={[
-              styles.scheduleValue,
-              row.active ? styles.scheduleValueActive : null,
-            ]}
-          >
-            {row.value}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
+  if (timings?.slots && Object.keys(timings.slots).length) {
+    for (const day of Object.keys(timings.slots)) {
+      const value = timings.slots[day];
+      const slotText = Array.isArray(value)
+        ? value
+            .map(
+              (s) =>
+                s.label || (s.open && s.close ? `${s.open}–${s.close}` : s.open)
+            )
+            .filter(Boolean)
+            .join(', ')
+        : String(value ?? '');
+      const closed = !slotText || slotText.toLowerCase() === 'closed';
+      const key = day.toLowerCase();
+      byKey.set(key, {
+        key,
+        day: formatScheduleDay(key),
+        value: slotText || 'Closed',
+        closed,
+        today: key === todayKey,
+      });
+    }
+  } else if (legacy) {
+    for (const [day, value] of Object.entries(legacy)) {
+      const dayInfo =
+        value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+      const open = dayInfo.isOpen === true;
+      const slots = Array.isArray(dayInfo.slots)
+        ? (dayInfo.slots as { open?: string; close?: string }[])
+        : [];
+      const slotText = slots
+        .map((s) => (s.open && s.close ? `${s.open}–${s.close}` : null))
+        .filter(Boolean)
+        .join(', ');
+      const key = day.toLowerCase();
+      byKey.set(key, {
+        key,
+        day: formatScheduleDay(key),
+        value: open ? slotText || 'Open' : 'Closed',
+        closed: !open,
+        today: key === todayKey,
+      });
+    }
+  }
+
+  const ordered: HoursRow[] = [];
+  for (const day of WEEKDAYS) {
+    const row = byKey.get(day);
+    if (row) ordered.push(row);
+  }
+  for (const [key, row] of byKey) {
+    if (!WEEKDAYS.includes(key as (typeof WEEKDAYS)[number])) ordered.push(row);
+  }
+  return ordered;
 }
 
 export function RestaurantInfoPanel({
@@ -129,18 +153,15 @@ export function RestaurantInfoPanel({
 }: RestaurantInfoPanelProps) {
   const { ORANGE, MUTED } = infoColors;
 
-  const statusTitle = kitchenClosed
-    ? nextOpenLabel
-      ? `Closed · opens ${nextOpenLabel}`
-      : 'Currently closed'
-    : openNow
-      ? 'Open now'
-      : 'Outlet hours';
-  const statusSub = kitchenClosed
-    ? 'Not accepting orders right now'
-    : openNow
-      ? 'Accepting delivery orders'
-      : 'See weekly hours below';
+  const todayKey = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  ][new Date().getDay()];
 
   const stats: { key: string; label: string; value: string }[] = [];
   const cost = r.costForTwo ?? r.priceForTwo;
@@ -194,126 +215,25 @@ export function RestaurantInfoPanel({
       : null,
   ].filter(Boolean) as { id: string; label: string; icon: ReactNode }[];
 
-  const scheduleRows: {
-    key: string;
-    day: string;
-    value: string;
-    active?: boolean;
-  }[] = [];
-
-  if (timings?.slots && Object.keys(timings.slots).length) {
-    const days = [
-      ...WEEKDAYS.filter((day) => timings.slots?.[day] != null),
-      ...Object.keys(timings.slots).filter(
-        (day) => !WEEKDAYS.includes(day.toLowerCase() as (typeof WEEKDAYS)[number])
-      ),
-    ];
-    for (const day of days) {
-      const value = timings.slots[day];
-      const slotText = Array.isArray(value)
-        ? value
-            .map(
-              (s) =>
-                s.label || (s.open && s.close ? `${s.open}–${s.close}` : s.open)
-            )
-            .filter(Boolean)
-            .join(', ')
-        : String(value ?? '');
-      const closed = !slotText || slotText.toLowerCase() === 'closed';
-      scheduleRows.push({
-        key: day,
-        day: day.charAt(0).toUpperCase() + day.slice(1),
-        value: slotText || 'Closed',
-        active: !closed,
-      });
-    }
-  } else if (r.timings) {
-    for (const [day, value] of Object.entries(r.timings)) {
-      const dayInfo =
-        value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-      const open = dayInfo.isOpen === true;
-      const slots = Array.isArray(dayInfo.slots)
-        ? (dayInfo.slots as { open?: string; close?: string }[])
-        : [];
-      const slotText = slots
-        .map((s) => (s.open && s.close ? `${s.open}–${s.close}` : null))
-        .filter(Boolean)
-        .join(', ');
-      scheduleRows.push({
-        key: day,
-        day: day.charAt(0).toUpperCase() + day.slice(1),
-        value: open ? slotText || 'Open' : 'Closed',
-        active: open,
-      });
-    }
-  }
-
-  const notifyOutline = watchingOpen;
+  const weeklyHours = buildWeeklyHours(timings, r.timings, todayKey);
 
   return (
     <View style={styles.root}>
-      <View style={styles.card}>
-        <Text style={styles.sectionKicker}>Outlet</Text>
-        <View style={styles.statusRow}>
-          <View
-            style={[
-              styles.statusDot,
-              kitchenClosed ? styles.statusDotClosed : styles.statusDotOpen,
-            ]}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.statusTitle}>{statusTitle}</Text>
-            <Text style={styles.statusSub}>{statusSub}</Text>
-            <View style={styles.badgeRow}>
-              {r.isPureVeg ? (
-                <View style={styles.badge}>
-                  <Leaf color={ORANGE} size={14} />
-                  <Text style={styles.badgeText}>Pure veg</Text>
-                </View>
-              ) : null}
-              {showHygieneScore ? (
-                <View style={styles.badge}>
-                  <ShieldCheck color={ORANGE} size={14} />
-                  <Text style={styles.badgeText}>Hygiene {infoHygieneScore}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-        </View>
-        {kitchenClosed && token ? (
-          <Pressable
-            style={[styles.notifyBtn, notifyOutline ? styles.notifyBtnOutline : null]}
-            onPress={onToggleNotifyOpen}
-            disabled={notifyPending}
-          >
-            {watchingOpen ? (
-              <BellOff color={notifyOutline ? ORANGE : '#FFFFFF'} size={16} />
-            ) : (
-              <Bell color={notifyOutline ? ORANGE : '#FFFFFF'} size={16} />
-            )}
-            <Text
-              style={[
-                styles.notifyBtnText,
-                notifyOutline ? styles.notifyBtnTextOutline : null,
-              ]}
-            >
-              {watchingOpen
-                ? 'Stop kitchen-open alert'
-                : 'Notify when kitchen opens'}
-            </Text>
-          </Pressable>
-        ) : null}
-        {stats.length > 0 ? (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.statsGrid}>
-              {stats.map((s) => (
-                <StatTile key={s.key} label={s.label} value={s.value} />
-              ))}
-            </View>
-          </>
-        ) : null}
-      </View>
+      <RestaurantInfoOutletCard
+        kitchenClosed={kitchenClosed}
+        openNow={openNow}
+        nextOpenLabel={nextOpenLabel}
+        isPureVeg={r.isPureVeg}
+        showHygieneScore={showHygieneScore}
+        infoHygieneScore={infoHygieneScore}
+        stats={stats}
+        token={token}
+        watchingOpen={watchingOpen}
+        notifyPending={notifyPending}
+        onToggleNotifyOpen={onToggleNotifyOpen}
+      />
+
+      <RestaurantInfoWeeklyHours rows={weeklyHours} />
 
       <View style={styles.card}>
         <SectionTitle title={`About ${restaurantName}`} />
@@ -379,39 +299,23 @@ export function RestaurantInfoPanel({
         </View>
       ) : null}
 
-      {scheduleRows.length > 0 ? (
-        <View style={styles.card}>
-          <SectionTitle title="Weekly hours (IST)" />
-          <ScheduleList rows={scheduleRows} />
-        </View>
-      ) : null}
+      <RestaurantInfoHoursList
+        title="Upcoming closed dates"
+        rows={holidays.slice(0, 5).map((h) => ({
+          key: h.date,
+          day: h.date,
+          value: h.reason || 'Closed',
+        }))}
+      />
 
-      {holidays.length > 0 ? (
-        <View style={styles.card}>
-          <SectionTitle title="Upcoming closed dates" />
-          <ScheduleList
-            rows={holidays.slice(0, 5).map((h) => ({
-              key: h.date,
-              day: h.date,
-              value: h.reason || 'Closed',
-            }))}
-          />
-        </View>
-      ) : null}
-
-      {specialHours.length > 0 ? (
-        <View style={styles.card}>
-          <SectionTitle title="Special hours" />
-          <ScheduleList
-            rows={specialHours.slice(0, 5).map((sh) => ({
-              key: sh.date,
-              day: sh.date,
-              value: `${sh.openTime}–${sh.closeTime}${sh.reason ? ` · ${sh.reason}` : ''}`,
-              active: true,
-            }))}
-          />
-        </View>
-      ) : null}
+      <RestaurantInfoHoursList
+        title="Special hours"
+        rows={specialHours.slice(0, 5).map((sh) => ({
+          key: sh.date,
+          day: sh.date,
+          value: `${sh.openTime}–${sh.closeTime}${sh.reason ? ` · ${sh.reason}` : ''}`,
+        }))}
+      />
     </View>
   );
 }
