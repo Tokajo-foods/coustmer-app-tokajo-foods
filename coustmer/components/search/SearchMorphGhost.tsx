@@ -1,11 +1,12 @@
 import { Search, SlidersHorizontal } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 
 import { fonts } from '@/constants/typography';
 import { SEARCH_MORPH } from '@/lib/motion/search-morph';
 import type { SearchMorph } from '@/lib/motion/use-search-morph';
 
+import { StaticPlaceholder } from './RotatingPlaceholder';
 import { SEARCH_PLACEHOLDER, searchColors } from './search-styles';
 
 const { from: A, to: B } = SEARCH_MORPH;
@@ -63,7 +64,7 @@ export function SearchMorphGhost({ morph }: { morph: SearchMorph }) {
           {morph.hint || SEARCH_PLACEHOLDER}
         </Animated.Text>
         <Animated.View style={[StyleSheet.absoluteFill, styles.center, hintIn]}>
-          <Text style={styles.placeholder} numberOfLines={1}>{SEARCH_PLACEHOLDER}</Text>
+          <StaticPlaceholder />
         </Animated.View>
       </View>
       <Animated.View style={[styles.trailing, trailing]}>
@@ -91,7 +92,6 @@ const styles = StyleSheet.create({
   texts: { flex: 1, justifyContent: 'center' },
   center: { justifyContent: 'center' },
   hint: { fontFamily: fonts.ui, fontSize: 14.5, color: '#8A8A8A' },
-  placeholder: { fontFamily: fonts.ui, fontSize: 15, color: searchColors.muted },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: 11, position: 'absolute', right: 12 },
   divider: { width: 1, height: 24, backgroundColor: '#EFEAE4' },
 });

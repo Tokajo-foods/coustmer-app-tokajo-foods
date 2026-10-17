@@ -8,10 +8,15 @@ export const searchColors = {
   muted: '#64748B',
   border: '#F1F5F9',
   bg: '#FFFFFF',
-  field: '#F8FAFC',
+  field: '#FFFFFF',
+  fieldBorder: '#FED7AA',
+  peach: '#FFF7ED',
 } as const;
 
-export const SEARCH_PLACEHOLDER = 'Search restaurants, dishes…';
+/** Spoken label and the fallback text when the rotator is not shown. */
+export const SEARCH_PLACEHOLDER = 'Search dishes, cuisines and restaurants';
+export const SEARCH_PROMPT = 'Search for';
+export const SEARCH_SCOPES = ['dishes', 'cuisines', 'restaurants'] as const;
 
 const { ink, muted, border, orange, bg, field } = searchColors;
 
@@ -33,13 +38,30 @@ export const searchStyles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    height: 48,
     backgroundColor: field,
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: searchColors.fieldBorder,
     paddingHorizontal: 12,
-    paddingVertical: 10,
     gap: 8,
+    shadowColor: '#B4541A',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  input: { flex: 1, fontFamily: fonts.ui, fontSize: 15, color: ink, padding: 0 },
+  inputArea: { flex: 1, justifyContent: 'center' },
+  input: { fontFamily: fonts.ui, fontSize: 15, color: ink, padding: 0 },
+  placeholderLayer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center' },
+  clearIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   hairline: { height: 1, backgroundColor: border },
 
   section: { paddingHorizontal: 16, paddingTop: 16 },

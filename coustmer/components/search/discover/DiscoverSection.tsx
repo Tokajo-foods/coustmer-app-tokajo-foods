@@ -10,6 +10,7 @@ import { searchColors } from '../search-styles';
 export function DiscoverSection({
   title,
   subtitle,
+  icon,
   action,
   onAction,
   children,
@@ -17,6 +18,8 @@ export function DiscoverSection({
 }: {
   title: string;
   subtitle?: string;
+  /** Small glyph shown in an orange badge before the title. */
+  icon?: ReactNode;
   action?: string;
   onAction?: () => void;
   children: ReactNode;
@@ -24,14 +27,15 @@ export function DiscoverSection({
   flush?: boolean;
 }) {
   return (
-    <Animated.View entering={FadeIn.duration(220)} style={styles.section}>
+    <Animated.View entering={FadeIn.duration(260)} style={styles.section}>
       <View style={styles.header}>
+        {icon ? <View style={styles.badge}>{icon}</View> : null}
         <View style={styles.titles}>
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
         {action && onAction ? (
-          <Pressable onPress={onAction} hitSlop={10}>
+          <Pressable onPress={onAction} hitSlop={10} style={styles.actionBtn}>
             <Text style={styles.action}>{action}</Text>
           </Pressable>
         ) : null}
@@ -42,17 +46,26 @@ export function DiscoverSection({
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 22 },
+  section: { paddingTop: 26 },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  titles: { flex: 1, gap: 2 },
-  title: { fontFamily: fonts.displayBold, fontSize: 17, color: searchColors.ink, letterSpacing: -0.2 },
+  badge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: searchColors.peach,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titles: { flex: 1, gap: 1 },
+  title: { fontFamily: fonts.displayBold, fontSize: 17.5, color: searchColors.ink, letterSpacing: -0.3 },
   subtitle: { fontFamily: fonts.ui, fontSize: 12.5, color: searchColors.muted },
-  action: { fontFamily: fonts.uiSemi, fontSize: 13, color: searchColors.orange },
+  actionBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: searchColors.peach },
+  action: { fontFamily: fonts.uiBold, fontSize: 12, color: searchColors.orange },
   inset: { paddingHorizontal: 16 },
 });

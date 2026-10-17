@@ -10,6 +10,7 @@ import { searchColors } from '../search-styles';
 import { DishRail } from './DishRail';
 import { NearbyRestaurantList } from './NearbyRestaurantList';
 import { RecentChips } from './RecentChips';
+import { SearchHero } from './SearchHero';
 
 type Props = {
   recent: string[];
@@ -26,7 +27,8 @@ export function SearchDiscover({ recent, onSearch, onRemoveRecent, onClearRecent
   const nothingNearby = !d.loading && !d.failed && d.hasLocation && !d.restaurants.length;
 
   return (
-    <ScrollView {...PREMIUM_SCROLL} contentContainerStyle={styles.content}>
+    <ScrollView {...PREMIUM_SCROLL} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <SearchHero />
       <RecentChips terms={recent} onPick={onSearch} onRemove={onRemoveRecent} onClear={onClearRecent} />
       {!d.hasLocation ? (
         <Notice icon={<MapPin color={searchColors.orange} size={26} />} title="Set your delivery location"
@@ -97,7 +99,7 @@ function DiscoverSkeleton() {
 
 const styles = StyleSheet.create({
   content: { paddingBottom: 120 },
-  notice: { alignItems: 'center', paddingHorizontal: 32, paddingTop: 48, gap: 6 },
+  notice: { alignItems: 'center', paddingHorizontal: 32, paddingTop: 36, gap: 6 },
   noticeIcon: {
     width: 56,
     height: 56,
@@ -123,5 +125,5 @@ const styles = StyleSheet.create({
   bone: { backgroundColor: '#F1F5F9' },
   titleBone: { width: 180, height: 14, borderRadius: 7, marginBottom: 14 },
   listRow: { height: 64, borderRadius: 14, marginBottom: 12 },
-  card: { width: 148, height: 168, borderRadius: 16 },
+  card: { width: 156, height: 172, borderRadius: 18 },
 });

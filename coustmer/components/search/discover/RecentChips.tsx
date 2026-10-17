@@ -20,7 +20,12 @@ export function RecentChips({
 }) {
   if (!terms.length) return null;
   return (
-    <DiscoverSection title="Recent searches" action="Clear" onAction={onClear}>
+    <DiscoverSection
+      title="Recent searches"
+      icon={<History color={searchColors.orange} size={17} strokeWidth={2.4} />}
+      action="Clear"
+      onAction={onClear}
+    >
       <View style={styles.wrap}>
         {terms.slice(0, 8).map((term) => (
           <Pressable
@@ -55,8 +60,8 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
-  pressed: { backgroundColor: '#F8FAFC' },
+  pressed: { backgroundColor: '#F1F5F9' },
   text: { fontFamily: fonts.uiMedium, fontSize: 13, color: searchColors.ink, maxWidth: 180 },
 });
