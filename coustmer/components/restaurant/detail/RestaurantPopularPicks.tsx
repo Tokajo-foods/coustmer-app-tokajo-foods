@@ -1,6 +1,6 @@
 import { Pressable } from '@/components/common/Pressable';
 import { Image } from 'expo-image';
-import { Flame, Sparkles, UtensilsCrossed } from 'lucide-react-native';
+import { UtensilsCrossed } from 'lucide-react-native';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
@@ -56,7 +56,6 @@ function PopularDishCard({
           )}
           {badge ? (
             <View style={styles.badge}>
-              <Sparkles color="#FFF" size={9} strokeWidth={2.4} />
               <Text style={styles.badgeText} numberOfLines={1}>{badge}</Text>
             </View>
           ) : null}
@@ -98,10 +97,7 @@ export function RestaurantPopularPicks({
   return (
     <Animated.View entering={FadeInDown.delay(50).duration(320)} style={styles.block}>
       <View style={styles.head}>
-        <View style={styles.titleRow}>
-          <Flame color={ORANGE} size={16} strokeWidth={2.5} />
-          <Text style={styles.title}>{title}</Text>
-        </View>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.sub}>{subtitle}</Text>
       </View>
 
@@ -135,11 +131,6 @@ const styles = StyleSheet.create({
   head: {
     paddingHorizontal: 14,
     marginBottom: 10,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   title: {
     fontFamily: fonts.displayBold,

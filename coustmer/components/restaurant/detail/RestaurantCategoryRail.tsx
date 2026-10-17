@@ -1,5 +1,4 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Flame } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
@@ -41,11 +40,6 @@ export function RestaurantCategoryRail({
           onPress={() => onSelect('popular')}
         >
           <View style={styles.itemInner}>
-            <Flame
-              color={activeId === 'popular' ? ORANGE : MUTED}
-              size={14}
-              strokeWidth={2.5}
-            />
             <Text
               style={[styles.label, activeId === 'popular' && styles.labelOn]}
             >
