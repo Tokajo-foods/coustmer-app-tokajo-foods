@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar';
 import { ChevronDown, Lock, Mic, MicOff, Phone, PhoneOff, Volume2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -19,6 +20,8 @@ type Props = {
   onToggleMute: () => void;
   onToggleSpeaker: () => void;
   onMinimize?: () => void;
+  /** Set for a moment after the call closes, like WhatsApp's "Call ended" frame. */
+  endedLabel?: string | null;
 };
 
 export function formatCallDuration(totalSec: number): string {
@@ -45,14 +48,17 @@ function useStatus(call: ActiveCall): string {
 export function CallScreen(props: Props) {
   const { call, muted, speaker, busy } = props;
   const insets = useSafeAreaInsets();
-  const status = useStatus(call);
+  const liveStatus = useStatus(call);
+  const ended = Boolean(props.endedLabel);
+  const status = props.endedLabel || liveStatus;
   const incoming = call.phase === 'incoming';
-  const ringing = incoming || call.phase === 'outgoing';
+  const ringing = !ended && (incoming || call.phase === 'outgoing');
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 28 }]}>
+      <StatusBar style="light" />
       <View style={styles.topBar}>
-        {props.onMinimize && !incoming ? (
+        {props.onMinimize && !incoming && !ended ? (
           <Pressable onPress={props.onMinimize} hitSlop={12} accessibilityLabel="Minimise call">
             <ChevronDown color="#D1D7DB" size={26} />
           </Pressable>
@@ -74,13 +80,21 @@ export function CallScreen(props: Props) {
         <Text style={styles.sub} numberOfLines={1}>
           {peerSubtitle(call)}
         </Text>
-        <Text style={[styles.status, call.phase === 'active' && !call.reconnecting && styles.timer]}>
+        <Text
+          accessibilityLiveRegion="polite"
+          numberOfLines={2}
+          style={[
+            styles.status,
+            !ended && call.phase === 'active' && !call.reconnecting && styles.timer,
+            ended && styles.endedStatus,
+          ]}
+        >
           {status}
         </Text>
       </View>
 
       {incoming ? (
-        <View style={styles.answerRow}>
+        <View style={[styles.answerRow, ended && styles.endedControls]} pointerEvents={ended ? 'none' : 'auto'}>
           <CallControl
             label="Decline"
             tone="end"
@@ -101,7 +115,7 @@ export function CallScreen(props: Props) {
           />
         </View>
       ) : (
-        <View style={styles.panel}>
+        <View style={[styles.panel, ended && styles.endedControls]} pointerEvents={ended ? 'none' : 'auto'}>
           <CallControl
             label="Speaker"
             tone={speaker ? 'on' : 'neutral'}
@@ -149,8 +163,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sub: { marginTop: 6, fontFamily: fonts.uiMedium, fontSize: 14, color: '#8696A0' },
-  status: { marginTop: 14, fontFamily: fonts.uiMedium, fontSize: 16, color: '#D1D7DB' },
+  status: {
+    marginTop: 14,
+    paddingHorizontal: 12,
+    fontFamily: fonts.uiMedium,
+    fontSize: 16,
+    color: '#D1D7DB',
+    textAlign: 'center',
+  },
   timer: { letterSpacing: 1, fontVariant: ['tabular-nums'] },
+  endedStatus: { color: '#F28B82' },
+  endedControls: { opacity: 0.35 },
   answerRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
