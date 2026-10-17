@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
-import * as Clipboard from 'expo-clipboard';
+import { copyTextToClipboard } from '@/lib/clipboard/copy-text';
 import {
   Copy,
   MessageCircle,
@@ -52,9 +52,13 @@ export function RestaurantShareSheet({ visible, restaurant, onClose }: Props) {
   const copyLink = async () => {
     setCopying(true);
     try {
-      await Clipboard.setStringAsync(urls.primaryUrl);
-      Alert.alert('Link copied', 'Restaurant link copied to clipboard.');
-      onClose();
+      const ok = await copyTextToClipboard(urls.primaryUrl);
+      if (ok) {
+        Alert.alert('Link copied', 'Restaurant link copied to clipboard.');
+        onClose();
+      } else {
+        Alert.alert('Copy failed', 'Could not copy the link. Try Share instead.');
+      }
     } catch {
       Alert.alert('Copy failed', 'Could not copy the link. Try again.');
     } finally {
