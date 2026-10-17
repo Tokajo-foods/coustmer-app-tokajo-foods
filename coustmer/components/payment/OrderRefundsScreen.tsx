@@ -28,6 +28,7 @@ import {
   REFUND_STATUS_LABELS,
   type Refund,
 } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 export function OrderRefundsScreen() {
   const router = useRouter();
@@ -57,7 +58,7 @@ export function OrderRefundsScreen() {
       return;
     }
     if (maxAmount && parsedAmount && parsedAmount > maxAmount) {
-      setBanner(`Amount cannot exceed ₹${maxAmount.toFixed(0)}`);
+      setBanner(`Amount cannot exceed ${formatInr(maxAmount)}`);
       return;
     }
 
@@ -130,7 +131,7 @@ export function OrderRefundsScreen() {
               <Text style={styles.section}>Request a refund</Text>
               {typeof maxAmount === 'number' ? (
                 <Text style={styles.hint}>
-                  Order total ₹{maxAmount.toFixed(0)}. Leave amount blank for full
+                  Order total {formatInr(maxAmount)}. Leave amount blank for full
                   refund.
                 </Text>
               ) : null}
@@ -224,7 +225,7 @@ function RefundRow({
   return (
     <Pressable style={styles.row} onPress={onPress}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.rowTitle}>₹{refund.amount.toFixed(0)}</Text>
+        <Text style={styles.rowTitle}>{formatInr(refund.amount)}</Text>
         <Text style={styles.rowMeta}>
           {REFUND_STATUS_LABELS[refund.status] ?? refund.status}
           {refund.reason ? ` · ${refund.reason}` : ''}

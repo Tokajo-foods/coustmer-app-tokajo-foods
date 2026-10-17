@@ -13,6 +13,7 @@ import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes';
 
 import { authTheme } from '@/constants/auth-theme';
+import { formatInr } from '@/lib/format/money';
 
 type Props = {
   visible: boolean;
@@ -195,8 +196,8 @@ export function PaymentGatewayWebView({
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Payment Gateway</Text>
             <Text style={styles.headerSubtitle}>
-              {orderNumber ? `Order ${orderNumber} • ` : ''}₹
-              {Number(orderAmount ?? 0).toFixed(0)}
+              {orderNumber ? `Order ${orderNumber} • ` : ''}
+              {formatInr(Number(orderAmount ?? 0))}
             </Text>
           </View>
           

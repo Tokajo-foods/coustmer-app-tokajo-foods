@@ -240,8 +240,7 @@ export function mapOrder(data: Record<string, unknown>): Order {
       data.itemsTotal,
       pricing?.subtotal,
       pricing?.itemTotal
-    ) ??
-    items.reduce((s, i) => s + i.price * i.quantity, 0);
+    );
 
   const packagingCharge =
     pickNum(
@@ -289,7 +288,7 @@ export function mapOrder(data: Record<string, unknown>): Order {
       pricing?.deliveryTip
     ) ?? 0;
 
-  let tax =
+  const tax =
     pickNum(
       customerBill?.taxAmount,
       data.tax,
@@ -305,23 +304,6 @@ export function mapOrder(data: Record<string, unknown>): Order {
       pricing?.gstAmount,
       pricing?.taxesAndCharges
     ) ?? 0;
-
-  const chargesRaw = data.charges ?? pricing?.charges;
-  if (Array.isArray(chargesRaw) && tax <= 0) {
-    tax = chargesRaw.reduce((sum, row) => {
-      const c = asRecord(row);
-      const label = String(c.name ?? c.type ?? c.label ?? '').toLowerCase();
-      const amount = pickNum(c.amount, c.value, c.price) ?? 0;
-      if (
-        label.includes('tax') ||
-        label.includes('gst') ||
-        label.includes('vat')
-      ) {
-        return sum + amount;
-      }
-      return sum;
-    }, 0);
-  }
 
   const rainFee =
     pickNum(customerBill?.rainFee, data.rainFee, pricing?.rainFee) ?? 0;

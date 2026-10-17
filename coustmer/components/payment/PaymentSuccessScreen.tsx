@@ -18,6 +18,7 @@ import Animated, {
 import { authTheme } from '@/constants/auth-theme';
 import { usePayment } from '@/lib/payment/hooks';
 import { isPaymentSuccess } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 export function PaymentSuccessScreen() {
   const router = useRouter();
@@ -112,7 +113,7 @@ export function PaymentSuccessScreen() {
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Amount</Text>
-            <Text style={styles.detailValue}>₹{amount.toFixed(0)}</Text>
+            <Text style={styles.detailValue}>{formatInr(amount)}</Text>
           </View>
           
           {orderNumber && (

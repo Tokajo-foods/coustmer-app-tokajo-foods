@@ -86,8 +86,6 @@ type CartState = {
   hydrateFromServer: (payload: CartHydratePayload) => void;
   clearCart: () => void;
   totalItems: () => number;
-  subtotal: () => number;
-  estimatedTotal: () => number;
 };
 
 export const useCartStore = create<CartState>()(
@@ -265,30 +263,6 @@ export const useCartStore = create<CartState>()(
 
       totalItems: () =>
         get().items.reduce((sum, item) => sum + item.quantity, 0),
-
-      subtotal: () =>
-        get().items.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        ),
-
-      estimatedTotal: () => {
-        const state = get();
-        if (typeof state.serverTotal === 'number' && Number.isFinite(state.serverTotal)) {
-          return Math.max(0, state.serverTotal);
-        }
-        return Math.max(
-          0,
-          Math.round(
-            (state.subtotal() +
-              state.tip +
-              state.deliveryFee +
-              state.tax -
-              state.discount) *
-              100
-          ) / 100
-        );
-      },
     }),
     {
       name: 'customer-cart',

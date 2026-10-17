@@ -13,6 +13,7 @@ import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { authTheme } from '@/constants/auth-theme';
 import { useRefund } from '@/lib/payment/hooks';
 import { REFUND_STATUS_LABELS } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 export function RefundDetailScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export function RefundDetailScreen() {
       >
         <View style={styles.card}>
           <Text style={styles.label}>Amount</Text>
-          <Text style={styles.amount}>₹{data.amount.toFixed(0)}</Text>
+          <Text style={styles.amount}>{formatInr(data.amount)}</Text>
           <Text style={styles.status}>
             {REFUND_STATUS_LABELS[data.status] ?? data.status}
           </Text>

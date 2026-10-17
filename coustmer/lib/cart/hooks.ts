@@ -415,7 +415,31 @@ export function useDiscoverCoupons(
     queryKey: cartKeys.coupons(restaurantId, lat, lng),
     queryFn: () => cartApi.discoverCoupons({ restaurantId, lat, lng }),
     enabled,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+}
+
+/** POST /cart/items/quote — price shown on the item sheet comes from cart-service */
+export function useItemQuote(opts: {
+  restaurantId: string;
+  menuItemId: string;
+  modifiers: Array<{ groupId: string; optionId: string }>;
+  enabled?: boolean;
+}) {
+  const modKey = opts.modifiers.map((m) => `${m.groupId}:${m.optionId}`).sort().join('|');
+  return useQuery({
+    queryKey: ['cart', 'item-quote', opts.restaurantId, opts.menuItemId, modKey],
+    queryFn: () =>
+      cartApi.quoteItem({
+        restaurantId: opts.restaurantId,
+        menuItemId: opts.menuItemId,
+        quantity: 1,
+        modifiers: opts.modifiers,
+      }),
+    enabled: (opts.enabled ?? true) && Boolean(opts.restaurantId && opts.menuItemId),
+    placeholderData: (prev) => prev,
+    staleTime: 30_000,
   });
 }
 

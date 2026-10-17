@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
+import { formatInr, formatLineTotal } from '@/lib/format/money';
 import { useRepeatOrder } from '@/lib/cart/hooks';
 import { useReorder } from '@/lib/order/hooks';
 import { ORDER_STATUS_LABELS, type Order } from '@/lib/order/types';
@@ -53,10 +54,7 @@ export function OrderCard({ order }: Props) {
       ? order.restaurantImageUrl
       : resolveMenuItemImage('plated');
   const when = formatOrderWhen(order.createdAt || order.scheduledFor);
-  const total =
-    typeof order.total === 'number'
-      ? order.total
-      : order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const total = typeof order.total === 'number' ? order.total : 0;
 
   const statusLower = order.status.toLowerCase();
   const isDelivered = statusLower === 'delivered';
@@ -189,8 +187,6 @@ export function OrderCard({ order }: Props) {
       {expanded ? (
         <View style={styles.itemsList}>
           {order.items.map((item, index) => {
-            const originalPrice = (item.price + 2).toFixed(2);
-            const currentPrice = item.price.toFixed(2);
             const itemThumb = resolveMenuItemImage(item.name, item.imageUrl);
 
             return (
@@ -201,11 +197,10 @@ export function OrderCard({ order }: Props) {
                   contentFit="cover"
                 />
                 <Text style={styles.itemName} numberOfLines={2}>
-                  {item.name}
+                  {item.quantity} × {item.name}
                 </Text>
                 <View style={styles.priceWrap}>
-                  <Text style={styles.priceCurrent}>₹{currentPrice}</Text>
-                  <Text style={styles.priceOriginal}>₹{originalPrice}</Text>
+                  <Text style={styles.priceCurrent}>{formatLineTotal(item.itemTotal)}</Text>
                 </View>
               </View>
             );
@@ -215,9 +210,9 @@ export function OrderCard({ order }: Props) {
 
       <View style={styles.summaryFooter}>
         <Text style={styles.summaryLeft}>
-          <Text style={styles.summaryGrand}>Grand</Text> VAT Include
+          <Text style={styles.summaryGrand}>Grand</Text> incl. taxes
         </Text>
-        <Text style={styles.summaryTotal}>Total: ₹{total.toFixed(2)}</Text>
+        <Text style={styles.summaryTotal}>Total: {formatInr(total)}</Text>
       </View>
 
       {isActive ? (
@@ -352,12 +347,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiSemi,
     fontSize: 14,
     color: BRAND_ORANGE,
-  },
-  priceOriginal: {
-    fontFamily: fonts.uiMedium,
-    fontSize: 14,
-    color: TEXT_MUTED,
-    textDecorationLine: 'line-through',
   },
   summaryFooter: {
     flexDirection: 'row',

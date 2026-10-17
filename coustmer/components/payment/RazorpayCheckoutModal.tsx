@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 import { authTheme } from '@/constants/auth-theme';
+import { formatInr } from '@/lib/format/money';
 
 export type RazorpayResult = {
   gatewayPaymentId?: string;
@@ -196,7 +197,7 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
             <Text style={styles.headerSubtitle}>
               {session?.keyId.startsWith('rzp_test_')
                 ? 'Test: open UPI, enter success@razorpay'
-                : `₹${Number(session?.amount ?? 0).toFixed(0)} • Razorpay`}
+                : `${formatInr(Number(session?.amount ?? 0))} • Razorpay`}
             </Text>
           </View>
           <Pressable

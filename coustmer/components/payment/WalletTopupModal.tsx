@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authTheme } from '@/constants/auth-theme';
 import { useWalletTopup } from '@/lib/payment/hooks';
 import type { SavedPaymentMethod } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 type Props = {
   visible: boolean;
@@ -69,7 +70,7 @@ export function WalletTopupModal({
       handleClose();
       Alert.alert(
         'Top-up Initiated',
-        `₹${topupAmount.toFixed(0)} will be added to your wallet once payment is complete.`
+        `${formatInr(topupAmount)} will be added to your wallet once payment is complete.`
       );
     } catch (error) {
       Alert.alert(
@@ -111,7 +112,7 @@ export function WalletTopupModal({
           <View style={styles.content}>
             <View style={styles.balanceCard}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
-              <Text style={styles.balanceAmount}>₹{currentBalance.toFixed(0)}</Text>
+              <Text style={styles.balanceAmount}>{formatInr(currentBalance)}</Text>
             </View>
 
             <View style={styles.section}>

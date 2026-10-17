@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fonts } from '@/constants/typography';
 import { paymentApi } from '@/lib/payment/api';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 const TEXT = '#0B1220';
@@ -85,7 +86,7 @@ export function PaymentFailedRefundModal({
               </View>
               <Text style={styles.title}>Refund requested</Text>
               <Text style={styles.body}>
-                We&apos;ll refund{amount ? ` ₹${amount.toFixed(0)}` : ''} to{' '}
+                We&apos;ll refund{amount ? ` ${formatInr(amount)}` : ''} to{' '}
                 <Text style={styles.upiHighlight}>{upiId.trim()}</Text> within 48 hours.
                 You can track it under Orders.
               </Text>
@@ -106,7 +107,7 @@ export function PaymentFailedRefundModal({
               </View>
               <Text style={styles.title}>Payment received, order not confirmed</Text>
               <Text style={styles.body}>
-                Your payment{amount ? ` of ₹${amount.toFixed(0)}` : ''} went through but we
+                Your payment{amount ? ` of ${formatInr(amount)}` : ''} went through but we
                 couldn&apos;t place the order. Your money will be refunded within{' '}
                 <Text style={styles.bodyStrong}>48 hours</Text>. Add the UPI id where you want
                 the refund.

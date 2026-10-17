@@ -12,6 +12,7 @@ import {
   useSetDeliveryInstructions,
 } from '@/lib/delivery/hooks';
 import type { TrackingPhase } from '@/lib/order/tracking-phase';
+import { formatInr } from '@/lib/format/money';
 
 function errText(e: unknown): string {
   return e instanceof Error ? e.message : 'Please try again';
@@ -70,7 +71,7 @@ export function TrackingDeliveryControls({ orderId, phase }: { orderId: string; 
     try {
       await addTip.mutateAsync({ tip: amount });
       setTipInput('');
-      Alert.alert('Tip added', `₹${amount.toFixed(0)} tip sent to your partner.`);
+      Alert.alert('Tip added', `${formatInr(amount)} tip sent to your partner.`);
     } catch (e) {
       Alert.alert('Could not add tip', errText(e));
     }

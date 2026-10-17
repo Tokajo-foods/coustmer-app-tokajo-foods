@@ -18,6 +18,7 @@ import {
 } from '@/components/common/StateViews';
 import { authTheme } from '@/constants/auth-theme';
 import { useCustomerProfile } from '@/lib/customer/hooks';
+import { formatInr } from '@/lib/format/money';
 
 const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   bronze: { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -70,10 +71,6 @@ export function CustomerAnalytics() {
 
   const tier = profile.tier ?? 'bronze';
   const tierStyle = getTierStyle(tier);
-  const avgOrder = profile.totalOrders > 0
-    ? Math.round(profile.totalSpend / profile.totalOrders)
-    : 0;
-
   return (
     <View style={styles.root}>
       {/* Header */}
@@ -127,14 +124,13 @@ export function CustomerAnalytics() {
           <StatCard
             icon={<Wallet color="#059669" size={20} />}
             label="Total Spent"
-            value={`₹${profile.totalSpend.toLocaleString()}`}
+            value={formatInr(profile.totalSpend)}
             accent="#059669"
           />
           <StatCard
             icon={<TrendingUp color="#7C3AED" size={20} />}
             label="Avg Order"
-            value={avgOrder > 0 ? `₹${avgOrder.toLocaleString()}` : '—'}
-            subtitle={profile.averageOrderValue > 0 ? `API: ₹${profile.averageOrderValue}` : undefined}
+            value={profile.averageOrderValue > 0 ? formatInr(profile.averageOrderValue) : '—'}
             accent="#7C3AED"
           />
           <StatCard

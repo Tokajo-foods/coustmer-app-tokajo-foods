@@ -48,7 +48,7 @@ import {
   payableBeforeWallet,
 } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
-import { formatInr } from '@/lib/format/money';
+import { formatInr, formatLineTotal } from '@/lib/format/money';
 import { useCart, useCartBill } from '@/lib/cart/hooks';
 import { formatScheduledForDisplay } from '@/lib/cart/schedule';
 import { useCreateOrder } from '@/lib/order/hooks';
@@ -486,7 +486,7 @@ export function OrderSummaryScreen() {
                 </Text>
                 <Text style={styles.itemQty}>×{item.quantity}</Text>
                 <Text style={styles.itemPrice}>
-                  {formatInr(item.itemTotal ?? item.price * item.quantity)}
+                  {formatLineTotal(item.itemTotal)}
                 </Text>
               </View>
             ))}

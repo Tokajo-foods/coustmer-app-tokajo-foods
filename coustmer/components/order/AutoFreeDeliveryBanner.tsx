@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
 import type { BillBreakdown } from '@/lib/cart/bill';
+import { formatInr } from '@/lib/format/money';
 
 const GREEN = '#16A34A';
 const GREEN_BG = '#F0FDF4';
@@ -26,7 +27,7 @@ export function AutoFreeDeliveryBanner({ bill, deliveryType }: Props) {
     const title =
       bill.autoFreeDeliveryTitle?.trim() ||
       (bill.autoFreeDeliveryMinOrder != null && bill.autoFreeDeliveryMinOrder > 0
-        ? `Free delivery on orders above ₹${Math.round(bill.autoFreeDeliveryMinOrder)}`
+        ? `Free delivery on orders above ${formatInr(bill.autoFreeDeliveryMinOrder)}`
         : 'Free delivery unlocked');
 
     return (
@@ -49,12 +50,12 @@ export function AutoFreeDeliveryBanner({ bill, deliveryType }: Props) {
   const amountNeeded = bill.autoFreeDeliveryAmountNeeded;
   const headline =
     amountNeeded != null && amountNeeded > 0
-      ? `Add ₹${Math.ceil(amountNeeded)} more for free delivery`
-      : `Free delivery on orders above ₹${Math.round(minOrder)}`;
+      ? `Add ${formatInr(amountNeeded)} more for free delivery`
+      : `Free delivery on orders above ${formatInr(minOrder)}`;
 
   const subline =
     amountNeeded != null && amountNeeded > 0
-      ? `Free delivery when item total reaches ₹${Math.round(minOrder)}`
+      ? `Free delivery when item total reaches ${formatInr(minOrder)}`
       : 'Add more items to unlock free delivery';
 
   return (

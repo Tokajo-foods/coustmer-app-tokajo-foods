@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, ShoppingBag, Users } from 'lucide-react-native';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatInr } from '@/lib/format/money';
 
 const BG = '#F4F5F7';
 const WHITE = '#FFFFFF';
@@ -77,7 +78,7 @@ export function SharedCartPreviewScreen({ shareToken }: Props) {
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalValue}>₹{Math.round(subtotal)}</Text>
+            <Text style={styles.totalValue}>{formatInr(subtotal)}</Text>
           </View>
         </View>
 

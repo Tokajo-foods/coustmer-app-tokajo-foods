@@ -22,6 +22,7 @@ import {
   PAYMENT_STATUS_LABELS,
   isPaymentSuccess,
 } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 export function PaymentDetailScreen() {
   const router = useRouter();
@@ -117,7 +118,7 @@ export function PaymentDetailScreen() {
         <View style={styles.card}>
           <Text style={styles.label}>Amount</Text>
           <Text style={styles.amount}>
-            ₹{data.amount.toFixed(0)} {data.currency}
+            {formatInr(data.amount)} {data.currency}
           </Text>
           <Text style={styles.status}>
             {PAYMENT_STATUS_LABELS[data.status] ?? data.status}

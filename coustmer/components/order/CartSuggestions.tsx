@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import { Plus } from 'lucide-react-native';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { fonts } from '@/constants/typography';
+import { formatInr } from '@/lib/format/money';
 
 /**
  * Same-restaurant add-ons based on recommended menu API.
@@ -60,7 +61,7 @@ export function CartSuggestionsFromStore() {
             <Text style={styles.name} numberOfLines={2}>
               {item.name}
             </Text>
-            <Text style={styles.price}>₹{Math.round(item.price)}</Text>
+            <Text style={styles.price}>{formatInr(item.price)}</Text>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() => {

@@ -19,6 +19,7 @@ import {
   useSavedCarts,
 } from '@/lib/cart/hooks';
 import type { SavedCart } from '@/lib/cart/types';
+import { formatInr } from '@/lib/format/money';
 
 const BG = '#F4F5F7';
 const WHITE = '#FFFFFF';
@@ -62,7 +63,7 @@ export function SavedCartsScreen() {
         <Text style={styles.cardName}>{item.name || item.restaurantName || 'Saved Cart'}</Text>
         <Text style={styles.cardMeta}>
           {item.itemCount ?? item.items?.length ?? 0} items
-          {item.subtotal ? ` · ₹${item.subtotal.toFixed(0)}` : ''}
+          {item.subtotal ? ` · ${formatInr(item.subtotal)}` : ''}
         </Text>
       </View>
       <TouchableOpacity onPress={() => handleRestore(item.id)} style={styles.actionBtn}>

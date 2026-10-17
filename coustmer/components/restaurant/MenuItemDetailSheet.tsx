@@ -29,7 +29,9 @@ import {
   decrementCartItem,
   incrementCartItem,
 } from '@/lib/order/add-to-cart';
+import { useItemQuote } from '@/lib/cart/hooks';
 import { sameModifiers } from '@/lib/cart/modifiers';
+import { formatInr } from '@/lib/format/money';
 import type { CartModifier } from '@/lib/cart/types';
 import {
   useItemCustomizations,
@@ -166,10 +168,12 @@ export function MenuItemDetailSheet({
     setSelected(next);
   }, [itemId, groups]);
 
-  const extraPrice = useMemo(
-    () => selectedModifiers.reduce((sum, m) => sum + m.price, 0),
-    [selectedModifiers]
-  );
+  const quote = useItemQuote({
+    restaurantId,
+    menuItemId: itemId,
+    modifiers: selectedModifiers.map((m) => ({ groupId: m.groupId, optionId: m.optionId })),
+    enabled: Boolean(visible && !customizations.isLoading),
+  });
 
   const quantity = useCartStore((s) => {
     const line = s.items.find(
@@ -256,7 +260,7 @@ export function MenuItemDetailSheet({
 
   if (!displayItem) return null;
 
-  const unitPrice = (displayItem.price ?? 0) + extraPrice;
+  const unitPriceLabel = quote.data ? formatInr(quote.data.unitPrice) : '…';
   const description =
     displayItem.description?.trim() ||
     (displayItem.allergens?.length
@@ -337,7 +341,7 @@ export function MenuItemDetailSheet({
                 <Text style={styles.metaChip}>Bestseller</Text>
               ) : null}
 
-              <Text style={styles.priceText}>₹{unitPrice}</Text>
+              <Text style={styles.priceText}>{unitPriceLabel}</Text>
             </View>
 
             {customizations.isError ? (
@@ -392,7 +396,7 @@ export function MenuItemDetailSheet({
                         </Text>
                       </View>
                       <Text style={styles.optionPrice}>
-                        {opt.price > 0 ? `+₹${opt.price}` : 'Included'}
+                        {opt.price > 0 ? `+${formatInr(opt.price)}` : 'Included'}
                       </Text>
                     </Pressable>
                   );
@@ -436,7 +440,7 @@ export function MenuItemDetailSheet({
               )
             ) : quantity === 0 ? (
               <Pressable style={styles.addToCartPillCentered} onPress={handleAdd}>
-                <Text style={styles.addToCartText}>Add to cart · ₹{unitPrice}</Text>
+                <Text style={styles.addToCartText}>Add to cart · {unitPriceLabel}</Text>
               </Pressable>
             ) : (
               <View style={styles.addToCartPill}>

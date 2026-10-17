@@ -71,7 +71,7 @@ import {
   payableBeforeWallet,
 } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
-import { formatInr } from '@/lib/format/money';
+import { formatInr, formatLineTotal } from '@/lib/format/money';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import {
@@ -182,10 +182,12 @@ function CartItemCard({
             {modifierLabel}
           </Text>
         ) : null}
-        <Text style={styles.itemUnitPrice}>{formatInr(item.price)} each</Text>
+        <Text style={styles.itemUnitPrice}>
+          {item.itemTotal != null ? `${formatInr(item.price)} each` : 'Updating price…'}
+        </Text>
         <View style={styles.itemBottomRow}>
           <Text style={styles.itemPrice}>
-            {formatInr(item.itemTotal ?? item.price * item.quantity)}
+            {formatLineTotal(item.itemTotal)}
           </Text>
           <QuantityStepper
             quantity={item.quantity}

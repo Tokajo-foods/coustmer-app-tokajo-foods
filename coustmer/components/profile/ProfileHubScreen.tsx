@@ -43,6 +43,7 @@ import { usePaymentWallet } from '@/lib/payment/hooks';
 import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F3744B';
 const INK = '#1A1A1A';
@@ -220,7 +221,7 @@ export function ProfileHubScreen() {
               onPress={() => router.push('/profile/wallet')}
             >
               <Text style={styles.moneyLabel}>Wallet</Text>
-              <Text style={styles.moneyValue}>₹{balance.toFixed(0)}</Text>
+              <Text style={styles.moneyValue}>{formatInr(balance)}</Text>
             </Pressable>
             <View style={styles.moneyDivider} />
             <Pressable
@@ -300,7 +301,7 @@ export function ProfileHubScreen() {
             <Row
               icon={Wallet}
               title="Tokajo wallet"
-              trailing={`₹${balance.toFixed(0)}`}
+              trailing={`${formatInr(balance)}`}
               onPress={() => router.push('/profile/wallet')}
             />
             <Row

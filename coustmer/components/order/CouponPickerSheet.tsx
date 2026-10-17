@@ -25,6 +25,7 @@ import {
   useCouponPreview,
   useDiscoverCoupons,
 } from '@/lib/cart/hooks';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 const TEXT = '#0B1220';
@@ -48,7 +49,13 @@ export type CouponRow = {
   expiresAt: unknown;
   scope: 'platform' | 'restaurant';
   autoApply: boolean;
+  cartItemTotal: number | null;
+  amountNeeded: number | null;
+  unlocked: boolean;
 };
+
+const numOrNull = (v: unknown) =>
+  v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
 
 function mapCouponRow(raw: RawCoupon): CouponRow {
   const type = String(raw.type ?? raw.discountType ?? 'flat');
@@ -63,6 +70,9 @@ function mapCouponRow(raw: RawCoupon): CouponRow {
     expiresAt: raw.endsAt ?? raw.expiresAt ?? raw.validUntil ?? raw.expiry,
     scope: raw.scope === 'restaurant' ? 'restaurant' : 'platform',
     autoApply: raw.autoApply === true,
+    cartItemTotal: numOrNull(raw.cartItemTotal),
+    amountNeeded: numOrNull(raw.amountNeeded),
+    unlocked: raw.unlocked !== false,
   };
 }
 
@@ -94,7 +104,7 @@ function PreviewBadge({
 
   return (
     <View style={styles.previewBadge}>
-      <Text style={styles.previewText}>Save ₹{discount.toFixed(0)}</Text>
+      <Text style={styles.previewText}>Save {formatInr(discount)}</Text>
     </View>
   );
 }
@@ -113,9 +123,8 @@ function CouponCard({
   subtotal?: number;
 }) {
   const isBusy = applying === item.code;
-  const cartTotal = Number(subtotal ?? 0);
-  const shortfall = Math.max(0, Math.ceil((item.minOrder || 0) - cartTotal));
-  const eligible = shortfall <= 0;
+  const eligible = item.unlocked;
+  const shortfall = formatInr(item.amountNeeded ?? 0);
   const isAutoFreeDelivery =
     item.autoApply && (item.discountType === 'free_delivery' || item.discountType === 'free delivery');
   const discountLabel =
@@ -181,11 +190,11 @@ function CouponCard({
       {effectLine ? (
         <Text style={styles.couponDesc} numberOfLines={2}>{effectLine}</Text>
       ) : null}
-      {item.minOrder > 0 && !isAutoFreeDelivery ? (
+      {item.minOrder > 0 && !isAutoFreeDelivery && item.cartItemTotal != null ? (
         <Text style={styles.couponMeta}>
           {eligible
-            ? `Eligible on your item total of ₹${Math.round(cartTotal)}`
-            : `Add ₹${shortfall} more to item total to unlock`}
+            ? `Eligible on your item total of ${formatInr(item.cartItemTotal)}`
+            : `Add ${shortfall} more to item total to unlock`}
         </Text>
       ) : null}
 
@@ -208,7 +217,7 @@ function CouponCard({
         </TouchableOpacity>
       ) : (
         <View style={styles.lockedBtn}>
-          <Text style={styles.lockedBtnText}>Add ₹{shortfall} more</Text>
+          <Text style={styles.lockedBtnText}>Add {shortfall} more</Text>
         </View>
       )}
     </View>
@@ -246,18 +255,15 @@ export function CouponPickerSheet({
 
   const { restaurantOffers, platformOffers } = useMemo(() => {
     const all = (rawCoupons ?? []).map(mapCouponRow).filter((c) => c.code);
-    const cartTotal = Number(subtotal ?? 0);
     const sortEligibleFirst = (a: CouponRow, b: CouponRow) => {
-      const aOk = cartTotal >= (a.minOrder || 0) ? 0 : 1;
-      const bOk = cartTotal >= (b.minOrder || 0) ? 0 : 1;
-      if (aOk !== bOk) return aOk - bOk;
-      return (a.minOrder || 0) - (b.minOrder || 0);
+      if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+      return (a.amountNeeded ?? 0) - (b.amountNeeded ?? 0);
     };
     return {
       restaurantOffers: all.filter((c) => c.scope === 'restaurant').sort(sortEligibleFirst),
       platformOffers: all.filter((c) => c.scope === 'platform').sort(sortEligibleFirst),
     };
-  }, [rawCoupons, subtotal]);
+  }, [rawCoupons]);
 
   const handleApply = async (code: string) => {
     const trimmed = code.trim().toUpperCase();
@@ -268,7 +274,7 @@ export function CouponPickerSheet({
       const discount = cart.discount ?? 0;
       Alert.alert(
         'Promo applied!',
-        discount > 0 ? `₹${Math.round(discount)} saved with ${trimmed}` : `${trimmed} applied to your cart`,
+        discount > 0 ? `${formatInr(discount)} saved with ${trimmed}` : `${trimmed} applied to your cart`,
         [{ text: 'Great', onPress: onClose }]
       );
       onApplied?.(trimmed, discount);

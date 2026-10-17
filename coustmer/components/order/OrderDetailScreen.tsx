@@ -39,7 +39,7 @@ import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { RetryOnlinePayment } from '@/components/payment/RetryOnlinePayment';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
-import { formatInr } from '@/lib/format/money';
+import { formatInr, formatLineTotal } from '@/lib/format/money';
 import {
   useCancelOrder,
   useCancelScheduledOrder,
@@ -609,7 +609,7 @@ export function OrderDetailScreen() {
                     </View>
                   </View>
                   <Text style={[styles.itemPrice, isSelected && { color: '#DC2626' }]}>
-                    {formatInr(item.itemTotal ?? item.price * item.quantity)}
+                    {formatLineTotal(item.itemTotal)}
                   </Text>
                 </TouchableOpacity>
               </View>

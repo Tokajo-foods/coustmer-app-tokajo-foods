@@ -11,6 +11,7 @@ import { AuthInput } from '@/components/auth/AuthInput';
 import { EmptyView, ErrorView, LoadingView } from '@/components/common/StateViews';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
+import { formatInr } from '@/lib/format/money';
 import {
   usePaymentWallet,
   usePaymentWalletTransactions,
@@ -98,7 +99,7 @@ export function WalletScreen() {
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Available balance</Text>
           <Text style={styles.balanceValue}>
-            ₹{wallet.data?.balance.toFixed(0) ?? 0}
+            {formatInr(wallet.data?.balance ?? 0)}
           </Text>
           <Text style={styles.balanceMeta}>
             {wallet.data?.currency ?? 'INR'}

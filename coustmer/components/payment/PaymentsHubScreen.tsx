@@ -32,6 +32,7 @@ import {
   type Payment,
   type SavedPaymentMethod,
 } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 type Tab = 'history' | 'methods';
 
@@ -61,7 +62,7 @@ export function PaymentsHubScreen() {
 
   const subtitle = useMemo(() => {
     if (wallet.data) {
-      return `Wallet ₹${wallet.data.balance.toFixed(0)} · Payments & methods`;
+      return `Wallet ${formatInr(wallet.data.balance)} · Payments & methods`;
     }
     return 'History, cards & UPI';
   }, [wallet.data]);
@@ -89,7 +90,7 @@ export function PaymentsHubScreen() {
           <View>
             <Text style={styles.walletLabel}>Wallet balance</Text>
             <Text style={styles.walletValue}>
-              ₹{wallet.data?.balance.toFixed(0) ?? '—'}
+              {wallet.data ? formatInr(wallet.data.balance) : '—'}
             </Text>
           </View>
           <Text style={styles.walletCta}>Top up →</Text>
@@ -209,8 +210,7 @@ function PaymentRow({
       </View>
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle}>
-          {payment.method?.toUpperCase() || 'Payment'} · ₹
-          {payment.amount.toFixed(0)}
+          {payment.method?.toUpperCase() || 'Payment'} · {formatInr(payment.amount)}
         </Text>
         <Text style={styles.rowMeta}>
           {PAYMENT_STATUS_LABELS[payment.status] ?? payment.status}
@@ -219,7 +219,7 @@ function PaymentRow({
             : ''}
         </Text>
       </View>
-      <Text style={styles.rowAmount}>₹{payment.amount.toFixed(0)}</Text>
+      <Text style={styles.rowAmount}>{formatInr(payment.amount)}</Text>
     </Pressable>
   );
 }

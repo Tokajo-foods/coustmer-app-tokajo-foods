@@ -9,6 +9,13 @@ export function formatInr(amount: number | null | undefined): string {
   return `${value < 0 ? '−' : ''}₹${body}`;
 }
 
+/** Server line total; "…" while a local qty change waits for the cart re-sync. */
+export function formatLineTotal(itemTotal: number | null | undefined): string {
+  return typeof itemTotal === 'number' && Number.isFinite(itemTotal)
+    ? formatInr(itemTotal)
+    : '…';
+}
+
 /** Signed bill line, e.g. "+₹0.05" / "−₹0.05" for round off. */
 export function formatSignedInr(amount: number): string {
   const value = Math.round((Number(amount) || 0) * 100) / 100;

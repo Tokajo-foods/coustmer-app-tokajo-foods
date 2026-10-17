@@ -13,6 +13,7 @@ import {
 import { fonts } from '@/constants/typography';
 import { useInitiatePayment, useVerifyPayment } from '@/lib/payment/hooks';
 import { needsOnlinePayment } from '@/lib/payment/types';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 const WHITE = '#FFFFFF';
@@ -136,7 +137,7 @@ export function RetryOnlinePayment({
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Payment pending</Text>
           <Text style={styles.sub}>
-            Pay ₹{amount.toFixed(0)} in the secure Razorpay window. UPI, cards, and
+            Pay {formatInr(amount)} in the secure Razorpay window. UPI, cards, and
             netbanking are inside it.
           </Text>
         </View>
@@ -145,7 +146,7 @@ export function RetryOnlinePayment({
         {initiate.isPending ? (
           <ActivityIndicator color={WHITE} />
         ) : (
-          <Text style={styles.btnText}>Pay ₹{amount.toFixed(0)}</Text>
+          <Text style={styles.btnText}>Pay {formatInr(amount)}</Text>
         )}
       </Pressable>
 

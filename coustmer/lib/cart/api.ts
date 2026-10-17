@@ -152,20 +152,15 @@ function mapLineItem(raw: Record<string, unknown>): CartLineItem {
         .filter(Boolean) as CartLineItem['modifiers']
     : undefined;
 
-  const basePrice = Number(raw.price ?? raw.unitPrice ?? raw.basePrice ?? 0) || 0;
-  const modifiersTotal = (modifiers ?? []).reduce((s, m) => s + (m.price || 0), 0);
+  const basePrice = Number(raw.price ?? raw.basePrice ?? 0) || 0;
   const itemTotal = Number(raw.itemTotal ?? raw.lineTotal ?? 0);
   const quantity = Number(raw.quantity ?? raw.qty ?? 1) || 1;
-  const unitFromTotal =
-    itemTotal > 0 && quantity > 0
-      ? Math.round((itemTotal / quantity) * 100) / 100
-      : 0;
 
   return {
     id: lineId,
     menuItemId: menuItemId || lineId,
     name: String(raw.name ?? raw.itemName ?? raw.title ?? 'Item'),
-    price: unitFromTotal > 0 ? unitFromTotal : basePrice + modifiersTotal,
+    price: Number(raw.unitPrice ?? basePrice) || 0,
     basePrice,
     itemTotal: itemTotal > 0 ? itemTotal : undefined,
     quantity,
@@ -271,8 +266,6 @@ export function mapCart(data: unknown): Cart {
       {}
   );
 
-  const itemsSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-
   const subtotal =
     pickFiniteNumber(
       nestedCart.subtotal,
@@ -280,7 +273,7 @@ export function mapCart(data: unknown): Cart {
       nestedCart.itemsTotal,
       pricing.subtotal,
       pricing.itemTotal
-    ) ?? itemsSubtotal;
+    ) ?? 0;
 
   const tip =
     pickFiniteNumber(
@@ -311,39 +304,21 @@ export function mapCart(data: unknown): Cart {
       pricing.deliveryCharge
     ) ?? 0;
 
-  let tax =
+  const tax =
     pickFiniteNumber(
+      nestedCart.taxAmount,
       nestedCart.tax,
       nestedCart.taxes,
-      nestedCart.taxAmount,
       nestedCart.gst,
       nestedCart.gstAmount,
       nestedCart.taxesAndCharges,
       nestedCart.taxAndCharges,
+      pricing.taxAmount,
       pricing.tax,
       pricing.taxes,
       pricing.gst,
       pricing.taxesAndCharges
     ) ?? 0;
-
-  // Sum named charge rows if present (API sometimes returns charges[])
-  const chargesRaw = nestedCart.charges ?? pricing.charges;
-  if (Array.isArray(chargesRaw) && tax <= 0) {
-    const taxLike = chargesRaw.reduce((sum, row) => {
-      const c = asRecord(row);
-      const label = String(c.name ?? c.type ?? c.label ?? '').toLowerCase();
-      const amount = pickFiniteNumber(c.amount, c.value, c.price) ?? 0;
-      if (
-        label.includes('tax') ||
-        label.includes('gst') ||
-        label.includes('vat')
-      ) {
-        return sum + amount;
-      }
-      return sum;
-    }, 0);
-    if (taxLike > 0) tax = taxLike;
-  }
 
   const platformFee =
     pickFiniteNumber(nestedCart.platformFee, pricing.platformFee) ?? 0;
@@ -1108,6 +1083,25 @@ export const cartApi = {
     const payload = res.data ?? res;
     const list = Array.isArray(payload) ? payload : extractList(payload);
     return list.map((row) => asRecord(row));
+  },
+
+  /** POST /cart/items/quote — server unit price (base + add-ons) before add to cart */
+  quoteItem: async (body: {
+    restaurantId: string;
+    menuItemId: string;
+    quantity?: number;
+    modifiers: Array<{ groupId: string; optionId: string }>;
+  }): Promise<{ unitPrice: number; itemTotal: number; modifiersTotal: number }> => {
+    const res = await request<Record<string, unknown>>(`${CART_BASE}/items/quote`, {
+      method: 'POST',
+      body,
+    });
+    const d = asRecord(res.data ?? res);
+    return {
+      unitPrice: Number(d.unitPrice ?? 0),
+      itemTotal: Number(d.itemTotal ?? 0),
+      modifiersTotal: Number(d.modifiersTotal ?? 0),
+    };
   },
 
   /** GET /coupons/:code/preview */

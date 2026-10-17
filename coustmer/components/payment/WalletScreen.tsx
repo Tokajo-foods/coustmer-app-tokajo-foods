@@ -35,6 +35,7 @@ import {
 } from '@/lib/payment/hooks';
 import type { WalletTransaction } from '@/lib/payment/types';
 import { WalletTopupModal } from './WalletTopupModal';
+import { formatInr } from '@/lib/format/money';
 
 export function WalletScreen() {
   const router = useRouter();
@@ -72,7 +73,7 @@ export function WalletScreen() {
           title="Wallet"
           subtitle={
             walletData
-              ? `Balance: ₹${walletData.balance.toFixed(0)}`
+              ? `Balance: ${formatInr(walletData.balance)}`
               : 'Manage your wallet'
           }
           left={
@@ -99,7 +100,7 @@ export function WalletScreen() {
               <View style={styles.walletInfo}>
                 <Text style={styles.walletLabel}>Available Balance</Text>
                 <Text style={styles.walletBalance}>
-                  ₹{walletData.balance.toFixed(0)}
+                  {formatInr(walletData.balance)}
                 </Text>
                 {walletData.isLocked && (
                   <Text style={styles.walletLocked}>Wallet is locked</Text>
@@ -195,7 +196,7 @@ function TransactionRow({ transaction }: { transaction: WalletTransaction }) {
         <Text style={styles.transactionMeta}>
           {date}
           {transaction.balanceAfter !== undefined &&
-            ` • Balance: ₹${transaction.balanceAfter.toFixed(0)}`}
+            ` • Balance: ${formatInr(transaction.balanceAfter)}`}
         </Text>
       </View>
       <Text
@@ -204,7 +205,7 @@ function TransactionRow({ transaction }: { transaction: WalletTransaction }) {
           { color: isCredit ? '#10B981' : '#EF4444' },
         ]}
       >
-        {isCredit ? '+' : ''}₹{Math.abs(transaction.amount).toFixed(0)}
+        {isCredit ? '+' : ''}{formatInr(Math.abs(transaction.amount))}
       </Text>
     </View>
   );

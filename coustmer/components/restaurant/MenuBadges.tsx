@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { authTheme } from '@/constants/auth-theme';
+import { formatInr } from '@/lib/format/money';
 
 export function VegBadge({ isVeg }: { isVeg?: boolean }) {
   if (isVeg === undefined) return null;
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
   },
 });
 export function PriceTag({ price }: { price: number }) {
-  return <Text style={priceStyles.text}>₹{price.toFixed(0)}</Text>;
+  return <Text style={priceStyles.text}>{formatInr(price)}</Text>;
 }
 
 const priceStyles = StyleSheet.create({

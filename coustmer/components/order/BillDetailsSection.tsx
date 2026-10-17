@@ -214,7 +214,7 @@ function DeliveryFeeRow({
   if (bill.autoFreeDelivery) {
     const label =
       bill.autoFreeDeliveryMinOrder != null && bill.autoFreeDeliveryMinOrder > 0
-        ? `Delivery fee (₹${bill.autoFreeDeliveryMinOrder}+ order)`
+        ? `Delivery fee (${formatInr(bill.autoFreeDeliveryMinOrder)}+ order)`
         : 'Delivery fee';
     return (
       <View style={styles.billRow}>
