@@ -95,10 +95,11 @@ export function CustomerPushSync() {
 
         await registerCustomerPushDevice(N);
         track(N.addPushTokenListener(() => {
-          void registerCustomerPushDevice(N).catch(() => undefined);
+          void registerCustomerPushDevice(N).catch((err) => console.warn('[push] re-register failed', err));
         }));
-      } catch {
-        // Expo Go on Android cannot receive remote push. A dev build can.
+      } catch (err) {
+        // Expo Go on Android cannot receive remote push. A dev/EAS build with google-services.json can.
+        console.warn('[push] customer push registration failed — no order notifications on this device', err);
       }
     })();
 

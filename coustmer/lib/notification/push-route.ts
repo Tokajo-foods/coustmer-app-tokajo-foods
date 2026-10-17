@@ -14,6 +14,12 @@ const TRACKING_STATUSES = new Set([
   'out_for_delivery',
 ]);
 
+/** Order is over — open the summary (bill, rate, help), not live tracking. */
+const FINISHED_KINDS = new Set([
+  'order_delivered', 'order_returned', 'order_cancelled', 'order_rejected',
+  'restaurant_cancelled', 'accept_timeout', 'no_partner_available',
+]);
+
 const PROMO_CATEGORIES = new Set(['offer', 'offers', 'promo', 'promotion', 'marketing']);
 
 function str(value: unknown): string {
@@ -36,8 +42,11 @@ export function routeForNotificationData(raw: unknown): NotificationRoute | null
     };
   }
   if (orderId) {
+    const screen = str(data.screen);
     const tracking =
-      str(data.screen) === 'order_tracking' || TRACKING_STATUSES.has(str(data.status));
+      !FINISHED_KINDS.has(kind) &&
+      screen !== 'order_detail' &&
+      (screen === 'order_tracking' || TRACKING_STATUSES.has(str(data.status)));
     return {
       pathname: tracking ? '/orders/[orderId]/tracking' : '/orders/[orderId]',
       params: { orderId },

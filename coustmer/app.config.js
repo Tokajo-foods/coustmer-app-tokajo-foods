@@ -1,3 +1,10 @@
+const fs = require('fs');
+const path = require('path');
+
+// Android push (Expo + FCM) needs the Firebase Android app config. EAS: file secret GOOGLE_SERVICES_JSON.
+const googleServicesFile =
+  process.env.GOOGLE_SERVICES_JSON?.trim() ||
+  (fs.existsSync(path.join(__dirname, 'google-services.json')) ? './google-services.json' : undefined);
 const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
 const apiUrl =
   process.env.EXPO_PUBLIC_API_URL?.trim() || 'http://api.viharfood.in';
@@ -99,6 +106,7 @@ const config = {
   android: {
     package: 'com.fooddeliveryapp.customer',
     versionCode: 2,
+    ...(googleServicesFile ? { googleServicesFile } : {}),
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
