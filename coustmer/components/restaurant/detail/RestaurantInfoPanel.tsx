@@ -12,7 +12,6 @@ import {
   MapPin,
   Navigation,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -58,20 +57,50 @@ export type RestaurantInfoPanelProps = {
   }[];
 };
 
-function StatTile({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <View style={styles.sectionHead}>
+      <View style={styles.sectionAccent} />
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+  );
+}
+
+function StatTile({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.statTile}>
-      <View style={styles.statIconWrap}>{icon}</View>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
+    </View>
+  );
+}
+
+function ScheduleList({
+  rows,
+}: {
+  rows: { key: string; day: string; value: string; active?: boolean }[];
+}) {
+  return (
+    <View style={styles.scheduleList}>
+      {rows.map((row, i) => (
+        <View
+          key={row.key}
+          style={[
+            styles.scheduleRow,
+            i === rows.length - 1 ? styles.scheduleRowLast : null,
+          ]}
+        >
+          <Text style={styles.scheduleDay}>{row.day}</Text>
+          <Text
+            style={[
+              styles.scheduleValue,
+              row.active ? styles.scheduleValueActive : null,
+            ]}
+          >
+            {row.value}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -98,6 +127,8 @@ export function RestaurantInfoPanel({
   holidays,
   specialHours,
 }: RestaurantInfoPanelProps) {
+  const { ORANGE, MUTED } = infoColors;
+
   const statusTitle = kitchenClosed
     ? nextOpenLabel
       ? `Closed · opens ${nextOpenLabel}`
@@ -109,47 +140,31 @@ export function RestaurantInfoPanel({
     ? 'Not accepting orders right now'
     : openNow
       ? 'Accepting delivery orders'
-      : 'Check weekly timings below';
+      : 'See weekly hours below';
 
-  const stats: { key: string; icon: ReactNode; label: string; value: string }[] =
-    [];
+  const stats: { key: string; label: string; value: string }[] = [];
   const cost = r.costForTwo ?? r.priceForTwo;
   if (typeof cost === 'number') {
     stats.push({
       key: 'cost',
-      icon: <IndianRupee color={infoColors.ORANGE} size={18} />,
       label: 'Cost for two',
       value: `₹${cost}${r.priceRange ? ` · ${r.priceRange}` : ''}`,
     });
   }
-  if (eta) {
-    stats.push({
-      key: 'eta',
-      icon: <Clock color={infoColors.ORANGE} size={18} />,
-      label: 'Delivery',
-      value: eta,
-    });
-  }
+  if (eta) stats.push({ key: 'eta', label: 'Delivery time', value: eta });
   if (typeof distanceKm === 'number') {
     stats.push({
       key: 'dist',
-      icon: <Navigation color={infoColors.ORANGE} size={18} />,
       label: 'Distance',
       value: `${distanceKm.toFixed(1)} km`,
     });
   }
   if (typeof r.minOrderValue === 'number' && r.minOrderValue > 0) {
-    stats.push({
-      key: 'min',
-      icon: <Sparkles color={infoColors.ORANGE} size={18} />,
-      label: 'Min order',
-      value: `₹${r.minOrderValue}`,
-    });
+    stats.push({ key: 'min', label: 'Min order', value: `₹${r.minOrderValue}` });
   }
   if (typeof r.freeDeliveryThreshold === 'number' && r.freeDeliveryThreshold > 0) {
     stats.push({
       key: 'free',
-      icon: <IndianRupee color={infoColors.ORANGE} size={18} />,
       label: 'Free delivery',
       value: `Above ₹${r.freeDeliveryThreshold}`,
     });
@@ -157,26 +172,34 @@ export function RestaurantInfoPanel({
 
   const paymentOptions = [
     r.isOnlinePayment !== false
-      ? { id: 'online', label: 'Online', icon: <CreditCard size={16} color={infoColors.INK} /> }
+      ? {
+          id: 'online',
+          label: 'Online',
+          icon: <CreditCard size={15} color={ORANGE} />,
+        }
       : null,
     r.isCashOnDelivery !== false
-      ? { id: 'cod', label: 'Cash on delivery', icon: <Banknote size={16} color={infoColors.INK} /> }
+      ? {
+          id: 'cod',
+          label: 'Cash on delivery',
+          icon: <Banknote size={15} color={ORANGE} />,
+        }
       : null,
     r.acceptScheduledOrders
       ? {
           id: 'sched',
-          label: 'Schedule',
-          icon: <CalendarClock size={16} color={infoColors.INK} />,
+          label: 'Scheduled',
+          icon: <CalendarClock size={15} color={ORANGE} />,
         }
       : null,
-  ].filter(Boolean) as {
-    id: string;
-    label: string;
-    icon: ReactNode;
-  }[];
+  ].filter(Boolean) as { id: string; label: string; icon: ReactNode }[];
 
-  const scheduleRows: { key: string; day: string; value: string; closed?: boolean }[] =
-    [];
+  const scheduleRows: {
+    key: string;
+    day: string;
+    value: string;
+    active?: boolean;
+  }[] = [];
 
   if (timings?.slots && Object.keys(timings.slots).length) {
     const days = [
@@ -201,7 +224,7 @@ export function RestaurantInfoPanel({
         key: day,
         day: day.charAt(0).toUpperCase() + day.slice(1),
         value: slotText || 'Closed',
-        closed,
+        active: !closed,
       });
     }
   } else if (r.timings) {
@@ -220,19 +243,17 @@ export function RestaurantInfoPanel({
         key: day,
         day: day.charAt(0).toUpperCase() + day.slice(1),
         value: open ? slotText || 'Open' : 'Closed',
-        closed: !open,
+        active: open,
       });
     }
   }
 
+  const notifyOutline = watchingOpen;
+
   return (
     <View style={styles.root}>
-      <View
-        style={[
-          styles.statusCard,
-          kitchenClosed ? styles.statusCardClosed : styles.statusCardOpen,
-        ]}
-      >
+      <View style={styles.card}>
+        <Text style={styles.sectionKicker}>Outlet</Text>
         <View style={styles.statusRow}>
           <View
             style={[
@@ -240,56 +261,63 @@ export function RestaurantInfoPanel({
               kitchenClosed ? styles.statusDotClosed : styles.statusDotOpen,
             ]}
           />
-          <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flex: 1 }}>
             <Text style={styles.statusTitle}>{statusTitle}</Text>
             <Text style={styles.statusSub}>{statusSub}</Text>
+            <View style={styles.badgeRow}>
+              {r.isPureVeg ? (
+                <View style={styles.badge}>
+                  <Leaf color={ORANGE} size={14} />
+                  <Text style={styles.badgeText}>Pure veg</Text>
+                </View>
+              ) : null}
+              {showHygieneScore ? (
+                <View style={styles.badge}>
+                  <ShieldCheck color={ORANGE} size={14} />
+                  <Text style={styles.badgeText}>Hygiene {infoHygieneScore}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
-        </View>
-        <View style={styles.badgeRow}>
-          {r.isPureVeg ? (
-            <View style={styles.badge}>
-              <Leaf color="#16A34A" size={14} />
-              <Text style={styles.badgeText}>Pure veg</Text>
-            </View>
-          ) : null}
-          {showHygieneScore ? (
-            <View style={styles.badge}>
-              <ShieldCheck color="#15803D" size={14} />
-              <Text style={styles.badgeText}>Hygiene {infoHygieneScore}</Text>
-            </View>
-          ) : null}
         </View>
         {kitchenClosed && token ? (
           <Pressable
-            style={styles.notifyBtn}
+            style={[styles.notifyBtn, notifyOutline ? styles.notifyBtnOutline : null]}
             onPress={onToggleNotifyOpen}
             disabled={notifyPending}
           >
             {watchingOpen ? (
-              <BellOff color="#9A3412" size={16} />
+              <BellOff color={notifyOutline ? ORANGE : '#FFFFFF'} size={16} />
             ) : (
-              <Bell color="#9A3412" size={16} />
+              <Bell color={notifyOutline ? ORANGE : '#FFFFFF'} size={16} />
             )}
-            <Text style={styles.notifyBtnText}>
+            <Text
+              style={[
+                styles.notifyBtnText,
+                notifyOutline ? styles.notifyBtnTextOutline : null,
+              ]}
+            >
               {watchingOpen
                 ? 'Stop kitchen-open alert'
-                : 'Notify me when this kitchen opens'}
+                : 'Notify when kitchen opens'}
             </Text>
           </Pressable>
         ) : null}
+        {stats.length > 0 ? (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.statsGrid}>
+              {stats.map((s) => (
+                <StatTile key={s.key} label={s.label} value={s.value} />
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
 
-      {stats.length > 0 ? (
-        <View style={styles.statsGrid}>
-          {stats.map((s) => (
-            <StatTile key={s.key} icon={s.icon} label={s.label} value={s.value} />
-          ))}
-        </View>
-      ) : null}
-
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>About {restaurantName}</Text>
-        <Text style={styles.cardBody}>{description}</Text>
+        <SectionTitle title={`About ${restaurantName}`} />
+        <Text style={styles.body}>{description}</Text>
         {(r.cuisines?.length ?? 0) > 0 ? (
           <View style={styles.chipWrap}>
             {r.cuisines!.slice(0, 10).map((c) => (
@@ -302,16 +330,16 @@ export function RestaurantInfoPanel({
       </View>
 
       <View style={styles.card}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <MapPin color={infoColors.ORANGE} size={18} />
-          <Text style={styles.cardTitle}>Location</Text>
+        <View style={styles.sectionHead}>
+          <MapPin color={ORANGE} size={17} />
+          <Text style={styles.sectionTitle}>Location</Text>
         </View>
-        <Text style={styles.cardBody}>{locationText}</Text>
+        <Text style={styles.body}>{locationText}</Text>
       </View>
 
       {paymentOptions.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Payments</Text>
+          <SectionTitle title="Payments" />
           <View style={styles.payRow}>
             {paymentOptions.map((p) => (
               <View key={p.id} style={styles.payPill}>
@@ -325,89 +353,63 @@ export function RestaurantInfoPanel({
 
       {showInfoFssaiOrHygiene ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Licenses & safety</Text>
-          <View style={styles.complianceCard}>
-            <ShieldCheck color="#15803D" size={22} />
-            <View style={{ flex: 1 }}>
-              {infoFssaiFull ? (
-                <>
-                  <Text style={styles.complianceTitle}>FSSAI license</Text>
+          <SectionTitle title="Licenses & safety" />
+          <View style={styles.complianceBlock}>
+            {infoFssaiFull ? (
+              <View style={styles.complianceRow}>
+                <ShieldCheck color={ORANGE} size={18} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.complianceLabel}>FSSAI license</Text>
                   <Text style={styles.fssaiMono}>{infoFssaiFull}</Text>
-                </>
-              ) : null}
-              {showHygieneScore ? (
-                <Text
-                  style={[
-                    styles.complianceBody,
-                    infoFssaiFull ? { marginTop: 8 } : null,
-                  ]}
-                >
-                  Hygiene score {infoHygieneScore} / 5
-                </Text>
-              ) : null}
-            </View>
+                </View>
+              </View>
+            ) : null}
+            {showHygieneScore ? (
+              <View style={styles.complianceRow}>
+                <ShieldCheck color={ORANGE} size={18} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.complianceLabel}>Hygiene rating</Text>
+                  <Text style={styles.body}>
+                    {infoHygieneScore} <Text style={{ color: MUTED }}>/ 5</Text>
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
         </View>
       ) : null}
 
       {scheduleRows.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Weekly hours (IST)</Text>
-          <View style={styles.scheduleTable}>
-            {scheduleRows.map((row, i) => (
-              <View
-                key={row.key}
-                style={[styles.scheduleRow, i % 2 === 1 ? styles.scheduleRowAlt : null]}
-              >
-                <Text style={styles.scheduleDay}>{row.day}</Text>
-                <Text
-                  style={[
-                    styles.scheduleValue,
-                    !row.closed ? styles.scheduleValueOpen : null,
-                  ]}
-                >
-                  {row.value}
-                </Text>
-              </View>
-            ))}
-          </View>
+          <SectionTitle title="Weekly hours (IST)" />
+          <ScheduleList rows={scheduleRows} />
         </View>
       ) : null}
 
       {holidays.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Upcoming closed dates</Text>
-          <View style={styles.scheduleTable}>
-            {holidays.slice(0, 5).map((h, i) => (
-              <View
-                key={h.date}
-                style={[styles.scheduleRow, i % 2 === 1 ? styles.scheduleRowAlt : null]}
-              >
-                <Text style={styles.scheduleDay}>{h.date}</Text>
-                <Text style={styles.scheduleValue}>{h.reason || 'Closed'}</Text>
-              </View>
-            ))}
-          </View>
+          <SectionTitle title="Upcoming closed dates" />
+          <ScheduleList
+            rows={holidays.slice(0, 5).map((h) => ({
+              key: h.date,
+              day: h.date,
+              value: h.reason || 'Closed',
+            }))}
+          />
         </View>
       ) : null}
 
       {specialHours.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Special hours</Text>
-          <View style={styles.scheduleTable}>
-            {specialHours.slice(0, 5).map((sh, i) => (
-              <View
-                key={sh.date}
-                style={[styles.scheduleRow, i % 2 === 1 ? styles.scheduleRowAlt : null]}
-              >
-                <Text style={styles.scheduleDay}>{sh.date}</Text>
-                <Text style={[styles.scheduleValue, styles.scheduleValueOpen]}>
-                  {sh.openTime}–{sh.closeTime}
-                  {sh.reason ? ` · ${sh.reason}` : ''}
-                </Text>
-              </View>
-            ))}
-          </View>
+          <SectionTitle title="Special hours" />
+          <ScheduleList
+            rows={specialHours.slice(0, 5).map((sh) => ({
+              key: sh.date,
+              day: sh.date,
+              value: `${sh.openTime}–${sh.closeTime}${sh.reason ? ` · ${sh.reason}` : ''}`,
+              active: true,
+            }))}
+          />
         </View>
       ) : null}
     </View>
