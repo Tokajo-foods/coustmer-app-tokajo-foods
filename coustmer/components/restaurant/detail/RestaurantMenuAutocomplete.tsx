@@ -7,6 +7,7 @@ import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import type { MenuItem } from '@/lib/restaurant/types';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 const INK = '#0B1220';
@@ -79,7 +80,7 @@ export function RestaurantMenuAutocomplete({
                 </Text>
               ) : null}
             </View>
-            <Text style={styles.price}>₹{item.price}</Text>
+            <Text style={styles.price}>{formatInr(item.price)}</Text>
           </Pressable>
         );
       })}

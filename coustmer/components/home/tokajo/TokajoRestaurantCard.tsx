@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { fonts } from '@/constants/typography';
 import type { Restaurant } from '@/lib/restaurant/types';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 const GREEN = '#12833B';
@@ -34,7 +35,7 @@ function buildTags(r: Restaurant): Tag[] {
   if (offer) tags.push({ label: String(offer), tone: 'orange' });
 
   const cost = Number(r.costForTwo || r.priceForTwo || 0);
-  if (cost > 0) tags.push({ label: `₹${cost} for two`, tone: 'muted' });
+  if (cost > 0) tags.push({ label: `${formatInr(cost)} for two`, tone: 'muted' });
 
   if (r.isPureVeg) tags.push({ label: 'Pure Veg', tone: 'green' });
 

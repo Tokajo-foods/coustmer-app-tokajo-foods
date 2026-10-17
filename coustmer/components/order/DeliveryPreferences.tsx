@@ -14,6 +14,8 @@ import {
   useUpdateCartInstructions,
 } from '@/lib/cart/hooks';
 import { useAuthStore } from '@/store/auth-store';
+import { formatInr } from '@/lib/format/money';
+import { useAppMoneyConfig } from '@/lib/pricing/money-config';
 
 const ORANGE = '#F97316';
 const TEXT = '#0B1220';
@@ -27,10 +29,10 @@ type Props = {
   setTip: (amount: number) => void;
 };
 
-const TIP_PRESETS = [0, 20, 30, 50, 80];
-
 export function DeliveryPreferences({ tip, setTip }: Props) {
   const isLoggedIn = Boolean(useAuthStore((s) => s.token));
+  const moneyConfig = useAppMoneyConfig();
+  const tipPresets = moneyConfig.data?.tipPresetsInr ?? [];
 
   const updateInstructions = useUpdateCartInstructions();
 
@@ -53,8 +55,13 @@ export function DeliveryPreferences({ tip, setTip }: Props) {
     <View style={styles.card}>
       {/* Tip */}
       <Text style={styles.cardTitle}>Delivery partner tip</Text>
+      {moneyConfig.isError ? (
+        <TouchableOpacity onPress={() => void moneyConfig.refetch()}>
+          <Text style={styles.liveHint}>Could not load tip amounts · Tap to retry</Text>
+        </TouchableOpacity>
+      ) : null}
       <View style={styles.tipRow}>
-        {TIP_PRESETS.map((amount) => (
+        {tipPresets.map((amount) => (
           <TouchableOpacity
             key={amount}
             style={[styles.tipChip, tip === amount && styles.tipChipActive]}
@@ -62,7 +69,7 @@ export function DeliveryPreferences({ tip, setTip }: Props) {
             activeOpacity={0.7}
           >
             <Text style={[styles.tipChipText, tip === amount && styles.tipChipTextActive]}>
-              {amount === 0 ? 'No tip' : `₹${amount}`}
+              {amount === 0 ? 'No tip' : formatInr(amount)}
             </Text>
           </TouchableOpacity>
         ))}

@@ -129,24 +129,24 @@ function CouponCard({
     item.autoApply && (item.discountType === 'free_delivery' || item.discountType === 'free delivery');
   const discountLabel =
     item.discountType === 'percent' || item.discountType === 'percentage'
-      ? `${item.discount}% off${item.maxDiscount > 0 ? ` up to ₹${item.maxDiscount}` : ''}`
+      ? `${item.discount}% off${item.maxDiscount > 0 ? ` up to ${formatInr(item.maxDiscount)}` : ''}`
       : item.discountType === 'free_delivery'
       ? item.minOrder > 0
-        ? `Free delivery on item total ₹${item.minOrder}+`
+        ? `Free delivery on item total ${formatInr(item.minOrder)}+`
         : 'Free delivery'
       : item.discount > 0
-      ? `₹${item.discount} off`
+      ? `${formatInr(item.discount)} off`
       : '';
 
   const effectLine =
     item.discountType === 'free_delivery'
       ? item.minOrder > 0
-        ? `Free delivery when item total is ₹${item.minOrder}+`
+        ? `Free delivery when item total is ${formatInr(item.minOrder)}+`
         : 'Free delivery on this order'
       : item.discountType === 'percent' || item.discountType === 'percentage'
-      ? `${item.discount}% off item total${item.minOrder > 0 ? ` (min ₹${item.minOrder})` : ''}`
+      ? `${item.discount}% off item total${item.minOrder > 0 ? ` (min ${formatInr(item.minOrder)})` : ''}`
       : item.discount > 0
-      ? `₹${item.discount} off item total${item.minOrder > 0 ? ` (min ₹${item.minOrder})` : ''}`
+      ? `${formatInr(item.discount)} off item total${item.minOrder > 0 ? ` (min ${formatInr(item.minOrder)})` : ''}`
       : item.description;
 
   return (

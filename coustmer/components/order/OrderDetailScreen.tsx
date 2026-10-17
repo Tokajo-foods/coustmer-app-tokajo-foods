@@ -11,7 +11,6 @@ import {
   Clock,
   FileText,
   Headset,
-  IndianRupee,
   MapPin,
   Minus,
   RotateCcw,
@@ -39,6 +38,7 @@ import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { RetryOnlinePayment } from '@/components/payment/RetryOnlinePayment';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
+import { OrderTipCard } from '@/components/order/OrderTipCard';
 import { formatInr, formatLineTotal } from '@/lib/format/money';
 import {
   useCancelOrder,
@@ -50,7 +50,6 @@ import {
   useOrderTimeline,
   usePartialCancelItems,
   useReorder,
-  useUpdateTip,
 } from '@/lib/order/hooks';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
 import {
@@ -119,7 +118,6 @@ export function OrderDetailScreen() {
   const reorder = useReorder(id);
   const cancelOrder = useCancelOrder(id);
   const cancelScheduled = useCancelScheduledOrder(id);
-  const updateTip = useUpdateTip(id);
   const timeline = useOrderTimeline(id, showTimeline);
   const cancellationQuote = useCancellationQuote(id, quoteEnabled);
   const partialCancel = usePartialCancelItems(id);
@@ -296,23 +294,6 @@ export function OrderDetailScreen() {
         e instanceof Error ? e.message : 'Could not fetch invoice'
       );
     }
-  };
-
-  const handleTip = (amount: number) => {
-    updateTip.mutate(
-      { tip: amount },
-      {
-        onSuccess: () => {
-          void order.refetch();
-          Alert.alert('Tip updated', `Delivery tip set to ₹${amount}`);
-        },
-        onError: (e) =>
-          Alert.alert(
-            'Could not update tip',
-            e instanceof Error ? e.message : 'Please try again'
-          ),
-      }
-    );
   };
 
   const handleReorder = () => {
@@ -684,40 +665,7 @@ export function OrderDetailScreen() {
           </Pressable>
         ) : null}
 
-        {showTip ? (
-          <View style={styles.tipCard}>
-            <View style={styles.tipHead}>
-              <IndianRupee color={ORANGE} size={16} strokeWidth={2.4} />
-              <Text style={styles.tipTitle}>Add delivery tip</Text>
-            </View>
-            <Text style={styles.tipSub}>
-              Current tip {formatInr(tip)}. Change before the restaurant accepts.
-            </Text>
-            <View style={styles.tipRow}>
-              {[0, 20, 30, 50].map((amount) => (
-                <Pressable
-                  key={amount}
-                  style={[
-                    styles.tipChip,
-                    tip === amount && styles.tipChipOn,
-                    updateTip.isPending && styles.tipChipDisabled,
-                  ]}
-                  disabled={updateTip.isPending}
-                  onPress={() => handleTip(amount)}
-                >
-                  <Text
-                    style={[
-                      styles.tipChipText,
-                      tip === amount && styles.tipChipTextOn,
-                    ]}
-                  >
-                    {amount === 0 ? 'No tip' : `₹${amount}`}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ) : null}
+        {showTip ? <OrderTipCard orderId={id} tip={tip} /> : null}
 
         <View style={styles.actionsGrid}>
           {showInvoice ? (
@@ -1091,61 +1039,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 12,
     color: MUTED,
-  },
-  tipCard: {
-    marginTop: 14,
-    marginHorizontal: 16,
-    backgroundColor: WHITE,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#FFE4CC',
-  },
-  tipHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tipTitle: {
-    fontFamily: fonts.uiBold,
-    fontSize: 14,
-    color: INK,
-  },
-  tipSub: {
-    marginTop: 6,
-    fontFamily: fonts.ui,
-    fontSize: 12,
-    color: MUTED,
-    lineHeight: 17,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  tipChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#F3F4F6',
-  },
-  tipChipOn: {
-    backgroundColor: ORANGE_SOFT,
-    borderWidth: 1,
-    borderColor: '#FFD8BF',
-  },
-  tipChipDisabled: {
-    opacity: 0.6,
-  },
-  tipChipText: {
-    fontFamily: fonts.uiMedium,
-    fontSize: 13,
-    color: MUTED,
-  },
-  tipChipTextOn: {
-    color: ORANGE,
-    fontFamily: fonts.uiBold,
   },
   actionsGrid: {
     marginTop: 14,

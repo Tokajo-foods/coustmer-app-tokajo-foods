@@ -7,6 +7,7 @@ import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { authTheme } from '@/constants/auth-theme';
 import { useRestaurantOffer } from '@/lib/restaurant/hooks';
+import { formatInr } from '@/lib/format/money';
 
 export function OfferDetailScreen() {
   const { restaurantId, offerId } = useLocalSearchParams<{
@@ -56,14 +57,14 @@ export function OfferDetailScreen() {
                   <Text style={styles.metaValue}>
                     {offer.discountType === 'percentage'
                       ? `${offer.discountValue}%`
-                      : `₹${offer.discountValue}`}
+                      : `${formatInr(offer.discountValue)}`}
                   </Text>
                 </View>
               ) : null}
               {typeof offer.minOrderAmount === 'number' ? (
                 <View style={styles.metaItem}>
                   <Text style={styles.metaLabel}>Min order</Text>
-                  <Text style={styles.metaValue}>₹{offer.minOrderAmount}</Text>
+                  <Text style={styles.metaValue}>{formatInr(offer.minOrderAmount)}</Text>
                 </View>
               ) : null}
               {offer.validUntil ? (

@@ -46,6 +46,7 @@ import { navigateBack } from '@/lib/motion/navigate-back';
 import { PREMIUM_LIST } from '@/lib/motion/premium';
 import type { Restaurant } from '@/lib/restaurant/types';
 import { useFavoritesStore } from '@/store/favorites-store';
+import { formatInr } from '@/lib/format/money';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const HERO_HEIGHT = Math.round(SCREEN_H * 0.45);
@@ -153,7 +154,7 @@ function DishCard({
         )}
         <View style={dishStyles.meta}>
           {dish.price != null && (
-            <Text style={dishStyles.price}>₹{dish.price}</Text>
+            <Text style={dishStyles.price}>{formatInr(dish.price)}</Text>
           )}
           {typeof dish.rating === 'number' && dish.rating > 0 && (
             <View style={dishStyles.ratingPill}>

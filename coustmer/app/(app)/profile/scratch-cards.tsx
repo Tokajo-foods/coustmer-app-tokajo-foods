@@ -21,6 +21,7 @@ import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
 import { useRevealScratchCard, useScratchCards } from '@/lib/customer/hooks';
 import type { ScratchCard } from '@/lib/customer/types';
+import { formatInr } from '@/lib/format/money';
 
 function ScratchCardItem({
   card,
@@ -67,7 +68,7 @@ function ScratchCardItem({
               </View>
             )}
             {card.discount != null && (
-              <Text style={styles.discountText}>₹{card.discount} off</Text>
+              <Text style={styles.discountText}>{formatInr(card.discount)} off</Text>
             )}
           </>
         )}

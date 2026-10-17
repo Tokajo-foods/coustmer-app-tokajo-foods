@@ -18,6 +18,7 @@ import {
 } from '@/lib/restaurant/card-display';
 import type { Restaurant } from '@/lib/restaurant/types';
 import { prefetchRestaurantMenu } from '@/lib/restaurant/hooks';
+import { formatInr } from '@/lib/format/money';
 
 type Props = {
   restaurant: Restaurant;
@@ -119,7 +120,7 @@ export function RestaurantListCard({
             </View>
           ) : null}
           {typeof cost === 'number' ? (
-            <Text style={styles.meta}>₹{cost} for two</Text>
+            <Text style={styles.meta}>{formatInr(cost)} for two</Text>
           ) : null}
           {typeof restaurant.distance === 'number' ? (
             <View style={styles.metaChip}>
@@ -140,7 +141,7 @@ export function RestaurantListCard({
           restaurant.freeDeliveryThreshold > 0 ? (
           <View style={styles.offerRow}>
             <Text style={styles.offerText}>
-              Free delivery above ₹{restaurant.freeDeliveryThreshold}
+              Free delivery above {formatInr(restaurant.freeDeliveryThreshold)}
             </Text>
           </View>
         ) : null}

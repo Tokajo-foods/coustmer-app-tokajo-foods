@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { api } from '@/lib/api';
+import { formatInr } from '@/lib/format/money';
 
 export type OfferType = 'percentage' | 'fixed' | 'bogo' | 'freeDelivery';
 
@@ -170,7 +171,7 @@ export function formatOfferValue(offer: Offer): string {
     case 'percentage':
       return `${offer.value}% OFF`;
     case 'fixed':
-      return `₹${offer.value} OFF`;
+      return `${formatInr(offer.value)} OFF`;
     case 'bogo':
       return 'Buy 1 Get 1';
     case 'freeDelivery':

@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { styles } from '@/components/home/tokajo/TokajoRestaurantListCard.styles';
 import type { Restaurant } from '@/lib/restaurant/types';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 
@@ -174,7 +175,7 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           {cost > 0 ? (
             <View style={styles.metaItem}>
               {eta || distance ? <View style={styles.dot} /> : null}
-              <Text style={styles.metaText}>₹{cost} for two</Text>
+              <Text style={styles.metaText}>{formatInr(cost)} for two</Text>
             </View>
           ) : null}
 

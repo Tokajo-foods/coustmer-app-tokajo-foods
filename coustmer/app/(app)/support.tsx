@@ -17,6 +17,7 @@ import { useSupportTicketsSocket } from '@/lib/socket/hooks';
 import { SUPPORT_CATEGORY_LABELS } from '@/lib/support/types';
 import { getApiErrorMessage } from '@/lib/errors';
 import { authTheme } from '@/constants/auth-theme';
+import { formatInr } from '@/lib/format/money';
 
 export default function SupportHubScreen() {
   const router = useRouter();
@@ -169,8 +170,8 @@ export default function SupportHubScreen() {
                 <View>
                   <Text style={styles.restaurantName}>{recentOrder.restaurantName}</Text>
                   <Text style={styles.orderMeta}>
-                    {recentOrder.deliveryAddress?.label || 'Home'} | ₹
-                    {recentOrder.total || 0}
+                    {recentOrder.deliveryAddress?.label || 'Home'} |{' '}
+                    {formatInr(recentOrder.total)}
                   </Text>
                 </View>
                 {recentOrder.status === 'delivered' && (

@@ -7,6 +7,7 @@ import { fonts } from '@/constants/typography';
 import type { SearchDish, SearchRestaurant, SearchSuggestion } from '@/lib/search/types';
 
 import { searchColors } from './search-styles';
+import { formatInr } from '@/lib/format/money';
 
 const { ink: INK, muted: MUTED, border: BORDER } = searchColors;
 
@@ -62,7 +63,7 @@ export const RestaurantRow = memo(function RestaurantRow({
             </View>
           ) : null}
           {restaurant.deliveryTime ? <Text style={styles.resultMeta}>{restaurant.deliveryTime}</Text> : null}
-          {restaurant.priceForTwo ? <Text style={styles.resultMeta}>₹{restaurant.priceForTwo} for two</Text> : null}
+          {restaurant.priceForTwo ? <Text style={styles.resultMeta}>{formatInr(restaurant.priceForTwo)} for two</Text> : null}
         </View>
       </View>
     </Pressable>
@@ -85,7 +86,7 @@ export const DishRow = memo(function DishRow({ dish, onPress }: { dish: SearchDi
           <Text style={styles.resultName} numberOfLines={1}>{dish.name}</Text>
         </View>
         <Text style={styles.resultMeta} numberOfLines={1}>{dish.restaurantName || 'Restaurant'}</Text>
-        <Text style={styles.dishPrice}>₹{dish.price}</Text>
+        <Text style={styles.dishPrice}>{formatInr(dish.price)}</Text>
       </View>
     </Pressable>
   );

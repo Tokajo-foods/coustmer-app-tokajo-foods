@@ -18,6 +18,7 @@ import { authTheme } from '@/constants/auth-theme';
 import type { RestaurantCard } from '@/lib/customer/types';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
+import { formatInr } from '@/lib/format/money';
 
 export default function CollectionScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -70,7 +71,7 @@ export default function CollectionScreen() {
               <Text style={styles.metaText}>{item.deliveryTime}</Text>
             )}
             {item.priceForTwo != null && (
-              <Text style={styles.metaText}>₹{item.priceForTwo} for two</Text>
+              <Text style={styles.metaText}>{formatInr(item.priceForTwo)} for two</Text>
             )}
           </View>
         </View>

@@ -35,6 +35,7 @@ import {
 import {
   useDeliveryLocationStore,
 } from '@/store/delivery-location-store';
+import { formatInr } from '@/lib/format/money';
 
 function titleFromSlug(slug: string) {
   return slug
@@ -166,7 +167,7 @@ export function CategoryExploreScreen() {
                   <VegBadge isVeg={item.isVeg} />
                 </View>
 
-                <Text style={styles.price}>₹{item.price}</Text>
+                <Text style={styles.price}>{formatInr(item.price)}</Text>
 
                 {item.description ? (
                   <Text style={styles.desc} numberOfLines={2}>

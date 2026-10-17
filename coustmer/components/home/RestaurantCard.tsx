@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { FavoriteHeartButton } from '@/components/common/FavoriteHeartButton';
 import { authTheme } from '@/constants/auth-theme';
 import type { RestaurantCard as RestaurantCardType } from '@/lib/customer/types';
+import { formatInr } from '@/lib/format/money';
 
 type Props = {
   restaurant: RestaurantCardType;
@@ -116,7 +117,7 @@ export function RestaurantCard({
             </View>
           ) : null}
           {typeof restaurant.priceForTwo === 'number' ? (
-            <Text style={styles.meta}>₹{restaurant.priceForTwo} for two</Text>
+            <Text style={styles.meta}>{formatInr(restaurant.priceForTwo)} for two</Text>
           ) : null}
         </View>
       </Pressable>

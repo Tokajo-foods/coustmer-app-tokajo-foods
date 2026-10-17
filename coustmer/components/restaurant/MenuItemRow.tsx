@@ -12,6 +12,7 @@ import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import type { MenuItem } from '@/lib/restaurant/types';
 import { playHapticFeedback } from '@/lib/utils/haptics';
 import { useCartStore } from '@/store/cart-store';
+import { formatInr } from '@/lib/format/money';
 
 type Props = {
   item: MenuItem;
@@ -112,7 +113,7 @@ export function MenuItemRow({
             {item.description}
           </Text>
         ) : null}
-        <Text style={styles.price}>₹{item.price}</Text>
+        <Text style={styles.price}>{formatInr(item.price)}</Text>
         {!available ? (
           <Text style={styles.soldOut}>Currently unavailable</Text>
         ) : null}

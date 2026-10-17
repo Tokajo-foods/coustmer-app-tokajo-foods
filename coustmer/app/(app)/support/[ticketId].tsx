@@ -34,6 +34,7 @@ import {
 } from '@/lib/support/support-hooks';
 import { SUPPORT_CATEGORY_LABELS } from '@/lib/support/types';
 import { useSupportTicketSocket } from '@/lib/socket/hooks';
+import { formatInr } from '@/lib/format/money';
 
 export default function TicketDetailScreen() {
   const { ticketId } = useLocalSearchParams<{ ticketId: string }>();
@@ -136,7 +137,7 @@ export default function TicketDetailScreen() {
                   ) : null}
                   {ticket.compensationAmount ? (
                     <Text style={styles.compLine}>
-                      ₹{ticket.compensationAmount} credited to your wallet
+                      {formatInr(ticket.compensationAmount)} credited to your wallet
                     </Text>
                   ) : null}
                 </View>

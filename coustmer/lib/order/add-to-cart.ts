@@ -3,7 +3,6 @@ import { Alert } from 'react-native';
 import { cartApi } from '@/lib/cart/api';
 import {
   cartLineLocalId,
-  modifiersExtraTotal,
   sameModifiers,
 } from '@/lib/cart/modifiers';
 import type { CartModifier } from '@/lib/cart/types';
@@ -157,7 +156,8 @@ async function addRemote(
   const menuItemId = item.menuItemId || item.id;
   const basePrice =
     typeof item.basePrice === 'number' ? item.basePrice : item.price;
-  const unitPrice = basePrice + modifiersExtraTotal(modifiers);
+  // Placeholder until the server cart (unitPrice = base + add-ons) replaces this line.
+  const unitPrice = basePrice;
 
   const local = store.addItem(
     {
@@ -220,7 +220,8 @@ export function addMenuItemToCart(
   const menuItemId = item.id;
   const basePrice =
     typeof options?.basePrice === 'number' ? options.basePrice : item.price;
-  const unitPrice = basePrice + modifiersExtraTotal(modifiers);
+  // Placeholder until the server cart (unitPrice = base + add-ons) replaces this line.
+  const unitPrice = basePrice;
   const lineId = cartLineLocalId(menuItemId, modifiers);
   const existing = findLine(menuItemId, modifiers ?? []);
 

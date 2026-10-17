@@ -8,6 +8,7 @@ import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
 import { useApplyReferral, useReferral } from '@/lib/profile/hooks';
+import { formatInr } from '@/lib/format/money';
 
 export function ReferralScreen() {
   const { data, isLoading, isError, error, refetch } = useReferral();
@@ -93,8 +94,8 @@ export function ReferralScreen() {
           </Text>
           {program?.isActive ? (
             <Text style={styles.rewardMeta}>
-              You get ₹{program.referrerBonusInr} · Friend gets ₹
-              {program.refereeBonusInr} (one time)
+              You get {formatInr(program.referrerBonusInr)} · Friend gets{' '}
+              {formatInr(program.refereeBonusInr)} (one time)
             </Text>
           ) : (
             <Text style={styles.rewardMeta}>Program currently paused</Text>

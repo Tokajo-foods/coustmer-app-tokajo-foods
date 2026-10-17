@@ -18,6 +18,7 @@ import {
   type HoursRow,
 } from './RestaurantInfoWeeklyHours';
 import { infoColors, infoStyles as styles } from './restaurant-info-panel-styles';
+import { formatInr } from '@/lib/format/money';
 
 const WEEKDAYS = [
   'monday',
@@ -172,7 +173,7 @@ export function RestaurantInfoPanel({
     stats.push({
       key: 'cost',
       label: 'Cost for two',
-      value: `₹${cost}${r.priceRange ? ` · ${r.priceRange}` : ''}`,
+      value: `${formatInr(cost)}${r.priceRange ? ` · ${r.priceRange}` : ''}`,
     });
   }
   if (eta) stats.push({ key: 'eta', label: 'Delivery time', value: eta });
@@ -184,13 +185,13 @@ export function RestaurantInfoPanel({
     });
   }
   if (typeof r.minOrderValue === 'number' && r.minOrderValue > 0) {
-    stats.push({ key: 'min', label: 'Min order', value: `₹${r.minOrderValue}` });
+    stats.push({ key: 'min', label: 'Min order', value: `${formatInr(r.minOrderValue)}` });
   }
   if (typeof r.freeDeliveryThreshold === 'number' && r.freeDeliveryThreshold > 0) {
     stats.push({
       key: 'free',
       label: 'Free delivery',
-      value: `Above ₹${r.freeDeliveryThreshold}`,
+      value: `Above ${formatInr(r.freeDeliveryThreshold)}`,
     });
   }
 

@@ -23,6 +23,7 @@ import { useFullMenu } from '@/lib/restaurant/hooks';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import { rankMenuSearch } from '@/lib/restaurant/menu-search';
 import type { MenuItem } from '@/lib/restaurant/types';
+import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
 const INK = '#0F172A';
@@ -189,7 +190,7 @@ function SuggestionRow({
           <Text style={styles.meta} numberOfLines={1}>{item.categoryName}</Text>
         ) : null}
       </View>
-      <Text style={styles.price}>₹{item.price}</Text>
+      <Text style={styles.price}>{formatInr(item.price)}</Text>
     </Pressable>
   );
 }

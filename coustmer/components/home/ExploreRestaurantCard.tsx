@@ -21,6 +21,7 @@ import {
   formatDistanceKm,
 } from '@/lib/restaurant/card-display';
 import type { Restaurant } from '@/lib/restaurant/types';
+import { formatInr } from '@/lib/format/money';
 
 type Props = {
   restaurant: Restaurant;
@@ -74,9 +75,9 @@ export function ExploreRestaurantCard({
   const distance = formatDistanceKm(restaurant.distance);
 
   const costText = restaurant.costForTwo
-    ? `₹${restaurant.costForTwo} for two`
+    ? `${formatInr(restaurant.costForTwo)} for two`
     : restaurant.priceForTwo
-      ? `₹${restaurant.priceForTwo} for two`
+      ? `${formatInr(restaurant.priceForTwo)} for two`
       : null;
 
   return (

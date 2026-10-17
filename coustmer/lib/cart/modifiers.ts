@@ -23,8 +23,3 @@ export function sameModifiers(
 ): boolean {
   return modifiersSignature(a) === modifiersSignature(b);
 }
-
-export function modifiersExtraTotal(modifiers?: CartModifier[] | null): number {
-  if (!modifiers?.length) return 0;
-  return modifiers.reduce((sum, m) => sum + (Number(m.price) || 0), 0);
-}
