@@ -17,6 +17,7 @@ import { fonts } from '@/constants/typography';
 import { authTheme } from '@/constants/auth-theme';
 import type { RestaurantCard } from '@/lib/customer/types';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 
 export default function CollectionScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -32,12 +33,7 @@ export default function CollectionScreen() {
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.88}
-        onPress={() =>
-          router.push({
-            pathname: '/restaurants/[restaurantId]',
-            params: { restaurantId: item.id },
-          })
-        }
+        onPress={() => openRestaurantMenu(router, item.id, { slug: item.slug })}
       >
         <View style={styles.cardImgWrap}>
           {item.imageUrl ? (

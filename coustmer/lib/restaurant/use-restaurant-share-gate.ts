@@ -41,7 +41,7 @@ export function useRestaurantShareGate(
     if (!ok) {
       showNotServiceable(restaurant.name || 'This restaurant');
       if (router.canGoBack()) router.back();
-      else router.replace('/home');
+      else router.replace('/home' as import('expo-router').Href);
     }
   }, [fromShare, restaurant?.id, restaurant?.name, coords?.lat, coords?.lng, router, showNotServiceable]);
 }

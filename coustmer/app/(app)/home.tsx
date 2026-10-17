@@ -29,6 +29,7 @@ import { setFeedScrolling } from '@/lib/motion/scroll-activity';
 import { addressApi } from '@/lib/address/api';
 import { formatAddressLabel } from '@/lib/address/types';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import {
   useAppConfig,
   useCustomerProfile,
@@ -282,13 +283,11 @@ export default function HomeScreen() {
   const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
   const openRestaurant = useCallback(
-    (id: string) => {
-      router.push({
-        pathname: '/restaurants/[restaurantId]',
-        params: { restaurantId: id },
-      });
+    (id: string, slug?: string | null) => {
+      const r = restaurants.find((x) => x.id === id);
+      openRestaurantMenu(router, id, { slug: slug ?? r?.slug });
     },
-    [router]
+    [router, restaurants]
   );
 
   const onToggleFavorite = useCallback(

@@ -24,7 +24,7 @@ export default function AppLayout() {
   }
 
   if (!token || !user) {
-    return <Redirect href="/?auth=login" />;
+    return <Redirect href="/" />;
   }
 
   return (

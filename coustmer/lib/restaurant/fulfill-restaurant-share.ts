@@ -1,4 +1,4 @@
-import type { Router } from 'expo-router';
+import type { Href, Router } from 'expo-router';
 
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { restaurantApi } from '@/lib/restaurant/api';
@@ -42,6 +42,7 @@ export async function fulfillRestaurantShare(input: {
       return { status: 'not_found' };
     }
   } catch {
+    usePendingRestaurantShareStore.getState().clearPending();
     return { status: 'not_found' };
   }
 
@@ -64,11 +65,12 @@ export async function fulfillRestaurantShare(input: {
   }
 
   const q = link.fromShare ? '?share=1' : '';
-  if (restaurant.slug) {
-    router.replace(`/restaurants/slug/${encodeURIComponent(restaurant.slug)}${q}`);
-  } else {
-    router.replace(`/restaurants/${restaurant.id}${q}`);
-  }
+  const href = (
+    restaurant.slug
+      ? `/restaurants/slug/${encodeURIComponent(restaurant.slug)}${q}`
+      : `/restaurants/${encodeURIComponent(restaurant.id)}${q}`
+  ) as Href;
+  router.replace(href);
 
   return { status: 'opened', restaurantId: restaurant.id };
 }

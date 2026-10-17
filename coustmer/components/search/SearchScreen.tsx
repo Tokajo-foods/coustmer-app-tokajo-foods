@@ -22,6 +22,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { fonts } from '@/constants/typography';
 import { navigateBack } from '@/lib/motion/navigate-back';
 import { PREMIUM_LIST } from '@/lib/motion/premium';
@@ -103,12 +104,8 @@ export function SearchScreen() {
   }, []);
 
   const openRestaurant = (id: string, itemId?: string) => {
-    router.push({
-      pathname: '/restaurants/[restaurantId]',
-      params: {
-        restaurantId: id,
-        ...(itemId ? { itemId } : {}),
-      },
+    openRestaurantMenu(router, id, {
+      params: itemId ? { itemId } : undefined,
     });
   };
 

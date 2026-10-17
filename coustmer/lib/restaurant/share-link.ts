@@ -75,7 +75,10 @@ export function parseRestaurantShareUrl(
   const fromShare = parseShareFlag(url.search);
 
   const host = url.hostname.toLowerCase();
-  const path = url.pathname.replace(/\/+$/, '') || '/';
+  let path = url.pathname.replace(/\/+$/, '') || '/';
+  // Expo dev / Metro: /--/restaurants/...
+  path = path.replace(/^\/--/, '');
+  if (!path.startsWith('/')) path = `/${path}`;
 
   if (url.protocol === `${APP_SCHEME}:`) {
     const slugMatch = path.match(/^\/restaurants\/slug\/([^/]+)$/i);

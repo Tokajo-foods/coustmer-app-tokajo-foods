@@ -20,6 +20,7 @@ import { PREMIUM_HORIZONTAL_LIST, PREMIUM_LIST } from '@/lib/motion/premium';
 import { EmptyView, ErrorView } from '@/components/common/StateViews';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { RestaurantListCard } from '@/components/restaurant/RestaurantListCard';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { authTheme } from '@/constants/auth-theme';
 import {
   extractCityFromAddress,
@@ -122,8 +123,10 @@ export function RestaurantBrowseScreen() {
   const searchQuery = useSearchRestaurants(
     {
       q: debouncedSearch,
-      // Do not send lat/lng with text `q` — search-service rejects geoNear + text.
-      sort: 'newest',
+      lat: coords?.lat,
+      lng: coords?.lng,
+      radius: coords ? CUSTOMER_DISCOVERY_RADIUS_KM * 1000 : undefined,
+      sort: 'relevance',
       limit: 40,
     },
     { enabled: isTextSearch }
@@ -239,12 +242,8 @@ export function RestaurantBrowseScreen() {
   ]);
 
   const openRestaurant = (id: string) => {
-    router.push({
-      pathname: '/restaurants/[restaurantId]',
-      params: {
-        restaurantId: id,
-        ...(selectedCuisine ? { category: selectedCuisine } : {}),
-      },
+    openRestaurantMenu(router, id, {
+      params: selectedCuisine ? { category: selectedCuisine } : undefined,
     });
   };
 

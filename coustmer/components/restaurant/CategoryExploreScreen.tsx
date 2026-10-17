@@ -22,6 +22,7 @@ import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { fonts } from '@/constants/typography';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import {
   extractCityFromAddress,
@@ -79,23 +80,14 @@ export function CategoryExploreScreen() {
   const dishes = dishesQuery.data ?? [];
 
   const openDish = (dish: CategoryDish) => {
-    router.push({
-      pathname: '/restaurants/[restaurantId]',
-      params: {
-        restaurantId: dish.restaurantId,
-        category: slug,
-        itemId: dish.id,
-      },
+    openRestaurantMenu(router, dish.restaurantId, {
+      params: { category: slug, itemId: dish.id },
     });
   };
 
   const openRestaurant = (restaurantId: string) => {
-    router.push({
-      pathname: '/restaurants/[restaurantId]',
-      params: {
-        restaurantId,
-        category: slug,
-      },
+    openRestaurantMenu(router, restaurantId, {
+      params: { category: slug },
     });
   };
 
