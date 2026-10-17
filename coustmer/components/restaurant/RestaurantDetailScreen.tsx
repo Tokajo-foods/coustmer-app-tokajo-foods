@@ -126,6 +126,9 @@ export function RestaurantDetailScreen() {
   const [menuFilter, setMenuFilter] = useState<MenuFilter>(
     vegOnly ? 'veg' : 'all'
   );
+  const menuFilterFadeStyle = usePremiumContentFade(menuFilter, {
+    variant: 'filter',
+  });
   const [shareOpen, setShareOpen] = useState(false);
   const shareFlag = Array.isArray(params.share) ? params.share[0] : params.share;
   const fromShare = shareFlag === '1' || shareFlag === 'true';
@@ -468,10 +471,6 @@ export function RestaurantDetailScreen() {
       a.active !== false &&
       String(a.type).includes('open')
   );
-
-  const menuFilterFadeStyle = usePremiumContentFade(menuFilter, {
-    variant: 'filter',
-  });
 
   const applyMenuFilter = (next: MenuFilter) => {
     setMenuFilter(next);
