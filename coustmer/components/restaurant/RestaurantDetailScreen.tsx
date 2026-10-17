@@ -8,16 +8,13 @@ import {
   ChevronLeft,
   Clock,
   Flame,
-  Leaf,
   MapPin,
   Search,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
   Star,
   Tag,
   UtensilsCrossed,
-  X,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -28,7 +25,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -36,12 +32,19 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
+import { RestaurantCategoryRail } from '@/components/restaurant/detail/RestaurantCategoryRail';
+import { RestaurantDetailTabs } from '@/components/restaurant/detail/RestaurantDetailTabs';
+import type { RestaurantDetailTab } from '@/components/restaurant/detail/RestaurantDetailTabs';
+import {
+  RestaurantMenuSearchBar,
+  type MenuFilterId,
+} from '@/components/restaurant/detail/RestaurantMenuSearchBar';
 import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { MenuItemDetailSheet } from '@/components/restaurant/MenuItemDetailSheet';
 import { RestaurantReviewsPanel } from '@/components/review/RestaurantReviewsPanel';
 import { fonts } from '@/constants/typography';
 import { navigateBack } from '@/lib/motion/navigate-back';
-import { PREMIUM_HORIZONTAL_LIST, PREMIUM_SCROLL } from '@/lib/motion/premium';
+import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import {
   formatDistanceKm,
   formatNextOpenAt,
@@ -92,8 +95,8 @@ const WEEKDAYS = [
   'sunday',
 ] as const;
 
-type TabId = 'Menu' | 'Reviews' | 'Info' | 'Offers';
-type MenuFilter = 'all' | 'veg' | 'non_veg' | 'bestsellers' | 'recommended';
+type TabId = RestaurantDetailTab;
+type MenuFilter = MenuFilterId;
 
 function isBestseller(item: MenuItem, index: number) {
   if (item.isBestSeller || item.isRecommended) return true;
@@ -143,7 +146,6 @@ export function RestaurantDetailScreen() {
   const [menuFilter, setMenuFilter] = useState<MenuFilter>(
     vegOnly ? 'veg' : 'all'
   );
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
 
   const slugQuery = useRestaurantBySlug(slugOnly ? slugParam || '' : '', coords);
@@ -588,7 +590,6 @@ export function RestaurantDetailScreen() {
 
   const applyMenuFilter = (next: MenuFilter) => {
     setMenuFilter(next);
-    setFiltersOpen(false);
     setTab('Menu');
     if (next === 'veg') {
       setVegMode('pure_veg');
@@ -597,58 +598,22 @@ export function RestaurantDetailScreen() {
     }
   };
 
-  const filterChips: Array<{ id: MenuFilter; label: string }> = [
-    { id: 'all', label: 'All' },
-    { id: 'veg', label: 'Veg' },
-    { id: 'non_veg', label: 'Non-veg' },
-    { id: 'bestsellers', label: 'Bestsellers' },
-    { id: 'recommended', label: 'Recommended' },
-  ];
+  const categoryChips = useMemo(
+    () =>
+      grouped.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        count: cat.items.length,
+      })),
+    [grouped]
+  );
 
-  const catRail = (
-    <ScrollView
-      horizontal
-      {...PREMIUM_HORIZONTAL_LIST}
-      contentContainerStyle={styles.catRailContent}
-    >
-      <Pressable
-        style={[styles.catChip, activeCat === 'popular' && styles.catChipOn]}
-        onPress={() => jumpToCategory('popular')}
-      >
-        <Flame
-          color={activeCat === 'popular' ? '#FFF' : '#64748B'}
-          size={13}
-          strokeWidth={2.6}
-        />
-        <Text
-          style={[
-            styles.catChipText,
-            activeCat === 'popular' && styles.catChipTextOn,
-          ]}
-        >
-          Popular
-        </Text>
-      </Pressable>
-      {grouped.map((cat) => {
-        const on = activeCat === cat.id;
-        return (
-          <Pressable
-            key={cat.id}
-            style={[styles.catChip, on && styles.catChipOn]}
-            onPress={() => jumpToCategory(cat.id)}
-          >
-            <Text style={[styles.catChipText, on && styles.catChipTextOn]}>
-              {cat.name}
-            </Text>
-            <View style={[styles.catCount, on && styles.catCountOn]}>
-              <Text style={[styles.catCountText, on && styles.catCountTextOn]}>
-                {cat.items.length}
-              </Text>
-            </View>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+  const categoryRail = (
+    <RestaurantCategoryRail
+      categories={categoryChips}
+      activeId={activeCat}
+      onSelect={jumpToCategory}
+    />
   );
 
   return (
@@ -789,54 +754,21 @@ export function RestaurantDetailScreen() {
           </View>
         </View>
 
-        {/* Search sits above Menu / Offers / Reviews / Info */}
-        <View style={styles.searchWrap}>
-          <Search color={MUTED} size={16} strokeWidth={2.4} />
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={onSearchChange}
-            onFocus={() => {
-              setTab('Menu');
-              setSearchFocused(true);
-            }}
-            onBlur={() => {
-              // Delay so suggestion taps register before chips unmount.
-              setTimeout(() => setSearchFocused(false), 180);
-            }}
-            placeholder={
-              menuFilter === 'veg' || vegOnly
-                ? 'Search veg dishes…'
-                : 'Search dishes on this menu…'
-            }
-            placeholderTextColor="#94A3B8"
-            returnKeyType="search"
-            autoCorrect={false}
-            autoCapitalize="none"
-            clearButtonMode="never"
-            blurOnSubmit={false}
-          />
-          <Pressable
-            onPress={() => {
-              setFiltersOpen((v) => !v);
-              setTab('Menu');
-            }}
-            style={[styles.filterBtn, (filtersOpen || menuFilter !== 'all') && styles.filterBtnOn]}
-            hitSlop={8}
-            accessibilityLabel="Menu filters"
-          >
-            <SlidersHorizontal
-              color={filtersOpen || menuFilter !== 'all' ? ORANGE : MUTED}
-              size={15}
-              strokeWidth={2.4}
-            />
-          </Pressable>
-          {query ? (
-            <Pressable onPress={clearSearch} hitSlop={8}>
-              <X color={MUTED} size={16} />
-            </Pressable>
-          ) : null}
-        </View>
+        <RestaurantMenuSearchBar
+          query={query}
+          onQueryChange={onSearchChange}
+          onSearchFocus={() => {
+            setTab('Menu');
+            setSearchFocused(true);
+          }}
+          onSearchBlur={() => {
+            setTimeout(() => setSearchFocused(false), 180);
+          }}
+          onClearSearch={clearSearch}
+          menuFilter={menuFilter}
+          onMenuFilter={applyMenuFilter}
+          vegOnly={vegOnly}
+        />
 
         {(searchFocused || needle.length > 0) &&
         searchSuggestions.length > 0 &&
@@ -873,49 +805,7 @@ export function RestaurantDetailScreen() {
           </View>
         ) : null}
 
-        {filtersOpen || menuFilter !== 'all' ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRail}
-            keyboardShouldPersistTaps="handled"
-          >
-            {filterChips.map((chip) => {
-              const on = menuFilter === chip.id;
-              return (
-                <Pressable
-                  key={chip.id}
-                  style={[styles.filterChip, on && styles.filterChipOn]}
-                  onPress={() => applyMenuFilter(chip.id)}
-                >
-                  {chip.id === 'veg' ? (
-                    <Leaf color={on ? '#FFF' : '#15803D'} size={12} />
-                  ) : null}
-                  <Text
-                    style={[styles.filterChipText, on && styles.filterChipTextOn]}
-                  >
-                    {chip.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
-
-        {/* Tabs */}
-        <View style={styles.tabsWrap}>
-          {(['Menu', 'Offers', 'Reviews', 'Info'] as TabId[]).map((t) => (
-            <Pressable
-              key={t}
-              style={[styles.tab, tab === t && styles.tabActive]}
-              onPress={() => setTab(t)}
-            >
-              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                {t}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <RestaurantDetailTabs active={tab} onChange={setTab} />
 
         {tab === 'Menu' ? (
           <View
@@ -962,8 +852,8 @@ export function RestaurantDetailScreen() {
               </View>
             ) : (
               <>
-                {/* Inline category rail */}
-                <View style={styles.catRailInline}>{catRail}</View>
+                <View style={styles.menuSectionCard}>
+                  {categoryRail}
 
                 {/* Popular picks */}
                 {popularItems.length > 0 ? (
@@ -1090,28 +980,29 @@ export function RestaurantDetailScreen() {
                       style={styles.categoryBlock}
                     >
                       <View style={styles.categoryHead}>
-                        <View>
-                          <Text style={styles.categoryTitle}>{cat.name}</Text>
-                          <Text style={styles.categorySub}>
-                            {cat.items.length} item
-                            {cat.items.length === 1 ? '' : 's'}
-                          </Text>
-                        </View>
-                        <View style={styles.categoryAccent} />
+                        <Text style={styles.categoryTitle}>{cat.name}</Text>
+                        <Text style={styles.categorySub}>
+                          {cat.items.length} dish
+                          {cat.items.length === 1 ? '' : 'es'}
+                        </Text>
                       </View>
 
-                      {cat.items.map((item) => (
-                        <MenuItemRow
-                          key={item.id}
-                          item={item}
-                          onPress={() => setSelectedItem(item)}
-                          onAdd={() => addItem(item)}
-                          unavailable={unavailableSet.has(item.id)}
-                        />
-                      ))}
+                      <View style={styles.menuList}>
+                        {cat.items.map((item, itemIndex) => (
+                          <MenuItemRow
+                            key={item.id}
+                            item={item}
+                            onPress={() => setSelectedItem(item)}
+                            onAdd={() => addItem(item)}
+                            unavailable={unavailableSet.has(item.id)}
+                            showDivider={itemIndex < cat.items.length - 1}
+                          />
+                        ))}
+                      </View>
                     </Animated.View>
                   ))
                 )}
+                </View>
               </>
             )}
           </View>
@@ -1472,7 +1363,12 @@ export function RestaurantDetailScreen() {
           style={[styles.stickyCats, { paddingTop: insets.top + 6 }]}
           pointerEvents="box-none"
         >
-          {catRail}
+          <RestaurantCategoryRail
+            categories={categoryChips}
+            activeId={activeCat}
+            onSelect={jumpToCategory}
+            compact
+          />
         </View>
       ) : null}
 
@@ -2008,15 +1904,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: ORANGE,
   },
+  menuSectionCard: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E8EDF3',
+    overflow: 'hidden',
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+    paddingBottom: 8,
+  },
+  menuList: {
+    marginHorizontal: 12,
+    marginTop: 4,
+    backgroundColor: '#FAFBFC',
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
   categoryBlock: {
-    marginTop: 18,
+    marginTop: 20,
+    paddingHorizontal: 4,
   },
   categoryHead: {
     paddingHorizontal: 16,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   categoryTitle: {
     fontFamily: fonts.displayBold,
@@ -2029,13 +1947,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiMedium,
     fontSize: 12,
     color: MUTED,
-  },
-  categoryAccent: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: ORANGE,
-    marginBottom: 8,
   },
   emptyMenu: {
     marginHorizontal: 16,
@@ -2225,11 +2136,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(248,250,252,0.96)',
+    backgroundColor: 'rgba(255,255,255,0.98)',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingBottom: 6,
+    borderBottomColor: '#E8EDF3',
     zIndex: 20,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   histogramWrap: {
     margin: 16,

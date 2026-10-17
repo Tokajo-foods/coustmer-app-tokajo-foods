@@ -19,9 +19,16 @@ type Props = {
   onAdd?: () => void;
   highlighted?: boolean;
   unavailable?: boolean;
+  showDivider?: boolean;
 };
 
-export function MenuItemRow({ item, onPress, onAdd, unavailable: forceUnavailable }: Props) {
+export function MenuItemRow({
+  item,
+  onPress,
+  onAdd,
+  unavailable: forceUnavailable,
+  showDivider = true,
+}: Props) {
   const quantity = useCartStore((s) =>
     s.items
       .filter((i) => i.menuItemId === item.id || i.id === item.id)
@@ -62,7 +69,11 @@ export function MenuItemRow({ item, onPress, onAdd, unavailable: forceUnavailabl
 
   return (
     <Pressable
-      style={[styles.card, !available && styles.cardUnavailable]}
+      style={[
+        styles.card,
+        showDivider && styles.cardDivider,
+        !available && styles.cardUnavailable,
+      ]}
       onPress={onPress}
     >
       <View style={styles.leftCol}>
@@ -165,14 +176,14 @@ export function MenuItemRow({ item, onPress, onAdd, unavailable: forceUnavailabl
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
     flexDirection: 'row',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    backgroundColor: 'transparent',
+  },
+  cardDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E8EDF3',
   },
   cardUnavailable: {
     opacity: 0.72,
@@ -223,10 +234,11 @@ const styles = StyleSheet.create({
     color: '#047857',
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#202020',
-    marginBottom: 6,
+    color: '#0F172A',
+    marginBottom: 4,
+    lineHeight: 20,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -244,15 +256,16 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   desc: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
-    marginBottom: 8,
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 17,
+    marginBottom: 6,
   },
   price: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#111827',
+    color: '#0F172A',
+    marginTop: 2,
   },
   soldOut: {
     marginTop: 4,
@@ -261,19 +274,19 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   rightCol: {
-    width: 120,
+    width: 108,
   },
   imageWrap: {
-    width: 120,
-    height: 120,
-    borderRadius: 14,
+    width: 108,
+    height: 108,
+    borderRadius: 12,
     overflow: 'visible',
   },
   image: {
-    width: 120,
-    height: 120,
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
+    width: 108,
+    height: 108,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
   },
   imageDim: {
     opacity: 0.55,
@@ -295,10 +308,10 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#F3744B',
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
+    borderColor: '#F97316',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -306,10 +319,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   addButtonText: {
-    color: '#F3744B',
+    color: '#F97316',
     fontWeight: '800',
-    fontSize: 13,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
   unavailableBtn: {
     backgroundColor: '#F3F4F6',
@@ -327,8 +340,8 @@ const styles = StyleSheet.create({
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3744B',
-    borderRadius: 10,
+    backgroundColor: '#F97316',
+    borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 6,
     gap: 10,
