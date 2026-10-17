@@ -1,10 +1,14 @@
 import { Easing, FadeIn } from 'react-native-reanimated';
 
-/** Calm ease-out — no bounce (iOS-like). */
-const EASE_OUT = Easing.bezier(0.33, 0, 0.2, 1);
+/** Calm ease-out — no bounce. */
+export const RESTAURANT_MOTION_EASE = Easing.bezier(0.33, 0, 0.2, 1);
 
-/** Menu / Offers / Reviews / Info panel */
-export const RESTAURANT_DETAIL_TAB_ENTERING = FadeIn.duration(240).easing(EASE_OUT);
+export const RESTAURANT_TAB_FADE_MS = 280;
+export const RESTAURANT_TAB_SLIDE_PX = 5;
 
-/** Veg, non-veg, bestsellers, etc. */
-export const RESTAURANT_MENU_FILTER_ENTERING = FadeIn.duration(200).easing(EASE_OUT);
+export const RESTAURANT_FILTER_FADE_MS = 220;
+
+/** Fallback for list remount (filter key). */
+export const RESTAURANT_MENU_FILTER_ENTERING = FadeIn.duration(
+  RESTAURANT_FILTER_FADE_MS
+).easing(RESTAURANT_MOTION_EASE);

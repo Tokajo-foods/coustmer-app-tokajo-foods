@@ -24,10 +24,8 @@ import {
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import {
-  RESTAURANT_DETAIL_TAB_ENTERING,
-  RESTAURANT_MENU_FILTER_ENTERING,
-} from '@/lib/motion/restaurant-detail-motion';
+import { usePremiumContentFade } from '@/lib/motion/use-premium-content-fade';
+import { RestaurantDetailTabTransition } from '@/components/restaurant/detail/RestaurantDetailTabTransition';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
@@ -471,6 +469,10 @@ export function RestaurantDetailScreen() {
       String(a.type).includes('open')
   );
 
+  const menuFilterFadeStyle = usePremiumContentFade(menuFilter, {
+    variant: 'filter',
+  });
+
   const applyMenuFilter = (next: MenuFilter) => {
     setMenuFilter(next);
     setTab('Menu');
@@ -638,9 +640,8 @@ export function RestaurantDetailScreen() {
 
         <RestaurantDetailTabs active={tab} onChange={setTab} />
 
-        <Animated.View
-          key={tab}
-          entering={RESTAURANT_DETAIL_TAB_ENTERING}
+        <RestaurantDetailTabTransition
+          tab={tab}
           style={tab === 'Info' ? { flexGrow: 1 } : undefined}
         >
         {tab === 'Menu' ? (
@@ -679,10 +680,7 @@ export function RestaurantDetailScreen() {
                     ) : null}
                   </View>
                 ) : (
-                  <Animated.View
-                    key={menuFilter}
-                    entering={RESTAURANT_MENU_FILTER_ENTERING}
-                  >
+                  <Animated.View style={menuFilterFadeStyle}>
                     {grouped.map((cat) => (
                       <View
                         key={cat.id}
@@ -832,7 +830,7 @@ export function RestaurantDetailScreen() {
             specialHours={specialHours.data ?? []}
           />
         ) : null}
-        </Animated.View>
+        </RestaurantDetailTabTransition>
       </ScrollView>
 
       {/* Sticky category strip */}
