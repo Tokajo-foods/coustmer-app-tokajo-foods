@@ -191,8 +191,8 @@ export function AppBottomNav() {
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 28,
+    right: 28,
     bottom: 0,
     zIndex: 50,
   },
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
     borderRadius: 32,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingTop: 8,
     paddingBottom: 8,
     borderWidth: 1,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 60,
+    minWidth: 52,
   },
   tabInner: {
     alignItems: 'center',
