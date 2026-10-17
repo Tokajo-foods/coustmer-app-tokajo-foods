@@ -1,5 +1,5 @@
-import { MapPin, Store } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { MapPin, Store, WifiOff } from 'lucide-react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
 import type { HomeRestaurantCard, HomeTrendingDish } from '@/lib/home/types';
@@ -23,7 +23,7 @@ type Props = {
 /** Search landing: recent searches, then suggestions from restaurants in range only. */
 export function SearchDiscover({ recent, onSearch, onRemoveRecent, onClearRecent, onDish, onRestaurant }: Props) {
   const d = useSearchDiscovery();
-  const nothingNearby = !d.loading && d.hasLocation && !d.dishes.length && !d.restaurants.length;
+  const nothingNearby = !d.loading && !d.failed && d.hasLocation && !d.restaurants.length;
 
   return (
     <ScrollView {...PREMIUM_SCROLL} contentContainerStyle={styles.content}>
@@ -33,6 +33,11 @@ export function SearchDiscover({ recent, onSearch, onRemoveRecent, onClearRecent
           body="We'll suggest dishes and restaurants that deliver to you." />
       ) : null}
       {d.loading ? <DiscoverSkeleton /> : null}
+      {d.failed ? (
+        <Notice icon={<WifiOff color={searchColors.orange} size={26} />} title="Couldn't load suggestions"
+          body="Check your connection and try again." action={{ label: 'Retry', onPress: d.retry }} />
+      ) : null}
+      {!d.loading && d.dishesLoading && d.restaurants.length ? <DishRailSkeleton /> : null}
       <DishRail items={d.dishes} onPick={onDish} />
       <NearbyRestaurantList items={d.restaurants} onPick={onRestaurant} />
       {nothingNearby ? (
@@ -43,12 +48,36 @@ export function SearchDiscover({ recent, onSearch, onRemoveRecent, onClearRecent
   );
 }
 
-function Notice({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+type NoticeProps = {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  action?: { label: string; onPress: () => void };
+};
+
+function Notice({ icon, title, body, action }: NoticeProps) {
   return (
     <View style={styles.notice}>
       <View style={styles.noticeIcon}>{icon}</View>
       <Text style={styles.noticeTitle}>{title}</Text>
       <Text style={styles.noticeBody}>{body}</Text>
+      {action ? (
+        <Pressable onPress={action.onPress} style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+          accessibilityRole="button">
+          <Text style={styles.actionText}>{action.label}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function DishRailSkeleton() {
+  return (
+    <View style={styles.skeleton}>
+      <View style={[styles.bone, styles.titleBone]} />
+      <View style={styles.row}>
+        {[0, 1, 2].map((i) => <View key={i} style={[styles.bone, styles.card]} />)}
+      </View>
     </View>
   );
 }
@@ -80,6 +109,15 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { fontFamily: fonts.displayBold, fontSize: 16, color: searchColors.ink, textAlign: 'center' },
   noticeBody: { fontFamily: fonts.ui, fontSize: 13, color: searchColors.muted, textAlign: 'center', lineHeight: 19 },
+  action: {
+    marginTop: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: searchColors.orange,
+  },
+  pressed: { opacity: 0.85 },
+  actionText: { fontFamily: fonts.uiBold, fontSize: 13.5, color: '#FFFFFF' },
   skeleton: { paddingTop: 24, paddingHorizontal: 16 },
   row: { flexDirection: 'row', gap: 14, overflow: 'hidden' },
   bone: { backgroundColor: '#F1F5F9' },

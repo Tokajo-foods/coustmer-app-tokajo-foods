@@ -1,71 +1,79 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { useHomeFeed } from '@/lib/customer/hooks';
+import { useHomeFeed, useSuggestedItems } from '@/lib/customer/hooks';
+import { DEFAULT_HOME_FILTERS } from '@/lib/home/filters';
 import type { HomeRestaurantCard, HomeTrendingDish } from '@/lib/home/types';
+import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
+import { useNearbyRestaurants } from '@/lib/restaurant/hooks';
+import { homeFiltersToNearbyParams } from '@/lib/restaurant/nearby-params';
 import { useDeliveryCoords } from '@/store/delivery-location-store';
+
+import { isClosed, rankPopularDishes, rankPopularRestaurants } from './discovery-ranking';
 
 const DISH_COUNT = 12;
 const RESTAURANT_COUNT = 8;
 
-/** Same seed for one visit, so the mix does not reshuffle on every render. */
-function seededShuffle<T>(rows: T[], seed: number): T[] {
-  const out = rows.slice();
-  let s = Math.floor(seed * 2 ** 31) || 1;
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    s = (s * 48271) % 2147483647;
-    const j = s % (i + 1);
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-function uniqueBy<T>(rows: T[], key: (row: T) => string): T[] {
-  const seen = new Set<string>();
-  return rows.filter((row) => {
-    const k = key(row);
-    if (!k || seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-}
-
 export type SearchDiscovery = {
   hasLocation: boolean;
   loading: boolean;
+  /** Restaurant lookup failed and there is nothing cached to show. */
+  failed: boolean;
+  dishesLoading: boolean;
   dishes: HomeTrendingDish[];
   restaurants: HomeRestaurantCard[];
+  retry: () => void;
 };
 
 /**
- * Search landing suggestions, only from restaurants inside the delivery radius.
- * Reuses the home feed cache, so it is usually instant.
+ * Search landing suggestions, only from restaurants that deliver to the pin.
+ * Restaurants use the same nearby query as the home list (shared cache, so it
+ * matches what home shows). Dishes come from the suggested-items sample plus
+ * the home feed's ordered-most dishes when that area has them.
  */
 export function useSearchDiscovery(): SearchDiscovery {
   const coords = useDeliveryCoords();
   const [seed] = useState(() => Math.random());
+
+  const nearbyParams = useMemo(
+    () =>
+      coords?.lat && coords?.lng
+        ? homeFiltersToNearbyParams(coords, DEFAULT_HOME_FILTERS, {
+            radius: CUSTOMER_DISCOVERY_RADIUS_KM,
+            limit: 40,
+          })
+        : null,
+    [coords],
+  );
+  const nearby = useNearbyRestaurants(nearbyParams);
+  const suggested = useSuggestedItems();
   const feed = useHomeFeed();
 
-  return useMemo(() => {
-    const data = feed.data;
-    const dishPool = uniqueBy(
-      [...(data?.trendingDishes ?? []), ...(data?.dishesToTry ?? []), ...(data?.suggestedItems ?? [])],
-      (d) => d.id,
-    ).filter((d) => d.name && d.restaurantId);
-    const restaurantPool = uniqueBy(
-      [...(data?.topRated ?? []), ...(data?.trending ?? []), ...(data?.forYou ?? []), ...(data?.newlyAdded ?? [])],
-      (r) => r.id,
-    );
-    const onePerKitchen = uniqueBy(seededShuffle(dishPool, seed), (d) => d.restaurantId);
-    const extraDishes = seededShuffle(dishPool, seed + 0.5).filter((d) => !onePerKitchen.includes(d));
-    const openFirst = (r: HomeRestaurantCard) => (r.isOpenNow === false ? 1 : 0);
+  const retry = useCallback(() => {
+    void nearby.refetch();
+    void suggested.refetch();
+  }, [nearby, suggested]);
 
+  const nearbyRows = nearby.data?.restaurants;
+  const trendingDishes = feed.data?.trendingDishes;
+  const sampledDishes = suggested.data;
+
+  const ranked = useMemo(() => {
+    const rows = nearbyRows ?? [];
+    const inRange = new Map(rows.map((r) => [r.id, isClosed(r)] as const));
     return {
-      hasLocation: Boolean(coords?.lat && coords?.lng),
-      loading: feed.isLoading && !data,
-      dishes: [...onePerKitchen, ...extraDishes].slice(0, DISH_COUNT),
-      restaurants: seededShuffle(restaurantPool, seed)
-        .sort((a, b) => openFirst(a) - openFirst(b))
-        .slice(0, RESTAURANT_COUNT),
+      restaurants: rankPopularRestaurants(rows, RESTAURANT_COUNT),
+      dishes: rankPopularDishes(trendingDishes ?? [], sampledDishes ?? [], inRange, seed, DISH_COUNT),
     };
-  }, [coords?.lat, coords?.lng, feed.data, feed.isLoading, seed]);
+  }, [nearbyRows, trendingDishes, sampledDishes, seed]);
+
+  const hasLocation = Boolean(nearbyParams);
+  return {
+    hasLocation,
+    loading: hasLocation && nearby.isLoading && !nearbyRows,
+    failed: hasLocation && nearby.isError && !nearbyRows,
+    dishesLoading: hasLocation && suggested.isLoading && !sampledDishes,
+    dishes: ranked.dishes,
+    restaurants: ranked.restaurants,
+    retry,
+  };
 }

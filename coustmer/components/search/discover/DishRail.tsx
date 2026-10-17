@@ -9,7 +9,7 @@ import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
 import { searchColors } from '../search-styles';
 import { DiscoverSection } from './DiscoverSection';
 
-/** A random mix of dishes from restaurants in range. */
+/** Ordered-most and sampled dishes from restaurants in range. */
 export function DishRail({ items, onPick }: { items: HomeTrendingDish[]; onPick: (dish: HomeTrendingDish) => void }) {
   if (!items.length) return null;
   return (

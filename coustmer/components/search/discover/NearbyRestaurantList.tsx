@@ -15,7 +15,7 @@ function metaLine(r: HomeRestaurantCard): string {
   return parts.join(' · ');
 }
 
-/** A random mix of well-rated and trending restaurants in range. */
+/** Open, most-rated restaurants that deliver to the pin. */
 export function NearbyRestaurantList({
   items,
   onPick,
@@ -25,7 +25,7 @@ export function NearbyRestaurantList({
 }) {
   if (!items.length) return null;
   return (
-    <DiscoverSection title="Restaurants near you" subtitle="Delivering to your location">
+    <DiscoverSection title="Popular restaurants near you" subtitle="Delivering to your location">
       <View style={styles.list}>
         {items.map((r) => {
           const closed = r.isOpenNow === false;
