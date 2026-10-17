@@ -30,6 +30,7 @@ import {
   type PlacementPhase,
 } from '@/components/order/OrderPlacementModal';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
+import { SlideToConfirm } from '@/components/order/SlideToConfirm';
 import { PaymentGatewayWebView } from '@/components/payment/PaymentGatewayWebView';
 import {
   RazorpayCheckoutModal,
@@ -578,18 +579,13 @@ export function OrderSummaryScreen() {
             {paymentMethodLabel(paymentMethod, paymentMethods.data)}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.placeBtn, paying && styles.placeBtnDisabled]}
-          onPress={() => void placeOrder()}
-          disabled={paying || items.length === 0}
-          activeOpacity={0.9}
-        >
-          {paying ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.placeBtnText}>Place order</Text>
-          )}
-        </TouchableOpacity>
+        <SlideToConfirm
+          label={`Slide to place order · ${formatInr(payable)}`}
+          onConfirm={placeOrder}
+          loading={paying}
+          disabled={items.length === 0}
+          color={ORANGE}
+        />
       </View>
 
       <PaymentOptionsModal
@@ -884,18 +880,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,
-  },
-  placeBtn: {
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeBtnDisabled: { opacity: 0.7 },
-  placeBtnText: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 16,
-    color: '#FFFFFF',
   },
 });
