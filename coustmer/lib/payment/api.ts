@@ -148,12 +148,6 @@ export function mapPayment(data: Record<string, unknown>): Payment {
           data.transactionId ??
           ''
       ) || undefined,
-    paymentUrl:
-      (data.paymentUrl as string) ||
-      (data.checkoutUrl as string) ||
-      (data.redirectUrl as string) ||
-      (data.url as string) ||
-      undefined,
     razorpayKey:
       (data.razorpayKey as string) ||
       (data.key as string) ||

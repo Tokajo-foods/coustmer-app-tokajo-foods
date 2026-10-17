@@ -16,6 +16,11 @@ import {
   type WalletTopupMethod,
   type WalletTopupVerifyPayload,
 } from '@/lib/payment/wallet-topup-api';
+import {
+  subscriptionPaymentApi,
+  type SubscriptionPayMethod,
+  type SubscriptionVerifyPayload,
+} from '@/lib/payment/subscription-api';
 
 export const paymentKeys = {
   all: ['payment'] as const,
@@ -176,6 +181,26 @@ export function useSetDefaultPaymentMethod() {
     mutationFn: (methodId: string) => paymentApi.setDefaultMethod(methodId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.methods() });
+    },
+  });
+}
+
+/** POST /payments/subscriptions/subscribe — returns a Razorpay session for Super. */
+export function useStartSubscriptionPayment() {
+  return useMutation({
+    mutationFn: (payload: { planId: string; method: SubscriptionPayMethod }) =>
+      subscriptionPaymentApi.start(payload),
+  });
+}
+
+/** POST /payments/subscriptions/verify — activates Super, then refreshes membership + bill. */
+export function useVerifySubscriptionPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SubscriptionVerifyPayload) => subscriptionPaymentApi.verify(payload),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', 'mySubscription'] });
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 }

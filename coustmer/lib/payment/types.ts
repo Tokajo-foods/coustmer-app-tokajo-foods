@@ -45,7 +45,6 @@ export type Payment = {
   gateway?: string;
   gatewayOrderId?: string;
   gatewayPaymentId?: string;
-  paymentUrl?: string;
   razorpayKey?: string;
   razorpayOrderId?: string;
   description?: string;

@@ -31,7 +31,6 @@ import {
 } from '@/components/order/OrderPlacementModal';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { SlideToConfirm } from '@/components/order/SlideToConfirm';
-import { PaymentGatewayWebView } from '@/components/payment/PaymentGatewayWebView';
 import {
   RazorpayCheckoutModal,
   type RazorpayResult,
@@ -126,8 +125,6 @@ export function OrderSummaryScreen() {
   const [paying, setPaying] = useState(false);
   const [orderPlacementPhase, setOrderPlacementPhase] =
     useState<PlacementPhase>('none');
-  const [paymentGatewayOpen, setPaymentGatewayOpen] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState('');
   const [razorpayOpen, setRazorpayOpen] = useState(false);
   const [razorpaySession, setRazorpaySession] = useState<RazorpaySession | null>(null);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
@@ -270,18 +267,7 @@ export function OrderSummaryScreen() {
         return;
       }
 
-      // Online payment — open Razorpay checkout. Goes live automatically once the
-      // Razorpay keys are present in the backend env (no app change needed).
       try {
-        const raw = order.raw as Record<string, unknown> | undefined;
-        const hostedUrl = raw
-          ? ((raw.paymentUrl as string | undefined) ||
-            (raw.checkoutUrl as string | undefined) ||
-            (raw.redirectUrl as string | undefined) ||
-            (raw.gatewayUrl as string | undefined) ||
-            (raw.url as string | undefined))
-          : undefined;
-
         const payment = await initiatePayment.mutateAsync({
           orderId: order.id,
           amount,
@@ -321,23 +307,9 @@ export function OrderSummaryScreen() {
           return;
         }
 
-        const url =
-          payment.paymentUrl ||
-          (payment.checkoutUrl as string | undefined) ||
-          (payment.redirectUrl as string | undefined) ||
-          (payment.gatewayUrl as string | undefined) ||
-          (payment.url as string | undefined) ||
-          hostedUrl;
-        if (url?.startsWith('http')) {
-          setPaymentUrl(url);
-          setPaymentGatewayOpen(true);
-          setOrderPlacementPhase('none');
-          return;
-        }
-
         Alert.alert(
           'Online payment unavailable',
-          'Online payment isn\u2019t available right now. Please choose Pay on Delivery.'
+          'Your order is saved and waiting for payment. You can pay for it from Orders once payment is back.'
         );
         setOrderPlacementPhase('none');
       } catch (payErr) {
@@ -400,42 +372,6 @@ export function OrderSummaryScreen() {
       setFailedPaymentId(paymentId);
       setRefundModalOpen(true);
     }
-  };
-
-  const handlePaymentComplete = async (
-    success: boolean,
-    data?: Record<string, unknown>
-  ) => {
-    setPaymentGatewayOpen(false);
-    if (!success || !currentOrder) {
-      Alert.alert('Payment failed', 'Your order was created but payment did not complete.');
-      return;
-    }
-
-    setOrderPlacementPhase('placed');
-    const paymentId = String(data?.paymentId ?? '');
-    try {
-      await verifyPayment.mutateAsync({
-        paymentId,
-        orderId: currentOrder.id,
-        gatewayPaymentId: data?.gatewayPaymentId as string | undefined,
-        gatewayOrderId: data?.gatewayOrderId as string | undefined,
-        gatewaySignature: data?.gatewaySignature as string | undefined,
-        status: 'success',
-      });
-    } catch {
-      setOrderPlacementPhase('none');
-      setFailedPaymentId(paymentId);
-      setRefundModalOpen(true);
-      return;
-    }
-
-    await new Promise((r) => setTimeout(r, 1000));
-    router.replace({
-      pathname: '/orders/[orderId]/tracking',
-      params: { orderId: currentOrder.id, newOrder: 'true' },
-    });
-    setOrderPlacementPhase('none');
   };
 
   return (
@@ -635,15 +571,6 @@ export function OrderSummaryScreen() {
         addressLabel={location?.label || 'Delivery'}
         addressText={location?.formattedAddress || ''}
         savings={billBreakdown.discount}
-      />
-
-      <PaymentGatewayWebView
-        visible={paymentGatewayOpen}
-        onClose={() => setPaymentGatewayOpen(false)}
-        paymentUrl={paymentUrl}
-        onPaymentComplete={handlePaymentComplete}
-        orderAmount={currentOrder?.total ?? payable}
-        orderNumber={currentOrder?.orderNumber}
       />
 
       <RazorpayCheckoutModal

@@ -715,46 +715,35 @@ export const customerApi = {
 
   /** GET /customers/subscriptions/plans */
   getSubscriptionPlans: async (): Promise<SubscriptionPlan[]> => {
-    try {
-      const res = await request<unknown>(`${CUSTOMER_BASE}/subscriptions/plans`);
-      const rows = unwrapList(
-        (res.data as Record<string, unknown>)?.plans
-        ?? res.data
-        ?? res
-      );
-      return rows.map((raw) => ({
-        id: String(raw._id ?? raw.id ?? ''),
-        name: String(raw.name ?? raw.title ?? ''),
-        description: (raw.description ?? raw.subtitle) as string | undefined,
-        price: typeof raw.price === 'number' ? raw.price : 0,
-        durationDays: typeof raw.durationDays === 'number' ? raw.durationDays : undefined,
-        benefits: Array.isArray(raw.benefits) ? (raw.benefits as string[]) : [],
-        badgeColor: raw.badgeColor as string | undefined,
-        isPopular: Boolean(raw.isPopular ?? raw.featured ?? false),
-      }));
-    } catch {
-      return [];
-    }
+    const res = await request<{ plans?: Record<string, unknown>[] }>(
+      `${CUSTOMER_BASE}/subscriptions/plans`
+    );
+    const rows = Array.isArray(res.data?.plans) ? res.data.plans : [];
+    return rows
+      .map((raw) => ({
+        id: String(raw.id ?? ''),
+        name: String(raw.name ?? ''),
+        period: raw.period === 'year' ? ('year' as const) : ('month' as const),
+        price: Number(raw.price ?? 0),
+        benefits: Array.isArray(raw.benefits) ? raw.benefits.map(String) : [],
+        freeDeliveryMinOrder: Number(raw.freeDeliveryMinOrder ?? 0),
+      }))
+      .filter((p) => p.id && p.price > 0);
   },
 
   /** GET /customers/subscriptions/me */
   getMySubscription: async (): Promise<ActiveSubscription> => {
-    try {
-      const res = await request<Record<string, unknown>>(`${CUSTOMER_BASE}/subscriptions/me`);
-      const d = (res.data ?? res ?? null) as Record<string, unknown> | null;
-      if (!d || !d.id) return null;
-      return {
-        id: String(d._id ?? d.id),
-        planId: String(d.planId ?? d.plan ?? ''),
-        planName: String(d.planName ?? d.name ?? ''),
-        status: String(d.status ?? 'active'),
-        startDate: (d.startDate ?? d.start) as string | undefined,
-        endDate: (d.endDate ?? d.end ?? d.expiresAt) as string | undefined,
-        cancelAtPeriodEnd: Boolean(d.cancelAtPeriodEnd ?? d.cancelAt ?? false),
-      };
-    } catch {
-      return null;
-    }
+    const res = await request<Record<string, unknown> | null>(`${CUSTOMER_BASE}/subscriptions/me`);
+    const d = res.data;
+    if (!d || d.active !== true || !d.planId) return null;
+    return {
+      active: true,
+      planId: String(d.planId),
+      expiresAt: String(d.expiresAt ?? ''),
+      autoRenew: d.autoRenew === true,
+      status: String(d.status ?? 'active'),
+      freeDeliveryMinOrder: Number(d.freeDeliveryMinOrder ?? 0),
+    };
   },
 
   /** POST /customers/subscriptions/cancel */

@@ -200,22 +200,21 @@ export type LoyaltyTransaction = {
 export type SubscriptionPlan = {
   id: string;
   name: string;
-  description?: string;
+  period: 'month' | 'year';
   price: number;
-  durationDays?: number;
-  benefits?: string[];
-  badgeColor?: string;
-  isPopular?: boolean;
+  /** Raw benefit keys from the catalog, e.g. `free_delivery`. */
+  benefits: string[];
+  freeDeliveryMinOrder: number;
 };
 
+/** `GET /customers/subscriptions/me` — null when the user has no live Super. */
 export type ActiveSubscription = {
-  id: string;
+  active: boolean;
   planId: string;
-  planName: string;
+  expiresAt: string;
+  autoRenew: boolean;
   status: string;
-  startDate?: string;
-  endDate?: string;
-  cancelAtPeriodEnd?: boolean;
+  freeDeliveryMinOrder: number;
 } | null;
 
 // ─── Scratch cards ───────────────────────────────────────────────────────────
