@@ -1,9 +1,9 @@
 import {
   ArrowDownLeft,
+  CircleMinus,
   Gift,
   RotateCcw,
   ShoppingBag,
-  SlidersHorizontal,
   Undo2,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -32,7 +32,7 @@ export const CATEGORY_VISUALS: Record<WalletTxCategory, CategoryVisual> = {
   refund: { icon: RotateCcw, color: '#2563EB', bg: '#EFF6FF', label: 'Refund' },
   received: { icon: Gift, color: '#9333EA', bg: '#F5F0FF', label: 'Received' },
   reversal: { icon: Undo2, color: '#475569', bg: '#F1F5F9', label: 'Reversal' },
-  adjustment: { icon: SlidersHorizontal, color: '#475569', bg: '#F1F5F9', label: 'Adjustment' },
+  adjustment: { icon: CircleMinus, color: '#DC2626', bg: '#FEF2F2', label: 'Deducted' },
 };
 
 export const WALLET_FILTERS: { id: WalletFilter; label: string }[] = [
@@ -46,8 +46,8 @@ export const WALLET_FILTERS: { id: WalletFilter; label: string }[] = [
 export const EMPTY_COPY: Record<WalletFilter, { title: string; subtitle: string }> = {
   all: { title: 'No transactions yet', subtitle: 'Add money to your wallet and pay for orders in one tap.' },
   added: { title: 'No money added yet', subtitle: 'Money you add via UPI, card or netbanking shows up here.' },
-  spent: { title: 'Nothing spent yet', subtitle: 'Orders paid from your wallet will appear here.' },
-  received: { title: 'No credits yet', subtitle: 'Compensation, cashback and rewards from Tokajo appear here.' },
+  spent: { title: 'Nothing spent yet', subtitle: 'Orders paid from your wallet and any deductions by Tokajo appear here.' },
+  received: { title: 'No credits yet', subtitle: 'Money added by Tokajo, cashback and rewards appear here.' },
   refund: { title: 'No refunds', subtitle: 'Refunds credited to your wallet will appear here.' },
 };
 

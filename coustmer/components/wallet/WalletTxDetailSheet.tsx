@@ -77,6 +77,10 @@ export function WalletTxDetailSheet({ item, onClose }: Props) {
         ) : null}
 
         <View style={styles.card}>
+          <DetailRow
+            label="Type"
+            value={tx.type === 'credit' ? 'Money in · credited to wallet' : 'Money out · debited from wallet'}
+          />
           <DetailRow label="Date & time" value={fullDateTime(tx.createdAt)} />
           {tx.subtitle ? <DetailRow label="Details" value={tx.subtitle} /> : null}
           {method ? <DetailRow label="Paid via" value={method} /> : null}
