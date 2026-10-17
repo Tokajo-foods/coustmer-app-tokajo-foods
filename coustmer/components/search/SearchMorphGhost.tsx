@@ -40,14 +40,15 @@ export function SearchMorphGhost({ morph }: { morph: SearchMorph }) {
   const iconBox = useAnimatedStyle(() => {
     const p = progress.value;
     return {
-      width: interpolate(p, [0, 1], [36, 16]),
-      height: interpolate(p, [0, 1], [36, 16]),
+      width: interpolate(p, [0, 1], [36, 18]),
+      height: interpolate(p, [0, 1], [36, 18]),
       borderRadius: interpolate(p, [0, 1], [12, 0]),
-      marginRight: interpolate(p, [0, 1], [11, 8]),
+      marginRight: interpolate(p, [0, 1], [11, 10]),
       backgroundColor: interpolateColor(p, [0, 0.7], ['#FFF1E6', 'rgba(255,241,230,0)']),
-      transform: [{ scale: interpolate(p, [0, 1], [18 / 16, 1]) }],
     };
   });
+  const iconFrom = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0, 0.6], [1, 0], 'clamp') }));
+  const iconTo = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0.3, 0.9], [0, 1], 'clamp') }));
   const hintOut = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0, 0.5], [1, 0], 'clamp') }));
   const hintIn = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0.3, 0.9], [0, 1], 'clamp') }));
   const trailing = useAnimatedStyle(() => ({ opacity: interpolate(progress.value, [0, 0.3], [1, 0], 'clamp') }));
@@ -57,7 +58,12 @@ export function SearchMorphGhost({ morph }: { morph: SearchMorph }) {
   return (
     <Animated.View pointerEvents="none" style={[styles.shell, shell]}>
       <Animated.View style={[styles.iconBox, iconBox]}>
-        <Search color={searchColors.orange} size={16} strokeWidth={2.6} />
+        <Animated.View style={[styles.icon, iconFrom]}>
+          <Search color={searchColors.orange} size={18} strokeWidth={2.6} />
+        </Animated.View>
+        <Animated.View style={[styles.icon, iconTo]}>
+          <Search color={searchColors.fieldIcon} size={18} strokeWidth={2.2} />
+        </Animated.View>
       </Animated.View>
       <View style={styles.texts}>
         <Animated.Text style={[styles.hint, hintOut]} numberOfLines={1}>
@@ -89,6 +95,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   iconBox: { alignItems: 'center', justifyContent: 'center' },
+  icon: { position: 'absolute' },
   texts: { flex: 1, justifyContent: 'center' },
   center: { justifyContent: 'center' },
   hint: { fontFamily: fonts.ui, fontSize: 14.5, color: '#8A8A8A' },

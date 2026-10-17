@@ -45,7 +45,7 @@ export function StaticPlaceholder() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  prompt: { fontFamily: fonts.ui, fontSize: 15, color: searchColors.muted },
+  prompt: { fontFamily: fonts.ui, fontSize: 15, color: searchColors.placeholder },
   slot: { flex: 1, height: 22, justifyContent: 'center', overflow: 'hidden' },
-  word: { fontFamily: fonts.uiBold, fontSize: 15, color: searchColors.ink },
+  word: { fontFamily: fonts.uiMedium, fontSize: 15, color: '#52525B' },
 });

@@ -51,5 +51,5 @@ export const SEARCH_MORPH = {
   closeEasing: Easing.bezier(0.4, 0, 0.2, 1),
   /** Home pill look → search bar look. */
   from: { radius: 18, bg: '#FFFFFF', border: '#F1E7DE', shadow: 0.12, elevation: 4 },
-  to: { radius: 14, bg: '#FFFFFF', border: '#FED7AA', shadow: 0.08, elevation: 2 },
+  to: { radius: 12, bg: '#F4F4F5', border: '#ECECEF', shadow: 0, elevation: 0 },
 } as const;

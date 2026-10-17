@@ -28,7 +28,7 @@ export const SearchHeader = forwardRef<TextInput, Props>(function SearchHeader(
       <View style={s.bar}>
         <Animated.View style={morph.backStyle}>
           <SmoothPressable onPress={onBack} style={s.backBtn} pressScale={0.9} accessibilityLabel="Go back">
-            <ArrowLeft color={searchColors.ink} size={22} strokeWidth={2.2} />
+            <ArrowLeft color={searchColors.ink} size={22} strokeWidth={2} />
           </SmoothPressable>
         </Animated.View>
         <Animated.View
@@ -37,7 +37,7 @@ export const SearchHeader = forwardRef<TextInput, Props>(function SearchHeader(
           collapsable={false}
           style={[s.inputWrap, morph.barStyle]}
         >
-          <Search color={searchColors.orange} size={16} strokeWidth={2.6} />
+          <Search color={searchColors.fieldIcon} size={18} strokeWidth={2.2} />
           <View style={s.inputArea}>
             {query.length === 0 ? (
               <View style={s.placeholderLayer}>
@@ -59,7 +59,7 @@ export const SearchHeader = forwardRef<TextInput, Props>(function SearchHeader(
           </View>
           {query.length > 0 ? (
             <Pressable onPress={onClear} hitSlop={12} style={s.clearIcon} accessibilityLabel="Clear search">
-              <X color={searchColors.muted} size={13} strokeWidth={2.6} />
+              <X color="#FFFFFF" size={11} strokeWidth={3} />
             </Pressable>
           ) : null}
         </Animated.View>
