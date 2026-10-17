@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   titleRow: {
     flexDirection: 'row',
