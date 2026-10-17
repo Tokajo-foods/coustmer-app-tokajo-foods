@@ -601,27 +601,14 @@ export function RestaurantDetailScreen() {
                 <ChevronLeft color="#FFF" size={22} strokeWidth={2.4} />
               </Pressable>
 
-              <View style={styles.topBarRight}>
-                <Pressable
-                  onPress={() => setShareOpen(true)}
-                  style={styles.glassBtn}
-                  hitSlop={8}
-                  accessibilityLabel="Share restaurant"
-                >
-                  <Share2 color="#FFF" size={20} strokeWidth={2.3} />
-                </Pressable>
-                {eta ? (
-                  <View style={styles.etaPill}>
-                    <Clock color={INK} size={11} strokeWidth={2.6} />
-                    <Text style={styles.etaText}>{eta}</Text>
-                  </View>
-                ) : distanceLabel ? (
-                  <View style={styles.etaPill}>
-                    <MapPin color={INK} size={11} strokeWidth={2.6} />
-                    <Text style={styles.etaText}>{distanceLabel}</Text>
-                  </View>
-                ) : null}
-              </View>
+              <Pressable
+                onPress={() => setShareOpen(true)}
+                style={styles.glassBtn}
+                hitSlop={8}
+                accessibilityLabel="Share restaurant"
+              >
+                <Share2 color="#FFF" size={20} strokeWidth={2.3} />
+              </Pressable>
             </View>
           </SafeAreaView>
 
@@ -1298,11 +1285,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  topBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   glassBtn: {
     width: 40,
