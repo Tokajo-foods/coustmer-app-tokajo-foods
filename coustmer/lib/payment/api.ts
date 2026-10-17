@@ -26,6 +26,18 @@ type Envelope<T> = {
   meta?: PaginationMeta;
 };
 
+/** status 0 = no response (network). `code` is the backend AppError code when present. */
+export class PaymentApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string
+  ) {
+    super(message);
+    this.name = 'PaymentApiError';
+  }
+}
+
 export async function request<T>(
   path: string,
   options: {
@@ -64,26 +76,27 @@ export async function request<T>(
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (!error.response) {
-        throw new Error(
-          'Network request failed. Check your internet connection and try again.'
+        throw new PaymentApiError(
+          'Network request failed. Check your internet connection and try again.',
+          0
         );
       }
 
+      const status = error.response.status;
       const data = error.response.data as
-        | { message?: string; error?: string }
+        | { message?: string; error?: string; code?: string }
         | undefined;
-      const message =
-        data?.message ||
-        data?.error ||
-        `Request failed (${error.response.status})`;
+      const message = data?.message || data?.error || `Request failed (${status})`;
 
       if (message.toLowerCase().includes('csrf')) {
-        throw new Error(
-          'Security token expired. Close and reopen the app, then try again.'
+        throw new PaymentApiError(
+          'Security token expired. Close and reopen the app, then try again.',
+          status,
+          'CSRF'
         );
       }
 
-      throw new Error(message);
+      throw new PaymentApiError(message, status, data?.code);
     }
 
     throw error;
@@ -501,23 +514,6 @@ export const paymentApi = {
       configured: Boolean(data.configured),
       keyId: (data.keyId as string) || null,
       provider: String(data.provider ?? 'razorpay'),
-    };
-  },
-
-  /** POST /payments/:paymentId/refund-upi — failed payment, where to send the refund */
-  submitFailedRefundUpi: async (
-    paymentId: string,
-    upiId: string
-  ): Promise<{ paymentId: string; orderId: string; refundUpiId: string }> => {
-    const res = await request<Record<string, unknown>>(
-      `${PAYMENTS_BASE}/${paymentId}/refund-upi`,
-      { method: 'POST', body: { upiId } }
-    );
-    const data = asRecord(res.data ?? res);
-    return {
-      paymentId: String(data.paymentId ?? paymentId),
-      orderId: String(data.orderId ?? ''),
-      refundUpiId: String(data.refundUpiId ?? upiId),
     };
   },
 

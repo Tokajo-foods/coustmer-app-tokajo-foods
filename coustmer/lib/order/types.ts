@@ -229,6 +229,8 @@ export const ORDER_ISSUE_TYPES = [
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
+  pending_payment: 'Awaiting payment',
+  payment_failed: 'Payment not completed',
   placed: 'Placed',
   confirmed: 'Confirmed',
   preparing: 'Preparing',
@@ -266,6 +268,7 @@ export function isActiveOrderStatus(status?: string) {
     'canceled',
     'completed',
     'failed',
+    'payment_failed',
     'rejected',
     'scheduled',
   ].includes(s);

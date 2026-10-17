@@ -4,15 +4,16 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
-import { PaymentFailedRefundModal } from '@/components/payment/PaymentFailedRefundModal';
 import {
   RazorpayCheckoutModal,
   type RazorpayResult,
   type RazorpaySession,
 } from '@/components/payment/RazorpayCheckoutModal';
 import { fonts } from '@/constants/typography';
-import { useInitiatePayment, useVerifyPayment } from '@/lib/payment/hooks';
+import { normalizeOrderStatus } from '@/lib/order/types';
+import { useInitiatePayment } from '@/lib/payment/hooks';
 import { needsOnlinePayment } from '@/lib/payment/types';
+import { useOrderPaymentResult } from '@/lib/payment/use-order-payment-result';
 import { formatInr } from '@/lib/format/money';
 
 const ORANGE = '#F97316';
@@ -41,14 +42,16 @@ export function RetryOnlinePayment({
 }: Props) {
   const router = useRouter();
   const initiate = useInitiatePayment();
-  const verify = useVerifyPayment();
+  const { confirm, confirming } = useOrderPaymentResult();
   const [session, setSession] = useState<RazorpaySession | null>(null);
   const [open, setOpen] = useState(false);
-  const [refundOpen, setRefundOpen] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
 
+  // Expired / cancelled orders can't be paid any more (server answers ORDER_NOT_AWAITING_PAYMENT).
+  const awaitingPayment = !orderStatus || normalizeOrderStatus(orderStatus) === 'pending_payment';
   const unpaid =
     needsOnlinePayment(paymentMethod) &&
+    awaitingPayment &&
     ['pending', 'initiated', 'failed', 'pending_payment'].includes(
       String(paymentStatus ?? orderStatus ?? '').toLowerCase()
     );
@@ -112,23 +115,10 @@ export function RetryOnlinePayment({
       );
       return;
     }
-    try {
-      await verify.mutateAsync({
-        paymentId,
-        orderId,
-        gatewayPaymentId: data.gatewayPaymentId,
-        gatewayOrderId: data.gatewayOrderId,
-        gatewaySignature: data.gatewaySignature,
-        status: 'success',
-      });
-      router.replace({
-        pathname: '/orders/[orderId]/tracking',
-        params: { orderId, newOrder: 'true' },
-      });
-    } catch {
-      setRefundOpen(true);
-    }
+    await confirm(orderId, paymentId, data);
   };
+
+  const busy = initiate.isPending || confirming;
 
   return (
     <View style={styles.card}>
@@ -142,8 +132,8 @@ export function RetryOnlinePayment({
           </Text>
         </View>
       </View>
-      <Pressable style={styles.btn} onPress={() => void pay()} disabled={initiate.isPending}>
-        {initiate.isPending ? (
+      <Pressable style={styles.btn} onPress={() => void pay()} disabled={busy}>
+        {busy ? (
           <ActivityIndicator color={WHITE} />
         ) : (
           <Text style={styles.btnText}>Pay {formatInr(amount)}</Text>
@@ -155,13 +145,6 @@ export function RetryOnlinePayment({
         session={session}
         onClose={() => setOpen(false)}
         onResult={(ok, data) => void onResult(ok, data)}
-      />
-      <PaymentFailedRefundModal
-        visible={refundOpen}
-        paymentId={paymentId}
-        amount={amount}
-        onClose={() => setRefundOpen(false)}
-        onDone={() => setRefundOpen(false)}
       />
     </View>
   );

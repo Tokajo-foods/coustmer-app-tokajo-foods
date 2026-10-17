@@ -36,7 +36,6 @@ import {
   type RazorpayResult,
   type RazorpaySession,
 } from '@/components/payment/RazorpayCheckoutModal';
-import { PaymentFailedRefundModal } from '@/components/payment/PaymentFailedRefundModal';
 import { fonts } from '@/constants/typography';
 import {
   paymentMethodHint,
@@ -55,9 +54,9 @@ import {
   useInitiatePayment,
   usePaymentMethods,
   usePaymentWallet,
-  useVerifyPayment,
 } from '@/lib/payment/hooks';
 import { needsOnlinePayment } from '@/lib/payment/types';
+import { useOrderPaymentResult } from '@/lib/payment/use-order-payment-result';
 import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
@@ -119,7 +118,7 @@ export function OrderSummaryScreen() {
 
   const createOrder = useCreateOrder();
   const initiatePayment = useInitiatePayment();
-  const verifyPayment = useVerifyPayment();
+  const { confirm: confirmPayment } = useOrderPaymentResult();
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -127,8 +126,6 @@ export function OrderSummaryScreen() {
     useState<PlacementPhase>('none');
   const [razorpayOpen, setRazorpayOpen] = useState(false);
   const [razorpaySession, setRazorpaySession] = useState<RazorpaySession | null>(null);
-  const [refundModalOpen, setRefundModalOpen] = useState(false);
-  const [failedPaymentId, setFailedPaymentId] = useState<string | null>(null);
   const [currentOrder, setCurrentOrder] = useState<{
     id: string;
     total?: number;
@@ -335,8 +332,6 @@ export function OrderSummaryScreen() {
   const handleRazorpayResult = async (success: boolean, data: RazorpayResult) => {
     setRazorpayOpen(false);
     const paymentId = razorpaySession?.paymentId ?? '';
-    const amountPaid = currentOrder?.total ?? payable;
-
     if (!success) {
       // Nothing was charged (user dismissed, or the gateway rejected). Order is saved.
       Alert.alert(
@@ -347,31 +342,14 @@ export function OrderSummaryScreen() {
       return;
     }
 
-    // Payment captured — confirm with the backend (places + marks the order paid).
-    setOrderPlacementPhase('placed');
-    try {
-      await verifyPayment.mutateAsync({
-        paymentId,
-        orderId: currentOrder?.id,
-        gatewayPaymentId: data.gatewayPaymentId,
-        gatewayOrderId: data.gatewayOrderId,
-        gatewaySignature: data.gatewaySignature,
-        status: 'success',
-      });
-      await new Promise((r) => setTimeout(r, 900));
-      if (currentOrder) {
-        router.replace({
-          pathname: '/orders/[orderId]/tracking',
-          params: { orderId: currentOrder.id, newOrder: 'true' },
-        });
-      }
+    if (!currentOrder) {
       setOrderPlacementPhase('none');
-    } catch {
-      // Money was captured but we couldn't confirm the order → promise a refund + collect UPI.
-      setOrderPlacementPhase('none');
-      setFailedPaymentId(paymentId);
-      setRefundModalOpen(true);
+      return;
     }
+    // Server places the order, or refunds automatically if it can't — no manual refund form.
+    setOrderPlacementPhase('placing');
+    await confirmPayment(currentOrder.id, paymentId, data);
+    setOrderPlacementPhase('none');
   };
 
   return (
@@ -581,22 +559,6 @@ export function OrderSummaryScreen() {
           setOrderPlacementPhase('none');
         }}
         onResult={handleRazorpayResult}
-      />
-
-      <PaymentFailedRefundModal
-        visible={refundModalOpen}
-        paymentId={failedPaymentId}
-        amount={currentOrder?.total ?? payable}
-        onClose={() => setRefundModalOpen(false)}
-        onDone={() => {
-          setRefundModalOpen(false);
-          if (currentOrder) {
-            router.replace({
-              pathname: '/orders/[orderId]/tracking',
-              params: { orderId: currentOrder.id },
-            });
-          }
-        }}
       />
     </View>
   );
