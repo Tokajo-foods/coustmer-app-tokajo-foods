@@ -1,5 +1,7 @@
 import type { Href, Router } from 'expo-router';
 
+import { usePendingRestaurantShareStore } from '@/store/pending-restaurant-share-store';
+
 type OpenOptions = {
   /** Use slug route only for fulfilled share links — not for in-app card taps. */
   useSlugRoute?: boolean;
@@ -26,18 +28,17 @@ function buildRestaurantHref(
   }
 
   if (slug) {
-    return {
-      pathname: '/restaurants/slug/[slug]',
-      params: { slug, ...extra },
-    } as Href;
+    const qs = new URLSearchParams(extra).toString();
+    const suffix = qs ? `?${qs}` : '';
+    return `/restaurants/slug/${encodeURIComponent(slug)}${suffix}` as Href;
   }
 
   if (!id) return null;
 
-  return {
-    pathname: '/restaurants/[restaurantId]',
-    params: { restaurantId: id, ...extra },
-  } as Href;
+  const qs = new URLSearchParams(extra).toString();
+  const suffix = qs ? `?${qs}` : '';
+
+  return `/restaurants/${encodeURIComponent(id)}${suffix}` as Href;
 }
 
 /** Canonical navigation into a restaurant menu screen. */
@@ -48,6 +49,8 @@ export function openRestaurantMenu(
 ) {
   const href = buildRestaurantHref(restaurantId, options);
   if (!href) return;
+
+  usePendingRestaurantShareStore.getState().clearPending();
 
   if (options?.replace) router.replace(href);
   else router.push(href);

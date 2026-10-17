@@ -1,3 +1,8 @@
+import {
+  isRestaurantShareUrl,
+  unwrapExpoDevLinkUrl,
+} from '@/lib/restaurant/incoming-share-url';
+
 const APP_SCHEME = 'fooddeliveryapp';
 
 export type ParsedRestaurantShareLink = {
@@ -64,10 +69,13 @@ function parseShareFlag(search: string): boolean {
 export function parseRestaurantShareUrl(
   rawUrl: string | null | undefined
 ): ParsedRestaurantShareLink | null {
-  if (!rawUrl?.trim()) return null;
+  if (!isRestaurantShareUrl(rawUrl)) return null;
+  const unwrapped = unwrapExpoDevLinkUrl(rawUrl);
+  if (!unwrapped) return null;
+
   let url: URL;
   try {
-    url = new URL(rawUrl.trim());
+    url = new URL(unwrapped);
   } catch {
     return null;
   }

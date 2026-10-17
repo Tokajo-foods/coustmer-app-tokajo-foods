@@ -5,6 +5,8 @@ import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
 import { LocationEnablePrompt } from '@/components/location/LocationEnablePrompt';
 import { ReplaceCartModal } from '@/components/order/ReplaceCartModal';
+import { RestaurantShareLinkHandler } from '@/components/restaurant/RestaurantShareLinkHandler';
+import { RestaurantNotServiceableModal } from '@/components/restaurant/RestaurantNotServiceableModal';
 import { authTheme } from '@/constants/auth-theme';
 import { useDeliveryLocationInit } from '@/lib/location/use-delivery-location-init';
 import {
@@ -44,6 +46,8 @@ export default function AppLayout() {
         />
       </Stack>
       <AppBottomNav />
+      <RestaurantShareLinkHandler />
+      <RestaurantNotServiceableModal />
       <ReplaceCartModal />
       <LocationEnablePrompt />
     </View>

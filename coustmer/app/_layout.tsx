@@ -20,8 +20,6 @@ import { CrashBoundary } from '@/components/common/CrashBoundary';
 import { PREMIUM_STACK_OPTIONS } from '@/lib/motion/premium';
 import { CustomerInternetCallHost } from '@/components/call/CustomerInternetCallHost';
 import { CustomerPushSync } from '@/components/notification/CustomerPushSync';
-import { RestaurantNotServiceableModal } from '@/components/restaurant/RestaurantNotServiceableModal';
-import { RestaurantShareLinkHandler } from '@/components/restaurant/RestaurantShareLinkHandler';
 import { SocketProvider } from '@/lib/socket/SocketProvider';
 
 // Keep the native splash visible while we initialise.
@@ -108,8 +106,6 @@ export default function RootLayout() {
             <SocketProvider>
               <CustomerPushSync />
               <CustomerInternetCallHost />
-              <RestaurantShareLinkHandler />
-              <RestaurantNotServiceableModal />
               <View
                 style={{ flex: 1, backgroundColor: authTheme.bg }}
                 onLayout={onLayoutRootView}

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
 import { fulfillRestaurantShare } from '@/lib/restaurant/fulfill-restaurant-share';
+import { isRestaurantShareUrl } from '@/lib/restaurant/incoming-share-url';
 import { parseRestaurantShareUrl } from '@/lib/restaurant/share-link';
 import { useAuthStore } from '@/store/auth-store';
 import { useDeliveryCoords } from '@/store/delivery-location-store';
@@ -58,17 +59,18 @@ export function RestaurantShareLinkHandler() {
   };
 
   const ingestUrl = (url: string | null) => {
+    if (!isRestaurantShareUrl(url)) return;
     const parsed = parseRestaurantShareUrl(url);
     if (!parsed) return;
     void runFulfill(parsed);
   };
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || !token || !user) return;
     void Linking.getInitialURL().then(ingestUrl);
     const sub = Linking.addEventListener('url', (event) => ingestUrl(event.url));
     return () => sub.remove();
-  }, [isHydrated]);
+  }, [isHydrated, token, user]);
 
   useEffect(() => {
     if (!isHydrated || !token || !user || !pending) return;
