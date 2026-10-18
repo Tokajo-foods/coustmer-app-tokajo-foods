@@ -1,42 +1,48 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
-import { authTheme } from '@/constants/auth-theme';
 import { WALLET_FILTERS, walletPalette } from '@/lib/payment/wallet-display';
 import type { WalletFilter } from '@/lib/payment/wallet-types';
 
 type Props = { value: WalletFilter; onChange: (filter: WalletFilter) => void };
 
+/** Segmented control: equal-width tabs on a grey track. */
 export function WalletHistoryFilters({ value, onChange }: Props) {
   return (
-    <View style={styles.bar}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {WALLET_FILTERS.map((filter) => {
-          const active = filter.id === value;
-          return (
-            <SmoothPressable
-              key={filter.id}
-              onPress={() => onChange(filter.id)}
-              haptic="selection"
-              pressScale={1}
-              accessibilityRole="tab"
-              accessibilityLabel={`${filter.label} transactions`}
-              style={[styles.tab, active && styles.tabActive]}
-            >
-              <Text style={[styles.text, active && styles.textActive]}>{filter.label}</Text>
-            </SmoothPressable>
-          );
-        })}
-      </ScrollView>
+    <View style={styles.track}>
+      {WALLET_FILTERS.map((filter) => {
+        const active = filter.id === value;
+        return (
+          <SmoothPressable
+            key={filter.id}
+            onPress={() => onChange(filter.id)}
+            haptic="selection"
+            pressScale={1}
+            accessibilityRole="tab"
+            accessibilityLabel={`${filter.label} transactions`}
+            style={[styles.segment, active && styles.segmentActive]}
+          >
+            <Text style={[styles.text, active && styles.textActive]} numberOfLines={1}>
+              {filter.label}
+            </Text>
+          </SmoothPressable>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { borderBottomWidth: 1, borderBottomColor: walletPalette.hairline },
-  row: { gap: 22 },
-  tab: { paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: 'transparent', marginBottom: -1 },
-  tabActive: { borderBottomColor: authTheme.brand },
-  text: { color: walletPalette.muted, fontSize: 14, fontWeight: '500' },
+  track: { flexDirection: 'row', backgroundColor: '#ECEDF1', borderRadius: 10, padding: 3 },
+  segment: { flex: 1, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  segmentActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  text: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
   textActive: { color: walletPalette.ink, fontWeight: '700' },
 });

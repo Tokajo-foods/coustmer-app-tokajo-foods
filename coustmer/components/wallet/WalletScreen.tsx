@@ -114,8 +114,14 @@ export function WalletScreen() {
             <Text style={styles.dateText}>{section.title}</Text>
           </View>
         )}
-        renderItem={({ item, index }) => (
-          <View style={styles.rowWrap}>
+        renderItem={({ item, index, section }) => (
+          <View
+            style={[
+              styles.rowWrap,
+              index === 0 && styles.rowFirst,
+              index === section.data.length - 1 && styles.rowLast,
+            ]}
+          >
             {index > 0 ? <View style={styles.rowDivider} /> : null}
             <WalletTxRow item={item} onPress={onRowPress} />
           </View>
@@ -159,7 +165,7 @@ function Header() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#FFFFFF' },
+  safe: { flex: 1, backgroundColor: walletPalette.canvas },
   header: {
     paddingHorizontal: 16,
     paddingTop: 6,
@@ -168,23 +174,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: walletPalette.hairline,
   },
-  list: { paddingBottom: 40, flexGrow: 1, backgroundColor: walletPalette.canvas },
-  banner: { paddingHorizontal: 16, paddingTop: 14, backgroundColor: walletPalette.canvas },
-  passbookHead: {
-    marginTop: 10,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: walletPalette.hairline,
-  },
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 },
+  list: { paddingBottom: 40, flexGrow: 1 },
+  banner: { paddingHorizontal: 16, paddingTop: 12 },
+  passbookHead: { marginTop: 24, paddingHorizontal: 16, gap: 12 },
+  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   title: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
   count: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
-  dateBand: { backgroundColor: walletPalette.canvas, paddingHorizontal: 20, paddingVertical: 8 },
+  dateBand: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8 },
   dateText: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '600' },
-  rowWrap: { backgroundColor: '#FFFFFF', paddingHorizontal: 4 },
+  rowWrap: {
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: walletPalette.hairline,
+    overflow: 'hidden',
+  },
+  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
+  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
   rowDivider: { height: 1, backgroundColor: '#F2F2F5', marginLeft: 16 },
-  emptyWrap: { backgroundColor: '#FFFFFF' },
+  emptyWrap: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: walletPalette.hairline,
+  },
   loader: { marginVertical: 24 },
 });
