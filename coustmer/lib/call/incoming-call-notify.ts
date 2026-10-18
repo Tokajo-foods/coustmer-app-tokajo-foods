@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import { dismissFullScreenCallAlert } from '@/lib/call/android-call-alert';
 import { loadNotifications } from '@/lib/notification/load-notifications';
 
 const CHANNEL = 'tokajo-calls';
@@ -104,6 +105,7 @@ export async function presentIncomingCallNotification(input: IncomingPayload): P
 }
 
 export async function dismissIncomingCallNotification(): Promise<void> {
+  await dismissFullScreenCallAlert();
   const Notifications = await loadNotifications();
   if (!Notifications) return;
   await Notifications.dismissNotificationAsync(NOTIF_ID).catch(() => undefined);

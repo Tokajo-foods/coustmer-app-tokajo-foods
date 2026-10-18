@@ -1,15 +1,11 @@
 import { AppState, Platform } from 'react-native';
 
-import {
-  acceptCall,
-  declineCall,
-  ensureNativeBindings,
-  isCallClosed,
-  ringIncomingCall,
-  type RingMeta,
-} from '@/lib/call/call-engine';
+import { dismissFullScreenCallAlert, type CallAlertPress } from '@/lib/call/android-call-alert';
+import { acceptCall, declineCall, ensureNativeBindings, isCallClosed } from '@/lib/call/call-engine';
 import { applyRemoteCallState } from '@/lib/call/call-remote';
+import { ringIncomingCall, type RingMeta } from '@/lib/call/call-ring';
 import { getCall, partyTitle } from '@/lib/call/call-store';
+import { startRingtone } from '@/lib/call/call-tones';
 import { presentMissedCallNotification } from '@/lib/call/incoming-call-notify';
 
 type Data = Record<string, unknown>;
@@ -98,4 +94,35 @@ export async function handleCallResponse(actionIdentifier: string, raw: unknown)
   await ringIncomingCall(meta, { verify: true, inApp: true });
   if (actionIdentifier === 'ACCEPT') await acceptCall(meta.callId);
   return true;
+}
+
+/** iOS PushKit: native code already showed CallKit before this runs. */
+export async function handleVoipPush(raw: unknown): Promise<void> {
+  const data = readCallPushData(raw);
+  if (!data || String(data.kind) !== 'internet_call') return;
+  const meta = metaOf(data);
+  if (!meta.callId) return;
+  await ensureNativeBindings();
+  await ringIncomingCall(meta, { nativeShown: true });
+}
+
+/** Accept / Decline / tap on the Android full-screen call alert. */
+export async function handleCallAlertPress(press: CallAlertPress): Promise<void> {
+  const meta = metaOf(press.data);
+  if (!meta.callId) return;
+  await dismissFullScreenCallAlert(meta.callId);
+  if (press.action === 'decline') {
+    await declineCall(meta.callId);
+    return;
+  }
+  if (press.action === 'accept') {
+    await acceptCall(meta.callId);
+    return;
+  }
+  const current = getCall();
+  if (current?.callId === meta.callId) {
+    if (current.phase === 'incoming') void startRingtone();
+    return;
+  }
+  await ringIncomingCall(meta, { verify: true, inApp: true });
 }

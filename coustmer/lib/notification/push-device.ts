@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+import { releaseVoipDevice } from '@/lib/call/voip-push';
 import { notificationApi } from '@/lib/notification/api';
 
 type NotificationsModule = typeof import('expo-notifications');
@@ -32,6 +33,7 @@ export async function registerCustomerPushDevice(N: NotificationsModule): Promis
 
 /** Call while still authenticated, so a signed-out phone stops receiving that account's order pushes. */
 export async function unregisterCustomerPushDevice(): Promise<void> {
+  await releaseVoipDevice();
   const deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY).catch(() => null);
   if (!deviceId) return;
   try {

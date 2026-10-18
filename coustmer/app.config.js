@@ -80,6 +80,7 @@ const config = {
         },
       },
     ],
+    './plugins/with-call-native.js',
   ],
   ios: {
     supportsTablet: true,

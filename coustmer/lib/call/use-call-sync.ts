@@ -1,12 +1,20 @@
 import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 
+import {
+  initialCallAlertPress,
+  onCallAlertForegroundEvent,
+  readCallAlertEvent,
+  type CallAlertPress,
+} from '@/lib/call/android-call-alert';
 import { ensureNativeBindings } from '@/lib/call/call-engine';
-import { handleCallPush, handleCallResponse } from '@/lib/call/call-push';
+import { handleCallAlertPress, handleCallPush, handleCallResponse } from '@/lib/call/call-push';
 import { handleVoiceLink, onCallSocketEvent, syncCurrentCall } from '@/lib/call/call-remote';
 import { useCallStore } from '@/lib/call/call-store';
+import { askFullScreenCallPermissionOnce } from '@/lib/call/full-screen-permission';
 import { ensureCallNotificationSetup } from '@/lib/call/incoming-call-notify';
 import { onVoiceLink } from '@/lib/call/internet-audio';
+import { syncVoipDevice } from '@/lib/call/voip-push';
 import { loadNotifications } from '@/lib/notification/load-notifications';
 import { getSocket } from '@/lib/socket/socket';
 
@@ -21,6 +29,24 @@ export function useCallSync(userId: string | null, enabled: boolean) {
     if (!enabled || Platform.OS === 'web') return;
     void ensureCallNotificationSetup();
     void ensureNativeBindings();
+    void askFullScreenCallPermissionOnce();
+  }, [enabled]);
+
+  useEffect(() => {
+    syncVoipDevice(enabled ? 'customer' : null);
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const run = (press: CallAlertPress | null) => {
+      if (!press) return;
+      const key = `alert:${String(press.data.callId ?? '')}:${press.action}`;
+      if (handledResponses.has(key)) return;
+      handledResponses.add(key);
+      void handleCallAlertPress(press);
+    };
+    void initialCallAlertPress().then(run);
+    return onCallAlertForegroundEvent((event) => run(readCallAlertEvent(event)));
   }, [enabled]);
 
   useEffect(() => onVoiceLink(handleVoiceLink), []);

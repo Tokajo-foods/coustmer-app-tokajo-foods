@@ -13,6 +13,7 @@ type CallKeepModule = {
     hasVideo?: boolean,
   ) => void;
   endCall: (uuid: string) => void;
+  answerIncomingCall: (uuid: string) => void;
   rejectCall: (uuid: string) => void;
   reportEndCallWithUUID: (uuid: string, reason: number) => void;
   setAvailable: (enabled: boolean) => void;
@@ -72,6 +73,7 @@ export function setupNativeIncomingCalls(): Promise<boolean> {
         maximumCallGroups: '1',
         maximumCallsPerCallGroup: '1',
         includesCallsInRecents: false,
+        ringtoneSound: 'incoming_call.wav',
       },
       android: {
         alertTitle: 'Allow order calls',
@@ -138,6 +140,17 @@ export function reportNativeCallEnded(callId: string, reason: number): void {
     keep.reportEndCallWithUUID(callUuidFromId(callId), reason);
   } catch {
     endNativeCall(callId);
+  }
+}
+
+/** Answered in the app while CallKit was ringing: move the OS call to answered too. */
+export function answerNativeCall(callId: string): void {
+  const keep = loadCallKeep();
+  if (!keep) return;
+  try {
+    keep.answerIncomingCall(callUuidFromId(callId));
+  } catch {
+    // The OS call is already gone.
   }
 }
 
