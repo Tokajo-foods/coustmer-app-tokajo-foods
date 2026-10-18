@@ -12,9 +12,9 @@ export function WalletStatsRow({ overview }: { overview: WalletOverview }) {
     { key: 'received', label: 'Credits & refunds', value: overview.totalReceived + overview.totalRefunded },
   ];
   return (
-    <View style={styles.card}>
+    <View style={styles.row}>
       {stats.map((stat, index) => (
-        <View key={stat.key} style={[styles.cell, index > 0 && styles.divider]}>
+        <View key={stat.key} style={[styles.cell, index === 0 ? styles.first : styles.divider]}>
           <Text style={styles.label} numberOfLines={1}>{stat.label}</Text>
           <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
             {formatInr(stat.value)}
@@ -26,16 +26,10 @@ export function WalletStatsRow({ overview }: { overview: WalletOverview }) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: walletPalette.hairline,
-    paddingVertical: 14,
-  },
-  cell: { flex: 1, paddingHorizontal: 14, gap: 4 },
+  row: { flexDirection: 'row' },
+  cell: { flex: 1, gap: 4, paddingHorizontal: 12 },
+  first: { paddingLeft: 0 },
   divider: { borderLeftWidth: 1, borderLeftColor: walletPalette.hairline },
   label: { color: walletPalette.muted, fontSize: 12, fontWeight: '500' },
-  value: { color: walletPalette.ink, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  value: { color: walletPalette.ink, fontSize: 15.5, fontWeight: '700' },
 });

@@ -10,16 +10,17 @@ import { EMPTY_COPY, groupByDay, walletPalette } from '@/lib/payment/wallet-disp
 import { useWalletHistory, useWalletOverview } from '@/lib/payment/wallet-hooks';
 import type { WalletFilter, WalletHistoryItem } from '@/lib/payment/wallet-types';
 import { WalletAwaitingBanner } from './WalletAwaitingBanner';
-import { WalletHeroCard } from './WalletHeroCard';
+import { WalletBalancePanel } from './WalletBalancePanel';
 import { WalletHistoryFilters } from './WalletHistoryFilters';
-import { WalletStatsRow } from './WalletStatsRow';
 import { WalletTopupModal } from './WalletTopupModal';
 import { WalletTxDetailSheet } from './WalletTxDetailSheet';
 import { WalletTxRow } from './WalletTxRow';
 
+type Topup = { open: boolean; amount: number | null };
+
 export function WalletScreen() {
   const [filter, setFilter] = useState<WalletFilter>('all');
-  const [topupOpen, setTopupOpen] = useState(false);
+  const [topup, setTopup] = useState<Topup>({ open: false, amount: null });
   const [selected, setSelected] = useState<WalletHistoryItem | null>(null);
 
   const overview = useWalletOverview();
@@ -47,23 +48,18 @@ export function WalletScreen() {
     void history.refetch();
   };
 
-  if (overview.isLoading) {
+  if (overview.isLoading || overview.isError || !overview.data) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Header />
-        <LoadingView label="Loading your wallet…" />
-      </SafeAreaView>
-    );
-  }
-
-  if (overview.isError || !overview.data) {
-    return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <Header />
-        <ErrorView
-          message={overview.error instanceof Error ? overview.error.message : 'Could not load your wallet.'}
-          onRetry={refresh}
-        />
+        {overview.isLoading ? (
+          <LoadingView label="Loading your wallet…" />
+        ) : (
+          <ErrorView
+            message={overview.error instanceof Error ? overview.error.message : 'Could not load your wallet.'}
+            onRetry={refresh}
+          />
+        )}
       </SafeAreaView>
     );
   }
@@ -93,15 +89,18 @@ export function WalletScreen() {
           if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
         }}
         ListHeaderComponent={
-          <View style={styles.top}>
-            <WalletHeroCard overview={data} onAddMoney={() => setTopupOpen(true)} />
-            <WalletAwaitingBanner amount={data.awaitingCredit.amount} count={data.awaitingCredit.count} />
-            <WalletStatsRow overview={data} />
-            <View style={styles.historyHead}>
-              <View style={styles.historyTitleRow}>
-                <Text style={styles.historyTitle}>Passbook</Text>
+          <View>
+            <WalletBalancePanel overview={data} onAddMoney={(amount) => setTopup({ open: true, amount: amount ?? null })} />
+            {data.awaitingCredit.count > 0 ? (
+              <View style={styles.banner}>
+                <WalletAwaitingBanner amount={data.awaitingCredit.amount} count={data.awaitingCredit.count} />
+              </View>
+            ) : null}
+            <View style={styles.passbookHead}>
+              <View style={styles.titleRow}>
+                <Text style={styles.title}>Passbook</Text>
                 {data.transactionCount > 0 ? (
-                  <Text style={styles.historyCount}>
+                  <Text style={styles.count}>
                     {data.transactionCount} {data.transactionCount === 1 ? 'entry' : 'entries'}
                   </Text>
                 ) : null}
@@ -110,37 +109,42 @@ export function WalletScreen() {
             </View>
           </View>
         }
-        renderSectionHeader={({ section }) => <Text style={styles.sectionTitle}>{section.title}</Text>}
-        renderItem={({ item, index, section }) => (
-          <View
-            style={[
-              styles.rowWrap,
-              index === 0 && styles.rowFirst,
-              index === section.data.length - 1 && styles.rowLast,
-              index > 0 && styles.rowDivider,
-            ]}
-          >
+        renderSectionHeader={({ section }) => (
+          <View style={styles.dateBand}>
+            <Text style={styles.dateText}>{section.title}</Text>
+          </View>
+        )}
+        renderItem={({ item, index }) => (
+          <View style={styles.rowWrap}>
+            {index > 0 ? <View style={styles.rowDivider} /> : null}
             <WalletTxRow item={item} onPress={onRowPress} />
           </View>
         )}
         ListEmptyComponent={
-          history.isLoading ? (
-            <ActivityIndicator color={authTheme.brand} style={styles.loader} />
-          ) : history.isError ? (
-            <ErrorView
-              message={history.error instanceof Error ? history.error.message : 'Could not load transactions.'}
-              onRetry={() => void history.refetch()}
-            />
-          ) : (
-            <EmptyView title={empty.title} subtitle={empty.subtitle} />
-          )
+          <View style={styles.emptyWrap}>
+            {history.isLoading ? (
+              <ActivityIndicator color={authTheme.brand} style={styles.loader} />
+            ) : history.isError ? (
+              <ErrorView
+                message={history.error instanceof Error ? history.error.message : 'Could not load transactions.'}
+                onRetry={() => void history.refetch()}
+              />
+            ) : (
+              <EmptyView title={empty.title} subtitle={empty.subtitle} />
+            )}
+          </View>
         }
         ListFooterComponent={
           history.isFetchingNextPage ? <ActivityIndicator color={authTheme.brand} style={styles.loader} /> : null
         }
       />
 
-      <WalletTopupModal visible={topupOpen} overview={data} onClose={() => setTopupOpen(false)} />
+      <WalletTopupModal
+        visible={topup.open}
+        overview={data}
+        initialAmount={topup.amount}
+        onClose={() => setTopup({ open: false, amount: null })}
+      />
       <WalletTxDetailSheet item={selected} onClose={() => setSelected(null)} />
     </SafeAreaView>
   );
@@ -155,31 +159,32 @@ function Header() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: walletPalette.canvas },
-  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: walletPalette.canvas },
-  list: { paddingHorizontal: 16, paddingBottom: 40 },
-  top: { gap: 14, paddingTop: 6 },
-  historyHead: { gap: 6, marginTop: 12 },
-  historyTitleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  historyTitle: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
-  historyCount: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
-  sectionTitle: {
-    color: walletPalette.muted,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 18,
-    marginBottom: 8,
-    marginLeft: 2,
-  },
-  rowWrap: {
+  safe: { flex: 1, backgroundColor: '#FFFFFF' },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
     backgroundColor: '#FFFFFF',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: walletPalette.hairline,
-    overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: walletPalette.hairline,
   },
-  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
-  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
-  rowDivider: { borderTopWidth: 1, borderTopColor: '#F2F2F5' },
+  list: { paddingBottom: 40, flexGrow: 1, backgroundColor: walletPalette.canvas },
+  banner: { paddingHorizontal: 16, paddingTop: 14, backgroundColor: walletPalette.canvas },
+  passbookHead: {
+    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: walletPalette.hairline,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 },
+  title: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
+  count: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
+  dateBand: { backgroundColor: walletPalette.canvas, paddingHorizontal: 20, paddingVertical: 8 },
+  dateText: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '600' },
+  rowWrap: { backgroundColor: '#FFFFFF', paddingHorizontal: 4 },
+  rowDivider: { height: 1, backgroundColor: '#F2F2F5', marginLeft: 16 },
+  emptyWrap: { backgroundColor: '#FFFFFF' },
   loader: { marginVertical: 24 },
 });
