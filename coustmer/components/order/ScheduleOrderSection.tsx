@@ -50,7 +50,7 @@ export function ScheduleOrderSection({
     <View style={styles.card}>
       <View style={styles.titleRow}>
         <Clock3 color={C.orange} size={16} strokeWidth={2.2} />
-        <Text style={styles.title}>When should we deliver?</Text>
+        <Text style={styles.title}>When should we place it?</Text>
       </View>
 
       <View style={styles.modeRow}>
@@ -60,7 +60,7 @@ export function ScheduleOrderSection({
           disabled={busy || !isLater}
           activeOpacity={0.85}
         >
-          <Text style={[styles.modeText, !isLater && styles.modeTextOn]}>Deliver now</Text>
+          <Text style={[styles.modeText, !isLater && styles.modeTextOn]}>Order now</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -85,14 +85,14 @@ export function ScheduleOrderSection({
       ) : isError ? (
         <TouchableOpacity onPress={onRetry} disabled={!onRetry}>
           <Text style={styles.hintError}>
-            Could not load delivery times.{onRetry ? ' Tap to retry.' : ''}
+            Could not load available times.{onRetry ? ' Tap to retry.' : ''}
           </Text>
         </TouchableOpacity>
       ) : unsupported ? (
         <Text style={styles.hint}>This restaurant does not accept scheduled orders.</Text>
       ) : !bookable ? (
         <Text style={styles.hint}>
-          No delivery times in the next {policy.maxAdvanceDays} days. Choose Deliver now.
+          No times available in the next {policy.maxAdvanceDays} days. Choose Order now.
         </Text>
       ) : isLater && scheduledLabel ? (
         <View style={styles.selectedBox}>

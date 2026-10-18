@@ -74,7 +74,7 @@ export function dateBlockReason(
       && day.slots.every((s) => new Date(s.startIso).getTime() > limit);
     return beyondLimit
       ? `You can schedule up to ${policy.maxAdvanceDays} days in advance.`
-      : `No delivery times left on ${formatScheduleDayLabel(date)}.`;
+      : `No times left on ${formatScheduleDayLabel(date)}.`;
   }
   return null;
 }
@@ -121,7 +121,7 @@ export function validateScheduleChoice(
     return {
       ok: false,
       code: 'SCHEDULE_OUTSIDE_HOURS',
-      message: `The restaurant isn't delivering at ${minutesToLabel(choice.minutes)}. Delivery on ${formatScheduleDayLabel(choice.date)}: ${formatWindows(day.windows)}.`,
+      message: `The restaurant can't take a scheduled order at ${minutesToLabel(choice.minutes)}. Available on ${formatScheduleDayLabel(choice.date)}: ${formatWindows(day.windows)}.`,
     };
   }
   return { ok: true, iso };

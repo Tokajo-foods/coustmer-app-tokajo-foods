@@ -28,7 +28,7 @@ export const DEFAULT_SCHEDULE_POLICY: SchedulePolicy = {
   minLeadMinutes: 45,
   maxAdvanceDays: 3,
   stepMinutes: 15,
-  kitchenLeadMinutes: 45,
+  kitchenLeadMinutes: 0,
 };
 
 export type ScheduleSlotsResponse = {

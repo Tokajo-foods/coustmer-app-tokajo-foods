@@ -108,7 +108,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
         <View style={styles.handle} />
         <View style={styles.titleRow}>
           <CalendarClock size={18} color={C.orange} />
-          <Text style={styles.title}>Schedule delivery</Text>
+          <Text style={styles.title}>Schedule order</Text>
           <TouchableOpacity onPress={onClose} style={styles.close} accessibilityLabel="Close">
             <X size={18} color={C.textSec} />
           </TouchableOpacity>
@@ -125,7 +125,8 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
 
           {activeDay?.windows.length ? (
             <Text style={styles.hours}>
-              Delivery on {formatScheduleDayLabel(choice.date)}: {formatWindows(activeDay.windows)}
+              Available on {formatScheduleDayLabel(choice.date)}: {formatWindows(activeDay.windows)}
+              {'\n'}Your order goes to the restaurant at the time you pick.
             </Text>
           ) : null}
 
