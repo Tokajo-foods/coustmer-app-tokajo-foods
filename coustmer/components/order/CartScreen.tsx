@@ -426,7 +426,9 @@ export function CartScreen() {
     if (deliveryType === type) return;
 
     const previous = deliveryType;
+    const previousTip = tip;
     setDeliveryTypeLocal(type);
+    if (type === 'takeaway') setTip(0);
 
     void updateDeliveryType
       .mutateAsync({ deliveryType: type, type })
@@ -444,6 +446,7 @@ export function CartScreen() {
       })
       .catch((e) => {
         setDeliveryTypeLocal(previous);
+        setTip(previousTip);
         const message =
           e instanceof Error ? e.message : 'Please try again.';
         const lower = message.toLowerCase();
@@ -797,7 +800,9 @@ export function CartScreen() {
             onSelectSlot={handleSchedulePick}
           />
 
-          <DeliveryPreferences tip={tip} setTip={handleTipChange} />
+          {normalizedDeliveryType === 'delivery' ? (
+            <DeliveryPreferences tip={tip} setTip={handleTipChange} />
+          ) : null}
 
           {normalizedDeliveryType === 'delivery' && items.length > 0 ? (
             <AutoFreeDeliveryBanner

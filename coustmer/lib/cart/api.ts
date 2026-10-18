@@ -829,58 +829,22 @@ export const cartApi = {
     return mutateCart(`${CART_BASE}/delivery-address`, 'PUT', [{ addressId }]);
   },
 
-  /** PUT /cart/delivery-type — Auth; accepts delivery / takeaway (and pickup aliases). */
+  /** PUT /cart/delivery-type — Auth; server enum is `delivery` | `pickup` (app calls pickup "takeaway"). */
   updateDeliveryType: async (
     payload: UpdateDeliveryTypePayload
   ): Promise<Cart> => {
     const normalized = normalizeDeliveryType(
       payload.deliveryType ?? payload.type ?? 'delivery'
     );
-    const valueVariants =
-      normalized === 'takeaway'
-        ? ['takeaway', 'pickup', 'TAKEAWAY', 'PICKUP', 'self_pickup']
-        : ['delivery', 'DELIVERY', 'home_delivery'];
-
-    const bodies: unknown[] = [];
-    for (const value of valueVariants) {
-      bodies.push({ deliveryType: value });
-      bodies.push({ type: value });
-      bodies.push({ fulfillmentType: value });
-      bodies.push({ orderType: value });
-      bodies.push({ mode: value });
-      bodies.push({ delivery_type: value });
-      bodies.push({ fulfillment_type: value });
-    }
-
-    let lastError: Error | null = null;
-
-    // Prefer PUT, then PATCH — some gateways only accept one verb
-    for (const method of ['PUT', 'PATCH'] as const) {
-      for (const body of bodies) {
-        try {
-          const res = await request<unknown>(`${CART_BASE}/delivery-type`, {
-            method,
-            body,
-          });
-          const cart = mapCart(res.data ?? res);
-          // Ensure local enum stays delivery | takeaway even if API echoed pickup
-          return {
-            ...cart,
-            deliveryType: normalizeDeliveryType(
-              cart.deliveryType ?? normalized
-            ),
-          };
-        } catch (error) {
-          lastError =
-            error instanceof Error ? error : new Error('Cart request failed');
-          if (isAuthErrorMessage(lastError.message)) {
-            throw lastError;
-          }
-        }
-      }
-    }
-
-    throw lastError ?? new Error('Failed to update delivery type');
+    const res = await request<unknown>(`${CART_BASE}/delivery-type`, {
+      method: 'PUT',
+      body: { deliveryType: normalized === 'takeaway' ? 'pickup' : 'delivery' },
+    });
+    const cart = mapCart(res.data ?? res);
+    return {
+      ...cart,
+      deliveryType: normalizeDeliveryType(cart.deliveryType ?? normalized),
+    };
   },
 
   /** POST /cart/merge */

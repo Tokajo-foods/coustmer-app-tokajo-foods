@@ -244,8 +244,8 @@ export function OrderSummaryScreen() {
         deliveryType,
         fulfillmentType: deliveryType,
         specialInstructions: specialInstructions || undefined,
-        tip: tip > 0 ? tip : 0,
-        deliveryTip: tip > 0 ? tip : 0,
+        tip: !isTakeaway && tip > 0 ? tip : 0,
+        deliveryTip: !isTakeaway && tip > 0 ? tip : 0,
         scheduledFor: scheduledFor ?? undefined,
         isScheduled: Boolean(scheduledFor),
       });
