@@ -31,7 +31,7 @@ export function GlassSurface({ radius, style, children }: Props) {
       <View style={[styles.clip, { borderRadius: radius }]}>
         {NativeBlur ? (
           <NativeBlur
-            intensity={Platform.OS === 'ios' ? 62 : 38}
+            intensity={Platform.OS === 'ios' ? 75 : 50}
             tint={Platform.OS === 'ios' ? 'systemUltraThinMaterialLight' : 'light'}
             experimentalBlurMethod="dimezisBlurView"
             style={StyleSheet.absoluteFill}
@@ -41,7 +41,7 @@ export function GlassSurface({ radius, style, children }: Props) {
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: hasBlur ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.78)' },
+            { backgroundColor: hasBlur ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.9)' },
           ]}
         />
         <LinearGradient
