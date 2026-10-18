@@ -31,7 +31,6 @@ export function WalletTxDetailSheet({ item, onClose }: Props) {
 
   if (!tx) return null;
   const visual = CATEGORY_VISUALS[tx.category];
-  const Icon = visual.icon;
   const status = STATUS_LABELS[tx.status] ?? STATUS_LABELS.completed!;
   const method = methodLabel(tx.paymentMethod);
 
@@ -57,9 +56,6 @@ export function WalletTxDetailSheet({ item, onClose }: Props) {
         </SmoothPressable>
 
         <View style={styles.hero}>
-          <View style={[styles.heroIcon, { backgroundColor: visual.bg }]}>
-            <Icon color={visual.color} size={26} strokeWidth={2.2} />
-          </View>
           <Text style={[styles.amount, { color: tx.type === 'credit' ? walletPalette.credit : walletPalette.ink }]}>
             {signedAmount(tx, formatInr(tx.amount))}
           </Text>
@@ -138,8 +134,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   hero: { alignItems: 'center', gap: 6, paddingTop: 12 },
-  heroIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  amount: { fontSize: 30, fontWeight: '800', letterSpacing: -0.8 },
+  amount: { fontSize: 30, fontWeight: '700', letterSpacing: -0.6 },
   title: { color: walletPalette.ink, fontSize: 15, fontWeight: '700', textAlign: 'center' },
   status: { marginTop: 2, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   statusText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },

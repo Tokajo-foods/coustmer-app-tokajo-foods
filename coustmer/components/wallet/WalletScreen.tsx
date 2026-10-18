@@ -1,5 +1,4 @@
 import { useFocusEffect } from 'expo-router';
-import { Receipt } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -133,15 +132,7 @@ export function WalletScreen() {
               onRetry={() => void history.refetch()}
             />
           ) : (
-            <EmptyView
-              title={empty.title}
-              subtitle={empty.subtitle}
-              icon={
-                <View style={styles.emptyIcon}>
-                  <Receipt color={authTheme.brand} size={26} />
-                </View>
-              }
-            />
+            <EmptyView title={empty.title} subtitle={empty.subtitle} />
           )
         }
         ListFooterComponent={
@@ -168,19 +159,17 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: walletPalette.canvas },
   list: { paddingHorizontal: 16, paddingBottom: 40 },
   top: { gap: 14, paddingTop: 6 },
-  historyHead: { gap: 12, marginTop: 10 },
+  historyHead: { gap: 6, marginTop: 12 },
   historyTitleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  historyTitle: { color: walletPalette.ink, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
-  historyCount: { color: walletPalette.muted, fontSize: 12, fontWeight: '600' },
+  historyTitle: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
+  historyCount: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
   sectionTitle: {
-    color: '#8A8D99',
-    fontSize: 11.5,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginTop: 20,
+    color: walletPalette.muted,
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 18,
     marginBottom: 8,
-    marginLeft: 4,
+    marginLeft: 2,
   },
   rowWrap: {
     backgroundColor: '#FFFFFF',
@@ -189,16 +178,8 @@ const styles = StyleSheet.create({
     borderColor: walletPalette.hairline,
     overflow: 'hidden',
   },
-  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 18, borderTopRightRadius: 18 },
-  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
-  rowDivider: { borderTopWidth: 1, borderTopColor: '#F3F3F6' },
+  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
+  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
+  rowDivider: { borderTopWidth: 1, borderTopColor: '#F2F2F5' },
   loader: { marginVertical: 24 },
-  emptyIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: authTheme.brandSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
