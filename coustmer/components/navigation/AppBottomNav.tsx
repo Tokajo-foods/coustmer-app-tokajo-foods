@@ -7,23 +7,24 @@ import {
   UserRound,
   Wallet,
 } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
+import { GlassSurface } from '@/components/navigation/GlassSurface';
 import { fonts } from '@/constants/typography';
 
 /** Space to leave above the floating tab bar on root tab screens. */
 export const APP_BOTTOM_NAV_INSET = 96;
 
 const ORANGE = '#F97316';
-const IDLE_COLOR = '#9CA3AF';
+const IDLE_COLOR = '#6B7280';
 
 type Tab = {
   key: string;
@@ -100,6 +101,8 @@ export function isAppTabRoot(pathname: string): boolean {
   );
 }
 
+const SPRING = { damping: 18, stiffness: 240, mass: 0.6 };
+
 function TabButton({
   tab,
   active,
@@ -109,20 +112,18 @@ function TabButton({
   active: boolean;
   onPress: () => void;
 }) {
-  const scale = useSharedValue(active ? 1 : 0.96);
+  const lift = useSharedValue(active ? 1 : 0);
   const Icon = tab.Icon;
 
   useEffect(() => {
-    scale.value = withSpring(active ? 1 : 0.96, {
-      damping: 16,
-      stiffness: 280,
-      mass: 0.5,
-    });
-  }, [active, scale]);
+    lift.value = withSpring(active ? 1 : 0, SPRING);
+  }, [active, lift]);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: active ? 1 : 0.88,
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -1.5 * lift.value },
+      { scale: 0.96 + 0.08 * lift.value },
+    ],
   }));
 
   return (
@@ -131,26 +132,50 @@ function TabButton({
       accessibilityLabel={tab.label}
       onPress={onPress}
       style={styles.tab}
-      pressScale={0.92}
+      pressScale={0.9}
       haptic="selection"
     >
-      <Animated.View style={[styles.tabInner, animStyle]}>
-        <View style={[styles.iconSlot, active && styles.iconSlotActive]}>
+      <View style={styles.tabInner}>
+        <Animated.View style={iconStyle}>
           <Icon
             color={active ? ORANGE : IDLE_COLOR}
-            size={20}
-            strokeWidth={active ? 2.4 : 1.8}
-            fill={active && tab.fillWhenActive ? ORANGE : 'transparent'}
+            size={21}
+            strokeWidth={active ? 2.3 : 1.8}
+            fill={active && tab.fillWhenActive ? 'rgba(249,115,22,0.18)' : 'transparent'}
           />
-        </View>
+        </Animated.View>
         <Text
           style={[styles.tabLabel, active && styles.tabLabelActive]}
           numberOfLines={1}
         >
           {tab.label}
         </Text>
-      </Animated.View>
+      </View>
     </SmoothPressable>
+  );
+}
+
+function ActiveIndicator({ index, tabWidth }: { index: number; tabWidth: number }) {
+  const x = useSharedValue(index * tabWidth);
+  const visible = index >= 0 && tabWidth > 0;
+
+  useEffect(() => {
+    if (visible) x.value = withSpring(index * tabWidth, SPRING);
+  }, [index, tabWidth, visible, x]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.value }],
+  }));
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.indicatorSlot, { width: tabWidth }, style]}
+    >
+      <View style={styles.indicator} />
+    </Animated.View>
   );
 }
 
@@ -158,12 +183,16 @@ export function AppBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const [rowWidth, setRowWidth] = useState(0);
 
   const path = pathname.split('?')[0] ?? pathname;
   if (!isAppTabRoot(path)) return null;
 
-  const go = (href: Href) => {
-    router.replace(href);
+  const activeIndex = TABS.findIndex((tab) => tab.match(path));
+  const tabWidth = Math.max(0, rowWidth - ROW_PADDING * 2) / TABS.length;
+
+  const onRowLayout = (e: LayoutChangeEvent) => {
+    setRowWidth(e.nativeEvent.layout.width);
   };
 
   return (
@@ -171,47 +200,55 @@ export function AppBottomNav() {
       pointerEvents="box-none"
       style={[
         styles.wrap,
-        { paddingBottom: Math.max(insets.bottom, 10) + 8 },
+        { paddingBottom: Math.max(insets.bottom, 10) + 6 },
       ]}
     >
-      <View style={styles.bar}>
-        {TABS.map((tab) => (
-          <TabButton
-            key={tab.key}
-            tab={tab}
-            active={tab.match(path)}
-            onPress={() => go(tab.href)}
-          />
-        ))}
-      </View>
+      <GlassSurface radius={BAR_RADIUS}>
+        <View style={styles.row} onLayout={onRowLayout}>
+          <ActiveIndicator index={activeIndex} tabWidth={tabWidth} />
+          {TABS.map((tab, i) => (
+            <TabButton
+              key={tab.key}
+              tab={tab}
+              active={i === activeIndex}
+              onPress={() => router.replace(tab.href)}
+            />
+          ))}
+        </View>
+      </GlassSurface>
     </View>
   );
 }
 
+const BAR_RADIUS = 28;
+const ROW_PADDING = 6;
+
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 40,
-    right: 40,
+    left: 18,
+    right: 18,
     bottom: 0,
     zIndex: 50,
   },
-  bar: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
+    padding: ROW_PADDING,
+  },
+  indicatorSlot: {
+    position: 'absolute',
+    top: ROW_PADDING,
+    bottom: ROW_PADDING,
+    left: ROW_PADDING,
     paddingHorizontal: 4,
-    paddingTop: 7,
-    paddingBottom: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(249, 115, 22, 0.18)',
-    shadowColor: '#7C2D12',
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 18,
+  },
+  indicator: {
+    flex: 1,
+    borderRadius: BAR_RADIUS - ROW_PADDING,
+    backgroundColor: 'rgba(249,115,22,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.18)',
   },
   tab: {
     flex: 1,
@@ -222,18 +259,8 @@ const styles = StyleSheet.create({
   tabInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    paddingVertical: 2,
-  },
-  iconSlot: {
-    width: 42,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconSlotActive: {
-    backgroundColor: '#FFEBDA',
+    gap: 3,
+    paddingVertical: 7,
   },
   tabLabel: {
     fontSize: 10.5,
