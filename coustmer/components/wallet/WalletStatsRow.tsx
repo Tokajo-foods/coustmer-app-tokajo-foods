@@ -7,16 +7,21 @@ import type { WalletOverview } from '@/lib/payment/wallet-types';
 /** Lifetime totals straight from the ledger aggregate. */
 export function WalletStatsRow({ overview }: { overview: WalletOverview }) {
   const stats = [
-    { key: 'added', label: 'Total added', value: overview.totalAdded },
-    { key: 'spent', label: 'Total spent', value: overview.totalSpent },
-    { key: 'received', label: 'Credits & refunds', value: overview.totalReceived + overview.totalRefunded },
+    { key: 'added', label: 'Added', value: overview.totalAdded, color: walletPalette.ink },
+    { key: 'spent', label: 'Spent', value: overview.totalSpent, color: walletPalette.ink },
+    {
+      key: 'received',
+      label: 'Credits & refunds',
+      value: overview.totalReceived + overview.totalRefunded,
+      color: walletPalette.credit,
+    },
   ];
   return (
     <View style={styles.row}>
-      {stats.map((stat, index) => (
-        <View key={stat.key} style={[styles.cell, index === 0 ? styles.first : styles.divider]}>
+      {stats.map((stat) => (
+        <View key={stat.key} style={styles.tile}>
           <Text style={styles.label} numberOfLines={1}>{stat.label}</Text>
-          <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.value, { color: stat.color }]} numberOfLines={1} adjustsFontSizeToFit>
             {formatInr(stat.value)}
           </Text>
         </View>
@@ -26,10 +31,17 @@ export function WalletStatsRow({ overview }: { overview: WalletOverview }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row' },
-  cell: { flex: 1, gap: 4, paddingHorizontal: 12 },
-  first: { paddingLeft: 0 },
-  divider: { borderLeftWidth: 1, borderLeftColor: walletPalette.hairline },
+  row: { flexDirection: 'row', gap: 10 },
+  tile: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: walletPalette.hairline,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 4,
+  },
   label: { color: walletPalette.muted, fontSize: 12, fontWeight: '500' },
-  value: { color: walletPalette.ink, fontSize: 15.5, fontWeight: '700' },
+  value: { fontSize: 16, fontWeight: '700' },
 });
