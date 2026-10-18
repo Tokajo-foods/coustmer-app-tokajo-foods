@@ -1,5 +1,5 @@
 import { X } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import { useStartWalletTopup, useVerifyWalletTopup } from '@/lib/payment/hooks';
 import { walletPalette } from '@/lib/payment/wallet-display';
 import { useWalletOverview } from '@/lib/payment/wallet-hooks';
 import type { WalletTopupMethod } from '@/lib/payment/wallet-topup-api';
+import { topupStartErrorMessage, useAwaitTopupCredit, withVerifyRetry } from '@/lib/payment/wallet-topup-flow';
 import type { WalletOverview } from '@/lib/payment/wallet-types';
 import { useAuthStore } from '@/store/auth-store';
 import { WalletTopupForm } from './WalletTopupForm';
@@ -38,7 +39,9 @@ export function WalletTopupModal({ visible, overview, initialAmount, onClose }: 
   const startTopup = useStartWalletTopup();
   const verifyTopup = useVerifyWalletTopup();
   const live = useWalletOverview();
-  const busy = startTopup.isPending || verifyTopup.isPending || Boolean(session);
+  const [verifying, setVerifying] = useState(false);
+  const busy = startTopup.isPending || verifying || Boolean(session);
+  const baselineRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -46,6 +49,20 @@ export function WalletTopupModal({ visible, overview, initialAmount, onClose }: 
     setServerError(null);
     setOutcome(null);
   }, [visible, initialAmount]);
+
+  useAwaitTopupCredit({
+    active: visible && outcome?.kind === 'processing',
+    baseline: baselineRef.current,
+    amount: outcome?.amount ?? 0,
+    balance: live.data?.balance ?? null,
+    refetch: live.refetch,
+    onCredited: () => setOutcome((prev) => (prev ? { ...prev, kind: 'credited' } : prev)),
+  });
+
+  const requestClose = () => {
+    if (verifying) return;
+    onClose();
+  };
 
   const value = Number(amount) || 0;
   const { minAmount, maxAmount, enabled } = overview.topUp;
@@ -64,6 +81,7 @@ export function WalletTopupModal({ visible, overview, initialAmount, onClose }: 
   const proceed = async () => {
     if (validation || busy || !enabled) return;
     setServerError(null);
+    baselineRef.current = live.data?.balance ?? overview.balance;
     try {
       const started = await startTopup.mutateAsync({ amount: value, method });
       setSession({
@@ -78,7 +96,7 @@ export function WalletTopupModal({ visible, overview, initialAmount, onClose }: 
         contact: user?.phone?.replace(/\D/g, '').slice(-10) || undefined,
       });
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : 'Could not start payment. Try again.');
+      setServerError(topupStartErrorMessage(error));
     }
   };
 
@@ -97,23 +115,31 @@ export function WalletTopupModal({ visible, overview, initialAmount, onClose }: 
         }
         return;
       }
+      setVerifying(true);
       try {
-        const result = await verifyTopup.mutateAsync({
-          paymentId: current.paymentId,
-          gatewayPaymentId: data.gatewayPaymentId ?? '',
-          gatewayOrderId: data.gatewayOrderId ?? current.orderId,
-          gatewaySignature: data.gatewaySignature ?? '',
-        });
+        const result = await withVerifyRetry(() =>
+          verifyTopup.mutateAsync({
+            paymentId: current.paymentId,
+            gatewayPaymentId: data.gatewayPaymentId ?? '',
+            gatewayOrderId: data.gatewayOrderId ?? current.orderId,
+            gatewaySignature: data.gatewaySignature ?? '',
+          }),
+        );
         setOutcome({ kind: result.userCredited ? 'credited' : 'processing', amount: result.amount || current.amount });
       } catch {
+        // Money may already be captured: the webhook / reconciler credits it, and we keep polling the balance.
         setOutcome({ kind: 'processing', amount: current.amount });
+      } finally {
+        setVerifying(false);
       }
     },
     [session, verifyTopup],
   );
 
   const disabled = Boolean(validation) || busy || !enabled;
-  const ctaLabel = busy
+  const ctaLabel = verifying
+    ? 'Confirming payment…'
+    : busy
     ? 'Processing…'
     : !enabled
       ? 'Add money is unavailable right now'
@@ -122,11 +148,16 @@ export function WalletTopupModal({ visible, overview, initialAmount, onClose }: 
         : 'Enter an amount';
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={requestClose}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>{outcome ? 'Wallet' : 'Add money'}</Text>
-          <SmoothPressable onPress={onClose} style={styles.close} accessibilityLabel="Close">
+          <SmoothPressable
+            onPress={requestClose}
+            disabled={verifying}
+            style={[styles.close, verifying && styles.closeDisabled]}
+            accessibilityLabel="Close"
+          >
             <X color={walletPalette.ink} size={18} />
           </SmoothPressable>
         </View>
@@ -189,6 +220,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  closeDisabled: { opacity: 0.4 },
   footer: {
     paddingHorizontal: 20,
     paddingTop: 12,

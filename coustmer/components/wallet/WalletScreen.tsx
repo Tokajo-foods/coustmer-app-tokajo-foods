@@ -83,7 +83,10 @@ export function WalletScreen() {
         visible={topup.open}
         overview={data}
         initialAmount={topup.amount}
-        onClose={() => setTopup({ open: false, amount: null })}
+        onClose={() => {
+          setTopup({ open: false, amount: null });
+          refreshAll();
+        }}
       />
       <WalletTxDetailSheet item={selected} onClose={() => setSelected(null)} />
     </SafeAreaView>
