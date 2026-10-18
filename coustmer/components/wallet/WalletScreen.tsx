@@ -153,7 +153,7 @@ export function WalletScreen() {
 function Header() {
   return (
     <View style={styles.header}>
-      <ScreenHeader title="Wallet" subtitle="Add money, pay faster, track every rupee" backFallback="/profile" />
+      <ScreenHeader title="Wallet" subtitle="Add money, pay faster, track every rupee" backFallback="/profile" gap={14} />
     </View>
   );
 }

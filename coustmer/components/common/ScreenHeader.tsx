@@ -13,6 +13,8 @@ type ScreenHeaderProps = {
   right?: React.ReactNode;
   /** Fallback route when there is no history (default `/home`). */
   backFallback?: string;
+  /** Space between the back button and the title (default 8). */
+  gap?: number;
 };
 
 export function ScreenHeader({
@@ -21,11 +23,12 @@ export function ScreenHeader({
   left,
   right,
   backFallback = '/home',
+  gap,
 }: ScreenHeaderProps) {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, gap != null && { gap }]}>
       {left !== undefined ? (
         left
       ) : (
