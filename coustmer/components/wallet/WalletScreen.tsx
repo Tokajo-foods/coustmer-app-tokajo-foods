@@ -71,7 +71,7 @@ export function WalletScreen() {
           overview={data}
           refreshing={overview.isRefetching}
           onRefresh={refreshAll}
-          onProceed={(amount) => setTopup({ open: true, amount })}
+          onAddMoney={() => setTopup({ open: true, amount: null })}
           onOpenTx={onOpenTx}
           onViewAll={() => setTab('transactions')}
         />
