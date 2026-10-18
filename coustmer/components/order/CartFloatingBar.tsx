@@ -1,11 +1,21 @@
 import { Pressable } from '@/components/common/Pressable';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { StyleSheet, Text, View, Animated, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  APP_BOTTOM_NAV_HEIGHT,
+  appBottomNavOffset,
+  isAppTabRoot,
+} from '@/components/navigation/AppBottomNav';
 import { useCartStore } from '@/store/cart-store';
+
+/** Extra scroll space a screen needs so its last row clears the cart pill. */
+export const CART_FLOATING_BAR_CLEARANCE = 60;
+
+const GAP_ABOVE_NAV = 10;
 
 type Props = {
   bottomOffset?: number;
@@ -13,7 +23,12 @@ type Props = {
 
 export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const navVisible = isAppTabRoot(pathname);
+  const bottom = navVisible
+    ? appBottomNavOffset(insets.bottom) + APP_BOTTOM_NAV_HEIGHT + GAP_ABOVE_NAV
+    : Math.max(insets.bottom, 16) + bottomOffset;
   const items = useCartStore((s) => s.items);
   const restaurant = useCartStore((s) => s.restaurant);
   const totalItems = useCartStore((s) => s.totalItems());
@@ -62,7 +77,7 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
           styles.bgContainer,
           { 
             position: 'absolute',
-            bottom: Math.max(insets.bottom, 16) + bottomOffset,
+            bottom,
             alignSelf: 'center',
             transform: [{ translateY: slideAnim }]
           },

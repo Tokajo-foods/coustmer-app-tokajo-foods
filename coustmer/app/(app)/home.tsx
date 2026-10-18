@@ -21,7 +21,11 @@ import { VegModeModal } from '@/components/home/VegModeModal';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import { InitialLocationSheet } from '@/components/location/InitialLocationSheet';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
-import { CartFloatingBar } from '@/components/order/CartFloatingBar';
+import {
+  CART_FLOATING_BAR_CLEARANCE,
+  CartFloatingBar,
+} from '@/components/order/CartFloatingBar';
+import { useCartStore } from '@/store/cart-store';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
 import { HOME_FEED_LIST } from '@/lib/motion/premium';
@@ -90,6 +94,7 @@ const ORANGE = '#F97316';
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const hasCart = useCartStore((s) => s.items.length > 0 && !!s.restaurant);
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   const loggedIn = Boolean(user || token);
@@ -319,10 +324,14 @@ export default function HomeScreen() {
 
   const listContentStyle = useMemo(
     () => ({
-      paddingBottom: insets.bottom + 28 + APP_BOTTOM_NAV_INSET,
+      paddingBottom:
+        insets.bottom +
+        28 +
+        APP_BOTTOM_NAV_INSET +
+        (hasCart ? CART_FLOATING_BAR_CLEARANCE : 0),
       flexGrow: 1 as const,
     }),
-    [insets.bottom]
+    [insets.bottom, hasCart]
   );
 
   const refreshing =

@@ -23,6 +23,13 @@ import { fonts } from '@/constants/typography';
 /** Space to leave above the floating tab bar on root tab screens. */
 export const APP_BOTTOM_NAV_INSET = 96;
 
+export const APP_BOTTOM_NAV_HEIGHT = 64;
+
+/** Distance from the screen bottom to the bottom edge of the floating tab bar. */
+export function appBottomNavOffset(safeAreaBottom: number): number {
+  return Math.max(safeAreaBottom, 10) + 6;
+}
+
 const ORANGE = '#F97316';
 const IDLE_COLOR = '#6B7280';
 
@@ -200,7 +207,7 @@ export function AppBottomNav() {
       pointerEvents="box-none"
       style={[
         styles.wrap,
-        { paddingBottom: Math.max(insets.bottom, 10) + 6 },
+        { paddingBottom: appBottomNavOffset(insets.bottom) },
       ]}
     >
       <GlassSurface radius={BAR_RADIUS}>
@@ -234,6 +241,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: APP_BOTTOM_NAV_HEIGHT,
     padding: ROW_PADDING,
   },
   indicatorSlot: {
