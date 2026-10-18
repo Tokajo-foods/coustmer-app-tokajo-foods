@@ -7,7 +7,7 @@ import { formatInr } from '@/lib/format/money';
 import type { SearchSuggestion } from '@/lib/search/types';
 
 import { HighlightedText } from '../HighlightedText';
-import { suggestStyles as s } from './suggest-styles';
+import { suggestRipple, suggestStyles as s } from './suggest-styles';
 
 export const DishSuggestionRow = memo(function DishSuggestionRow({ item, query, onPress }: {
   item: SearchSuggestion;
@@ -18,7 +18,8 @@ export const DishSuggestionRow = memo(function DishSuggestionRow({ item, query, 
   const restaurant = item.restaurantName ?? item.subtitle?.replace(/\s*·\s*Closed now$/, '') ?? '';
   return (
     <Pressable
-      style={({ pressed }) => [s.row, pressed && s.pressed]}
+      style={s.row}
+      android_ripple={suggestRipple}
       onPress={() => onPress(item)}
       accessibilityLabel={`Dish ${item.text}${restaurant ? ` from ${restaurant}` : ''}`}
     >

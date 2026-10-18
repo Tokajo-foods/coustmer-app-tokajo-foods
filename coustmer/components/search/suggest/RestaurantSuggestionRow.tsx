@@ -6,7 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { SearchSuggestion } from '@/lib/search/types';
 
 import { HighlightedText } from '../HighlightedText';
-import { suggestStyles as s } from './suggest-styles';
+import { suggestRipple, suggestStyles as s } from './suggest-styles';
 
 export const RestaurantSuggestionRow = memo(function RestaurantSuggestionRow({ item, query, onPress }: {
   item: SearchSuggestion;
@@ -17,7 +17,8 @@ export const RestaurantSuggestionRow = memo(function RestaurantSuggestionRow({ i
   const cuisines = item.subtitle?.replace(/\s*·\s*Closed now$/, '') || 'Restaurant';
   return (
     <Pressable
-      style={({ pressed }) => [s.row, pressed && s.pressed]}
+      style={s.row}
+      android_ripple={suggestRipple}
       onPress={() => onPress(item)}
       accessibilityLabel={`Restaurant ${item.text}`}
     >

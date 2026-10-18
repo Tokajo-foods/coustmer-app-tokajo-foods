@@ -25,7 +25,7 @@ export function CategoryChips({ items, onPick }: { items: SearchCategory[]; onPi
           const count = countLabel(c);
           return (
             <Pressable key={`${c.source}-${c.slug}`} onPress={() => onPick(c)}
-              style={({ pressed }) => [styles.chip, pressed && styles.pressed]} accessibilityLabel={`${c.name} dishes`}>
+              style={styles.chip} android_ripple={{ color: '#F4F4F5', borderless: false }} accessibilityLabel={`${c.name} dishes`}>
               <View style={styles.icon}>
                 {c.imageUrl ? (
                   <Image source={{ uri: c.imageUrl }} style={styles.image} contentFit="cover" />
@@ -61,11 +61,11 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     paddingRight: 12,
     borderRadius: 19,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E4E4E7',
     backgroundColor: '#FFFFFF',
   },
-  pressed: { backgroundColor: '#F4F4F5' },
   icon: {
     width: 28,
     height: 28,

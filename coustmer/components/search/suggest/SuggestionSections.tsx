@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react-native';
+import { ArrowRight, Search } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, SectionList, Text, View } from 'react-native';
 
@@ -9,7 +9,7 @@ import { searchColors } from '../search-styles';
 import { CuisineSuggestionRow } from './CuisineSuggestionRow';
 import { DishSuggestionRow } from './DishSuggestionRow';
 import { RestaurantSuggestionRow } from './RestaurantSuggestionRow';
-import { suggestStyles as s } from './suggest-styles';
+import { suggestRipple, suggestStyles as s } from './suggest-styles';
 
 type Section = { key: SearchSuggestionType; title: string; data: SearchSuggestion[] };
 
@@ -68,9 +68,14 @@ export function SuggestionSections({ query, items, correctedQuery, onPick, onSea
       }}
       ListFooterComponent={
         typed ? (
-          <Pressable style={({ pressed }) => [s.seeAll, pressed && { opacity: 0.85 }]} onPress={onSearchAll}>
-            <Text style={s.seeAllText} numberOfLines={1}>See all results for “{typed}”</Text>
-            <ArrowRight color={searchColors.orange} size={16} strokeWidth={2.4} />
+          <Pressable style={s.seeAll} android_ripple={suggestRipple} onPress={onSearchAll} accessibilityRole="button">
+            <View style={s.seeAllIcon}>
+              <Search color={searchColors.orange} size={16} strokeWidth={2.4} />
+            </View>
+            <Text style={s.seeAllText} numberOfLines={1}>
+              See all results for <Text style={s.seeAllQuery}>“{typed}”</Text>
+            </Text>
+            <ArrowRight color="#A1A1AA" size={16} strokeWidth={2.2} />
           </Pressable>
         ) : null
       }

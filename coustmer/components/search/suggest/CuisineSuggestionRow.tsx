@@ -7,7 +7,7 @@ import type { SearchSuggestion } from '@/lib/search/types';
 
 import { HighlightedText } from '../HighlightedText';
 import { searchColors } from '../search-styles';
-import { suggestStyles as s } from './suggest-styles';
+import { suggestRipple, suggestStyles as s } from './suggest-styles';
 
 /** Server subtitles start with the kind ("Cuisine · 3 restaurants"); the section header already says it. */
 function countLine(item: SearchSuggestion): string {
@@ -22,7 +22,8 @@ export const CuisineSuggestionRow = memo(function CuisineSuggestionRow({ item, q
 }) {
   return (
     <Pressable
-      style={({ pressed }) => [s.row, pressed && s.pressed]}
+      style={s.row}
+      android_ripple={suggestRipple}
       onPress={() => onPress(item)}
       accessibilityLabel={`All ${item.text} dishes near you`}
     >

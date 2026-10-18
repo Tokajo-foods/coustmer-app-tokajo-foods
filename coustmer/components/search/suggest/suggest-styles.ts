@@ -6,6 +6,8 @@ import { searchColors } from '../search-styles';
 
 const { ink, muted, orange } = searchColors;
 
+export const suggestRipple = { color: '#F4F4F5' };
+
 export const suggestStyles = StyleSheet.create({
   sectionHead: {
     flexDirection: 'row',
@@ -21,7 +23,6 @@ export const suggestStyles = StyleSheet.create({
   sectionRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#E4E4E7' },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 9 },
-  pressed: { backgroundColor: '#FAFAFA' },
   thumb: {
     width: 52,
     height: 52,
@@ -70,17 +71,23 @@ export const suggestStyles = StyleSheet.create({
   seeAll: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginHorizontal: 16,
-    marginTop: 18,
-    paddingVertical: 13,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FED7AA',
-    backgroundColor: searchColors.peach,
+    gap: 12,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E4E4E7',
   },
-  seeAllText: { flexShrink: 1, fontFamily: fonts.uiSemi, fontSize: 14, color: orange },
+  seeAllIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: searchColors.peach,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seeAllText: { flex: 1, fontFamily: fonts.ui, fontSize: 14.5, color: muted },
+  seeAllQuery: { fontFamily: fonts.uiSemi, color: orange },
   corrected: { fontFamily: fonts.ui, fontSize: 13, color: muted, paddingHorizontal: 16, paddingTop: 12 },
   correctedQuery: { fontFamily: fonts.uiSemi, color: ink },
 });

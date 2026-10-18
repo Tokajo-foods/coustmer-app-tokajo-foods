@@ -21,7 +21,8 @@ export const CategoryDishRow = memo(function CategoryDishRow({
   const hasDeal = dish.discountedPrice !== undefined && dish.discountedPrice < dish.price;
   return (
     <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={styles.row}
+      android_ripple={{ color: '#F4F4F5' }}
       onPress={() => onPress(dish)}
       accessibilityLabel={`${dish.name} from ${dish.restaurantName ?? 'restaurant'}`}
     >
@@ -66,7 +67,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E4E4E7',
   },
-  pressed: { backgroundColor: '#F8FAFC' },
   info: { flex: 1, gap: 4 },
   veg: {
     width: 14,

@@ -30,7 +30,8 @@ export function RecentChips({
         {terms.slice(0, 8).map((term) => (
           <Pressable
             key={term}
-            style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+            style={styles.chip}
+            android_ripple={{ color: '#E2E8F0' }}
             onPress={() => onPick(term)}
             onLongPress={() => onRemove(term)}
             accessibilityLabel={`Search ${term}`}
@@ -58,10 +59,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     height: 34,
     borderRadius: 17,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
   },
-  pressed: { backgroundColor: '#F1F5F9' },
   text: { fontFamily: fonts.uiMedium, fontSize: 13, color: searchColors.ink, maxWidth: 180 },
 });
