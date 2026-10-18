@@ -9,7 +9,6 @@ import {
   getMenuItemReviewCount,
   getRestaurantRating,
 } from '@/lib/restaurant/menu-rating';
-import { isPlaceholderListingEta } from '@/lib/restaurant/card-display';
 import type {
   CuisineChip,
   CustomizationGroup,
@@ -50,17 +49,12 @@ function parseReviewCount(data: Record<string, unknown>): number | undefined {
 function listingEtaLabel(
   data: Record<string, unknown>
 ): string | undefined {
-  const travelIncluded =
-    typeof data.travelIncluded === 'boolean' ? data.travelIncluded : undefined;
-  if (travelIncluded === false) return undefined;
-  const label =
+  return (
     (typeof data.deliveryTimeLabel === 'string' && data.deliveryTimeLabel.trim()) ||
     (typeof data.etaLabel === 'string' && data.etaLabel.trim()) ||
     (typeof data.deliveryTime === 'string' && data.deliveryTime.trim()) ||
-    undefined;
-  if (!label) return undefined;
-  if (isPlaceholderListingEta(label)) return undefined;
-  return label;
+    undefined
+  );
 }
 
 /**

@@ -4,7 +4,6 @@ import type {
   HomeRestaurantCard,
   HomeTrendingDish,
 } from '@/lib/home/types';
-import { isPlaceholderListingEta } from '@/lib/restaurant/card-display';
 import type { Restaurant } from '@/lib/restaurant/types';
 
 function asRecord(v: unknown): Record<string, unknown> {
@@ -69,17 +68,11 @@ export function mapFeedRestaurantCard(raw: unknown): HomeRestaurantCard | null {
       const n = num(r.avgRating ?? r.rating ?? nested.average ?? nested.avgRating);
       return n != null && n > 0 ? n : undefined;
     })(),
-    deliveryTime: (() => {
-      if (r.travelIncluded === false) return null;
-      const label =
-        str(r.etaLabel) ??
-        str(r.deliveryTimeLabel) ??
-        str(r.deliveryTime) ??
-        null;
-      if (!label) return null;
-      if (isPlaceholderListingEta(label)) return null;
-      return label;
-    })(),
+    deliveryTime:
+      str(r.etaLabel) ??
+      str(r.deliveryTimeLabel) ??
+      str(r.deliveryTime) ??
+      (num(r.promiseMinutes) ? `${Math.round(num(r.promiseMinutes) as number)} mins` : null),
     cuisines,
     isPureVeg: r.isPureVeg === true,
     isOpenNow: typeof r.isOpenNow === 'boolean' ? r.isOpenNow : undefined,

@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { styles } from '@/components/home/tokajo/TokajoRestaurantListCard.styles';
+import { restaurantEtaLabel } from '@/lib/restaurant/card-display';
 import type { Restaurant } from '@/lib/restaurant/types';
 import { formatInr } from '@/lib/format/money';
 
@@ -46,7 +47,7 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
 }: Props) {
   const cover =
     r.imageUrl || r.coverUrl || (r.images?.[0] as string | undefined);
-  const eta = r.deliveryTimeLabel || r.deliveryTime;
+  const eta = restaurantEtaLabel(r);
   const rating = r.avgRating ?? r.rating;
   const count = formatCount(r.totalRatings ?? r.reviewCount);
   const cuisines = (r.cuisines ?? []).slice(0, 3).join(' • ');

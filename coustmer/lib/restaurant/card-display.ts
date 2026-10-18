@@ -76,15 +76,12 @@ export function restaurantDetailEtaLabel(
   const fromApi = restaurantEtaLabel(r);
   if (fromApi) return fromApi;
 
-  if (
-    typeof distanceKm !== 'number' ||
-    !Number.isFinite(distanceKm) ||
-    distanceKm < MIN_TRAVEL_KM
-  ) {
+  if (typeof distanceKm !== 'number' || !Number.isFinite(distanceKm) || distanceKm < 0) {
     return undefined;
   }
 
-  const travelMin = (distanceKm / RIDER_SPEED_KMH) * 60;
+  const travelMin =
+    distanceKm < MIN_TRAVEL_KM ? 0 : (distanceKm / RIDER_SPEED_KMH) * 60;
   const prep = prepMinutesFromRestaurant(r);
   const mid = Math.max(1, Math.round(prep + travelMin + ETA_BUFFER_MIN));
   const min = Math.max(
@@ -92,9 +89,7 @@ export function restaurantDetailEtaLabel(
     mid - ETA_RANGE_PAD_MIN
   );
   const max = mid + ETA_RANGE_PAD_MIN;
-  const label = `${min}–${max} mins`;
-  if (isPlaceholderListingEta(label)) return undefined;
-  return label;
+  return `${min}–${max} mins`;
 }
 
 /** IST-friendly label for next open instant from nearby/detail APIs. */
@@ -135,23 +130,10 @@ export function restaurantRatingCount(r: Restaurant): number | undefined {
   return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
-/** Kitchen schema default (prep 30 + pad) — not a real door-to-door ETA. */
-export function isPlaceholderListingEta(label?: string | null): boolean {
-  if (!label) return false;
-  return /^(25|30)\s*[–-]\s*(35|38)\s*mins?$/i.test(label.trim());
-}
-
-/** ETA from card DTO. Hide schema-default 30–38 and sub-200 m hops. */
+/** ETA from card DTO: API label first, else promise minutes. */
 export function restaurantEtaLabel(r: Restaurant): string | undefined {
-  if (r.travelIncluded === false) return undefined;
-  if (typeof r.distance === 'number' && r.distance >= 0 && r.distance < 0.2) {
-    return undefined;
-  }
   const label = r.deliveryTimeLabel?.trim() || r.deliveryTime?.trim();
-  if (label) {
-    if (isPlaceholderListingEta(label)) return undefined;
-    return label;
-  }
+  if (label) return label;
   if (typeof r.promiseMinutes === 'number' && r.promiseMinutes > 0) {
     return `${Math.round(r.promiseMinutes)} mins`;
   }
