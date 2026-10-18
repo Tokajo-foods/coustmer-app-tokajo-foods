@@ -57,6 +57,7 @@ export function dateBlockReason(
   date: string,
   days: ScheduleDay[],
   policy: SchedulePolicy = DEFAULT_SCHEDULE_POLICY,
+  now: number = Date.now(),
 ): string | null {
   const day = days.find((d) => d.date === date);
   if (!day) {
@@ -68,7 +69,12 @@ export function dateBlockReason(
     return `The restaurant is closed on ${formatScheduleDayLabel(date)}.`;
   }
   if (!day.slots.some((s) => s.available)) {
-    return `No delivery times left on ${formatScheduleDayLabel(date)}.`;
+    const limit = now + policy.maxAdvanceDays * 86_400_000;
+    const beyondLimit = day.slots.length > 0
+      && day.slots.every((s) => new Date(s.startIso).getTime() > limit);
+    return beyondLimit
+      ? `You can schedule up to ${policy.maxAdvanceDays} days in advance.`
+      : `No delivery times left on ${formatScheduleDayLabel(date)}.`;
   }
   return null;
 }
@@ -79,7 +85,7 @@ export function validateScheduleChoice(
   policy: SchedulePolicy = DEFAULT_SCHEDULE_POLICY,
   now: number = Date.now(),
 ): ScheduleCheck {
-  const blocked = dateBlockReason(choice.date, days, policy);
+  const blocked = dateBlockReason(choice.date, days, policy, now);
   if (blocked) return { ok: false, code: 'SCHEDULE_DATE_BLOCKED', message: blocked };
 
   if (choice.minutes % policy.stepMinutes !== 0) {
