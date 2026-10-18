@@ -52,6 +52,12 @@ export type RatingDistribution = {
   5: number;
 };
 
+/** GET /restaurants/:id/reviews/me — `rated` stays true even if the review was later removed. */
+export type MyRestaurantRating = {
+  rated: boolean;
+  review: RestaurantReview | null;
+};
+
 export type ReviewStats = {
   /** 0–5, one decimal. 0 means nobody has rated yet. */
   average: number;

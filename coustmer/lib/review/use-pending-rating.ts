@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { orderApi } from '@/lib/order/api';
 import { orderKeys } from '@/lib/order/hooks';
 import { canRateOrder, type Order } from '@/lib/order/types';
-import { useOrderReview } from '@/lib/review/hooks';
+import { useMyRestaurantRating } from '@/lib/review/hooks';
 import { dismissRatingPrompt, loadDismissedRatingPrompts } from '@/lib/review/rating-prompt-store';
 
 /** Only ask about orders delivered in the last 3 days. */
@@ -37,7 +37,7 @@ function toPending(order: Order): PendingRating {
 }
 
 /**
- * The newest delivered order the customer has not rated or dismissed.
+ * The newest delivered order from a restaurant this customer has never rated, and not dismissed.
  * Refetches the recent orders every minute so a just-delivered order prompts without a restart.
  */
 export function usePendingRating(enabled: boolean) {
@@ -55,17 +55,34 @@ export function usePendingRating(enabled: boolean) {
     staleTime: 30_000,
   });
 
+  const [ratedRestaurants, setRatedRestaurants] = useState<ReadonlySet<string>>(new Set());
+
   const candidate = useMemo(() => {
     if (!dismissed) return null;
     const skip = new Set(dismissed);
     const order = (recent.data?.orders ?? []).find(
-      (o) => canRateOrder(o.status) && Boolean(o.restaurantId) && !skip.has(o.id) && deliveredRecently(o)
+      (o) =>
+        canRateOrder(o.status) &&
+        Boolean(o.restaurantId) &&
+        !ratedRestaurants.has(o.restaurantId ?? '') &&
+        !skip.has(o.id) &&
+        deliveredRecently(o)
     );
     return order ? toPending(order) : null;
-  }, [recent.data, dismissed]);
+  }, [recent.data, dismissed, ratedRestaurants]);
 
-  const review = useOrderReview(candidate?.orderId ?? '', { enabled: enabled && Boolean(candidate) });
-  const pending = candidate && review.isSuccess && review.data === null ? candidate : null;
+  const mine = useMyRestaurantRating(candidate?.restaurantId ?? '', {
+    enabled: enabled && Boolean(candidate),
+  });
+  const rated = mine.data?.rated === true;
+
+  useEffect(() => {
+    const id = candidate?.restaurantId;
+    if (!rated || !id) return;
+    setRatedRestaurants((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  }, [rated, candidate?.restaurantId]);
+
+  const pending = candidate && mine.isSuccess && !rated ? candidate : null;
 
   const dismiss = useCallback(async (orderId: string) => {
     setDismissed(await dismissRatingPrompt(orderId));

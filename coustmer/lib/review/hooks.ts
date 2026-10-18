@@ -23,6 +23,7 @@ export const reviewKeys = {
     [...reviewKeys.restaurant(restaurantId), 'list', params ?? {}] as const,
   restaurantStats: (restaurantId: string) =>
     [...reviewKeys.restaurant(restaurantId), 'stats'] as const,
+  myRestaurantRating: (restaurantId: string) => [...reviewKeys.restaurant(restaurantId), 'me'] as const,
   orderReview: (orderId: string) => [...reviewKeys.all, 'order', orderId] as const,
 };
 
@@ -60,6 +61,20 @@ export function useRestaurantReviewStats(
     queryFn: () => reviewApi.getRestaurantReviewStats(restaurantId),
     enabled: Boolean(restaurantId) && (options?.enabled ?? true),
     staleTime: 30_000,
+    retry: 1,
+  });
+}
+
+/** GET /restaurants/:restaurantId/reviews/me — has this customer ever rated the restaurant. */
+export function useMyRestaurantRating(
+  restaurantId: string,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: reviewKeys.myRestaurantRating(restaurantId),
+    queryFn: () => reviewApi.getMyRestaurantRating(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
+    staleTime: 60_000,
     retry: 1,
   });
 }
