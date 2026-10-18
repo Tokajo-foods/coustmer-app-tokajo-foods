@@ -168,16 +168,22 @@ function mapDevice(raw: Record<string, unknown>): NotificationDevice {
 function mapPrefs(raw: unknown): NotificationPreferences {
   const r = asRecord(raw);
   return {
+    push: r.pushEnabled !== false,
     orders: r.ordersPush !== false,
     offers: r.offersPush !== false && r.promoPush !== false,
+    sms: r.sms !== false,
+    email: r.email !== false,
     whatsapp: r.whatsapp === true,
   };
 }
 
-/** Server fields: ordersPush · offersPush + promoPush (one "Offers" switch) · whatsapp. */
+/** Server fields: pushEnabled · ordersPush · offersPush + promoPush (one "Offers" switch) · sms · email · whatsapp. */
 function toPrefsBody(payload: Partial<NotificationPreferences>): Record<string, boolean> {
   const body: Record<string, boolean> = {};
+  if (payload.push !== undefined) body.pushEnabled = payload.push;
   if (payload.orders !== undefined) body.ordersPush = payload.orders;
+  if (payload.sms !== undefined) body.sms = payload.sms;
+  if (payload.email !== undefined) body.email = payload.email;
   if (payload.offers !== undefined) {
     body.offersPush = payload.offers;
     body.promoPush = payload.offers;

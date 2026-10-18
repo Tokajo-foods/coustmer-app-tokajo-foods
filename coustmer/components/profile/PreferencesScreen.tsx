@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
+import { NotificationSettingsList } from '@/components/notification/NotificationSettingsList';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { ProfileMenuSection } from '@/components/profile/ProfileMenuSection';
 import { ToggleRow } from '@/components/profile/ToggleRow';
@@ -11,24 +12,18 @@ import {
   usePreferences,
   useUpdateDietaryPreferences,
   useUpdateLanguagePreference,
-  useUpdateNotificationPreferences,
   useUserProfile,
 } from '@/lib/profile/hooks';
-import type {
-  DietaryPreferences,
-  NotificationPreferences,
-} from '@/lib/profile/types';
+import type { DietaryPreferences } from '@/lib/profile/types';
 
 const SPICE_OPTIONS = ['mild', 'medium', 'hot'] as const;
 
 export function PreferencesScreen() {
   const { data: prefs, isLoading } = usePreferences();
   const { data: profile } = useUserProfile();
-  const updateNotifications = useUpdateNotificationPreferences();
   const updateDietary = useUpdateDietaryPreferences();
   const updateLanguage = useUpdateLanguagePreference();
 
-  const [notifications, setNotifications] = useState<NotificationPreferences>({});
   const [dietary, setDietary] = useState<DietaryPreferences>({});
   const [allergiesText, setAllergiesText] = useState('');
   const [language, setLanguage] = useState('en');
@@ -39,7 +34,6 @@ export function PreferencesScreen() {
 
   useEffect(() => {
     if (!prefs) return;
-    setNotifications(prefs.notificationPreferences ?? {});
     setDietary(prefs.dietaryPreferences ?? {});
     setAllergiesText((prefs.dietaryPreferences?.allergies ?? []).join(', '));
   }, [prefs]);
@@ -50,26 +44,9 @@ export function PreferencesScreen() {
     }
   }, [profile?.language]);
 
-  const toggleNotification = (key: keyof NotificationPreferences) => {
-    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const toggleDietary = (key: keyof DietaryPreferences) => {
     if (key === 'allergies' || key === 'spicePreference') return;
     setDietary((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const saveNotifications = () => {
-    setBanner(null);
-    updateNotifications.mutate(notifications, {
-      onSuccess: () =>
-        setBanner({ message: 'Notification preferences saved', type: 'success' }),
-      onError: (error) =>
-        setBanner({
-          message: error instanceof Error ? error.message : 'Save failed',
-          type: 'error',
-        }),
-    });
   };
 
   const saveDietary = () => {
@@ -112,59 +89,8 @@ export function PreferencesScreen() {
       banner={banner}
     >
       <ProfileMenuSection title="Notifications">
-        <ToggleRow
-          label="Push notifications"
-          value={Boolean(notifications.pushNotifications)}
-          onValueChange={() => toggleNotification('pushNotifications')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="SMS alerts"
-          value={Boolean(notifications.smsAlerts)}
-          onValueChange={() => toggleNotification('smsAlerts')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="Email notifications"
-          value={Boolean(notifications.emailNotifications)}
-          onValueChange={() => toggleNotification('emailNotifications')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="WhatsApp"
-          value={Boolean(notifications.whatsapp)}
-          onValueChange={() => toggleNotification('whatsapp')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="Order updates"
-          value={Boolean(notifications.orderUpdates)}
-          onValueChange={() => toggleNotification('orderUpdates')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="Offers & deals"
-          value={Boolean(notifications.offers)}
-          onValueChange={() => toggleNotification('offers')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="Cart reminders"
-          value={Boolean(notifications.cartReminders)}
-          onValueChange={() => toggleNotification('cartReminders')}
-          disabled={isLoading}
-        />
-        <ToggleRow
-          label="Weekly digest"
-          value={Boolean(notifications.weeklyDigest)}
-          onValueChange={() => toggleNotification('weeklyDigest')}
-          disabled={isLoading}
-        />
+        <NotificationSettingsList />
       </ProfileMenuSection>
-
-      <Pressable style={styles.button} onPress={saveNotifications}>
-        <Text style={styles.buttonText}>Save notifications</Text>
-      </Pressable>
 
       <ProfileMenuSection title="Dietary">
         <ToggleRow

@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import { notificationApi } from '@/lib/notification/api';
-import type { AppNotification } from '@/lib/notification/types';
+import type { AppNotification, NotificationPreferences } from '@/lib/notification/types';
 
 export const notificationKeys = {
   all: ['notification'] as const,
@@ -335,12 +335,23 @@ export function useNotificationPreferences(enabled = true) {
   });
 }
 
-/** PUT /preferences */
+/** PUT /preferences — flips the switch instantly, rolls back if the server refuses. */
 export function useUpdateNotificationPreferences() {
   const queryClient = useQueryClient();
+  const key = notificationKeys.preferences();
   return useMutation({
-    mutationFn: (payload: { orders?: boolean; offers?: boolean; whatsapp?: boolean }) =>
+    mutationFn: (payload: Partial<NotificationPreferences>) =>
       notificationApi.updatePreferences(payload),
-    onSettled: () => invalidateNotificationQueries(queryClient),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<NotificationPreferences>(key);
+      if (previous) queryClient.setQueryData(key, { ...previous, ...payload });
+      return { previous };
+    },
+    onError: (_err, _payload, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(key, ctx.previous);
+    },
+    onSuccess: (saved) => queryClient.setQueryData(key, saved),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   });
 }

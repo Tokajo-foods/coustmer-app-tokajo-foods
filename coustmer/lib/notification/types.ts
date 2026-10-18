@@ -50,7 +50,11 @@ export type NotificationDevice = {
 };
 
 export type NotificationPreferences = {
+  /** Master switch — off stops every push to this account (calls still ring). */
+  push: boolean;
   orders: boolean;
   offers: boolean;
+  sms: boolean;
+  email: boolean;
   whatsapp: boolean;
 };
