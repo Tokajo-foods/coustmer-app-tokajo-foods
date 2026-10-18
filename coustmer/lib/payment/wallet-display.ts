@@ -21,7 +21,8 @@ export const walletPalette = {
   dangerSoft: '#FEF2F2',
   ink: '#02060C',
   muted: '#686B78',
-  hairline: '#EEEEF2',
+  hairline: '#E1E2E8',
+  divider: '#E6E7EC',
   canvas: '#F5F6F8',
 } as const;
 

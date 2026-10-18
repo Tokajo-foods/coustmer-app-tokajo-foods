@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     borderColor: walletPalette.hairline,
     overflow: 'hidden',
   },
-  divider: { height: 1, backgroundColor: '#F2F2F5', marginLeft: 16 },
+  divider: { height: 1, backgroundColor: walletPalette.divider, marginLeft: 16 },
   empty: { padding: 18, textAlign: 'center', color: walletPalette.muted, fontSize: 13, lineHeight: 19 },
   loader: { marginVertical: 20 },
 });

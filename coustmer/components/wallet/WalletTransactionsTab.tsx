@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
   rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
-  divider: { height: 1, backgroundColor: '#F2F2F5', marginLeft: 16 },
+  divider: { height: 1, backgroundColor: walletPalette.divider, marginLeft: 16 },
   emptyWrap: {
     marginHorizontal: 16,
     marginTop: 14,
