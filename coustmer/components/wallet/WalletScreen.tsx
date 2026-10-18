@@ -159,7 +159,7 @@ export function WalletScreen() {
 function Header() {
   return (
     <View style={styles.header}>
-      <ScreenHeader title="Wallet" subtitle="Add money, pay faster, track every rupee" backFallback="/profile" gap={14} />
+      <ScreenHeader title="Wallet" subtitle="Add money and track every rupee" backFallback="/profile" gap={14} />
     </View>
   );
 }
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: walletPalette.hairline,
   },
-  list: { paddingBottom: 40, flexGrow: 1 },
+  list: { paddingBottom: 120, flexGrow: 1 },
   banner: { paddingHorizontal: 16, paddingTop: 12 },
   passbookHead: { marginTop: 24, paddingHorizontal: 16, gap: 12 },
   titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },

@@ -9,7 +9,7 @@ export function WalletStatsRow({ overview }: { overview: WalletOverview }) {
   const stats = [
     { key: 'added', label: 'Total added', value: overview.totalAdded },
     { key: 'spent', label: 'Total spent', value: overview.totalSpent },
-    { key: 'received', label: 'Credits & refunds', value: overview.totalReceived + overview.totalRefunded },
+    { key: 'received', label: 'Received', value: overview.totalReceived + overview.totalRefunded },
   ];
   return (
     <View style={styles.row}>
