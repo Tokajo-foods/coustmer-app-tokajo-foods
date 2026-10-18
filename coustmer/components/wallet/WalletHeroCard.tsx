@@ -13,9 +13,9 @@ type Props = {
 };
 
 const PERKS = [
-  { icon: Zap, label: '1-tap checkout' },
-  { icon: InfinityIcon, label: 'Never expires' },
-  { icon: ShieldCheck, label: '100% secure' },
+  { icon: Zap, label: '1-tap pay' },
+  { icon: InfinityIcon, label: 'No expiry' },
+  { icon: ShieldCheck, label: 'Secure' },
 ] as const;
 
 export function WalletHeroCard({ overview, onAddMoney }: Props) {
@@ -23,18 +23,34 @@ export function WalletHeroCard({ overview, onAddMoney }: Props) {
   return (
     <View style={styles.shadow}>
       <LinearGradient
-        colors={['#FB923C', authTheme.brand, authTheme.brandDark]}
+        colors={['#262A35', '#171A22', '#0F1117']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.card}
       >
-        <View style={styles.ring} />
+        <LinearGradient
+          colors={['rgba(249,115,22,0.35)', 'rgba(249,115,22,0)']}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.glow}
+        />
 
-        <View style={styles.brandRow}>
-          <View style={styles.brandIcon}>
-            <Wallet color={authTheme.brandDark} size={14} strokeWidth={2.6} />
+        <View style={styles.topRow}>
+          <View style={styles.brand}>
+            <LinearGradient colors={['#FB923C', authTheme.brandDark]} style={styles.logo}>
+              <Wallet color="#FFFFFF" size={15} strokeWidth={2.5} />
+            </LinearGradient>
+            <View>
+              <Text style={styles.brandText}>Tokajo Wallet</Text>
+              <Text style={styles.brandSub}>Food money · INR</Text>
+            </View>
           </View>
-          <Text style={styles.brandText}>Tokajo Wallet</Text>
+          {overview.isLocked ? (
+            <View style={styles.lockPill}>
+              <Lock color="#FCA5A5" size={11} strokeWidth={2.6} />
+              <Text style={styles.lockPillText}>Locked</Text>
+            </View>
+          ) : null}
         </View>
 
         <Text style={styles.label}>Available balance</Text>
@@ -42,34 +58,34 @@ export function WalletHeroCard({ overview, onAddMoney }: Props) {
           {formatInr(overview.balance)}
         </Text>
 
+        <View style={styles.divider} />
+
         {overview.isLocked ? (
-          <View style={styles.lockedBox}>
-            <Lock color="#FFFFFF" size={14} strokeWidth={2.4} />
-            <Text style={styles.lockedText} numberOfLines={2}>
-              Wallet locked{overview.lockReason ? ` · ${humanize(overview.lockReason)}` : ''}. Contact support.
-            </Text>
-          </View>
+          <Text style={styles.lockedText} numberOfLines={2}>
+            {overview.lockReason ? `${humanize(overview.lockReason)}. ` : ''}Contact support to unlock your wallet.
+          </Text>
         ) : (
-          <SmoothPressable
-            onPress={onAddMoney}
-            disabled={!canTopUp}
-            style={[styles.addBtn, !canTopUp && styles.addBtnDisabled]}
-            accessibilityLabel="Add money to wallet"
-          >
-            <Plus color={authTheme.brandDark} size={18} strokeWidth={2.8} />
-            <Text style={styles.addText}>{canTopUp ? 'Add money' : 'Add money unavailable'}</Text>
-          </SmoothPressable>
+          <View style={styles.bottomRow}>
+            <View style={styles.perks}>
+              {PERKS.map(({ icon: Icon, label }) => (
+                <View key={label} style={styles.perk}>
+                  <Icon color="#FDBA74" size={12} strokeWidth={2.4} />
+                  <Text style={styles.perkText}>{label}</Text>
+                </View>
+              ))}
+            </View>
+            <SmoothPressable
+              onPress={onAddMoney}
+              disabled={!canTopUp}
+              style={[styles.addBtn, !canTopUp && styles.addBtnDisabled]}
+              accessibilityLabel="Add money to wallet"
+            >
+              <Plus color="#FFFFFF" size={16} strokeWidth={3} />
+              <Text style={styles.addText}>Add money</Text>
+            </SmoothPressable>
+          </View>
         )}
       </LinearGradient>
-
-      <View style={styles.perks}>
-        {PERKS.map(({ icon: Icon, label }, index) => (
-          <View key={label} style={[styles.perk, index > 0 && styles.perkDivider]}>
-            <Icon color={authTheme.brandDark} size={13} strokeWidth={2.4} />
-            <Text style={styles.perkText} numberOfLines={1}>{label}</Text>
-          </View>
-        ))}
-      </View>
     </View>
   );
 }
@@ -81,69 +97,47 @@ function humanize(code: string): string {
 
 const styles = StyleSheet.create({
   shadow: {
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#7C2D12',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    borderRadius: 24,
+    shadowColor: '#0F1117',
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
-  card: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 20,
-    overflow: 'hidden',
-  },
-  ring: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 28,
-    borderColor: 'rgba(255,255,255,0.08)',
-    top: -70,
-    right: -60,
-  },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.1 },
-  label: { marginTop: 20, color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600', letterSpacing: 0.3 },
-  balance: { marginTop: 2, color: '#FFFFFF', fontSize: 38, fontWeight: '800', letterSpacing: -1 },
-  addBtn: {
-    marginTop: 16,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+  card: { borderRadius: 24, padding: 20, overflow: 'hidden' },
+  glow: { position: 'absolute', width: 260, height: 260, borderRadius: 130, top: -120, right: -90 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logo: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  brandText: { color: '#FFFFFF', fontSize: 14.5, fontWeight: '700', letterSpacing: 0.1 },
+  brandSub: { marginTop: 1, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
+  lockPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(239,68,68,0.16)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  lockPillText: { color: '#FCA5A5', fontSize: 11, fontWeight: '700' },
+  label: { marginTop: 24, color: 'rgba(255,255,255,0.6)', fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2 },
+  balance: { marginTop: 4, color: '#FFFFFF', fontSize: 36, fontWeight: '700', letterSpacing: -1 },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 18, marginBottom: 14 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  perks: { flex: 1, gap: 6 },
+  perk: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  perkText: { color: 'rgba(255,255,255,0.72)', fontSize: 11.5, fontWeight: '600' },
+  addBtn: {
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: authTheme.brand,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
-  addBtnDisabled: { opacity: 0.6 },
-  addText: { color: authTheme.brandDark, fontSize: 15, fontWeight: '800' },
-  lockedBox: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(127,29,29,0.35)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  lockedText: { flex: 1, color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  perks: { flexDirection: 'row', paddingVertical: 11 },
-  perk: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
-  perkDivider: { borderLeftWidth: 1, borderLeftColor: '#F1F1F4' },
-  perkText: { color: '#3D4152', fontSize: 11.5, fontWeight: '700' },
+  addBtnDisabled: { opacity: 0.45 },
+  addText: { color: '#FFFFFF', fontSize: 14.5, fontWeight: '800' },
+  lockedText: { color: '#FCA5A5', fontSize: 13, fontWeight: '600', lineHeight: 18 },
 });
