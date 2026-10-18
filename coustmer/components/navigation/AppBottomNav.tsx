@@ -233,8 +233,8 @@ const ROW_PADDING = 6;
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 34,
-    right: 34,
+    left: 46,
+    right: 46,
     bottom: 0,
     zIndex: 50,
   },
