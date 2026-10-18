@@ -24,6 +24,7 @@ export const walletPalette = {
   hairline: '#E1E2E8',
   divider: '#E6E7EC',
   canvas: '#F5F6F8',
+  headerTint: '#FFF7F0',
 } as const;
 
 type CategoryVisual = { icon: LucideIcon; color: string; bg: string; label: string };

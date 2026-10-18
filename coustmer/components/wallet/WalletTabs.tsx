@@ -38,7 +38,7 @@ export function WalletTabs({ value, onChange }: { value: WalletTab; onChange: (t
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: walletPalette.headerTint,
     borderBottomWidth: 1,
     borderBottomColor: walletPalette.hairline,
   },

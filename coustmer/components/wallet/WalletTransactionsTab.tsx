@@ -24,6 +24,7 @@ export function WalletTransactionsTab({ totalCount, onOpenTx }: Props) {
       sections={sections}
       keyExtractor={(item) => item.id}
       stickySectionHeadersEnabled={false}
+      style={styles.scroll}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -79,6 +80,7 @@ export function WalletTransactionsTab({ totalCount, onOpenTx }: Props) {
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: walletPalette.canvas },
   list: { paddingBottom: 120, flexGrow: 1 },
   head: { paddingHorizontal: 16, paddingTop: 14, gap: 10 },
   count: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500', marginLeft: 4 },

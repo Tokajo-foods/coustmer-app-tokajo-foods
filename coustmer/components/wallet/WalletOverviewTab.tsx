@@ -27,6 +27,7 @@ export function WalletOverviewTab({ overview, refreshing, onRefresh, onProceed, 
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -73,6 +74,7 @@ export function WalletOverviewTab({ overview, refreshing, onRefresh, onProceed, 
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: walletPalette.canvas },
   content: { paddingBottom: 120 },
   banner: { paddingHorizontal: 16, paddingTop: 12 },
   paused: { marginHorizontal: 20, marginTop: 14, color: walletPalette.amber, fontSize: 13, fontWeight: '500' },

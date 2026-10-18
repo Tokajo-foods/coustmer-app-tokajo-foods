@@ -120,9 +120,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipActive: { borderColor: authTheme.brand, backgroundColor: authTheme.brandSoft },
+  chipActive: { borderColor: authTheme.brand, backgroundColor: authTheme.brand },
   chipText: { color: walletPalette.ink, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: authTheme.brandDark },
+  chipTextActive: { color: '#FFFFFF', fontWeight: '700' },
   cta: {
     marginTop: 16,
     height: 48,
