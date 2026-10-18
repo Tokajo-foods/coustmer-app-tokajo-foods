@@ -31,8 +31,8 @@ export function GlassSurface({ radius, style, children }: Props) {
       <View style={[styles.clip, { borderRadius: radius }]}>
         {NativeBlur ? (
           <NativeBlur
-            intensity={Platform.OS === 'ios' ? 70 : 40}
-            tint={Platform.OS === 'ios' ? 'systemChromeMaterialLight' : 'light'}
+            intensity={Platform.OS === 'ios' ? 55 : 32}
+            tint={Platform.OS === 'ios' ? 'systemUltraThinMaterialLight' : 'light'}
             experimentalBlurMethod="dimezisBlurView"
             style={StyleSheet.absoluteFill}
           />
@@ -41,14 +41,15 @@ export function GlassSurface({ radius, style, children }: Props) {
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: hasBlur ? 'rgba(255,255,255,0.42)' : 'rgba(255,255,255,0.9)' },
+            { backgroundColor: hasBlur ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.62)' },
           ]}
         />
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(255,255,255,0.75)', 'rgba(255,255,255,0)']}
+          colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.18)']}
+          locations={[0, 0.55, 1]}
           start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.6 }}
+          end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         <View
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   rim: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.85)',
-    borderBottomColor: 'rgba(17,24,39,0.08)',
+    borderColor: 'rgba(255,255,255,0.7)',
+    borderBottomColor: 'rgba(255,255,255,0.25)',
   },
 });
