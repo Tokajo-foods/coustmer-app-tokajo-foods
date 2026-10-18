@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
+import { restaurantClosedLabel } from '@/lib/restaurant/card-display';
 import type { SearchDish, SearchRestaurant } from '@/lib/search/types';
 
 import { searchColors } from './search-styles';
@@ -19,6 +20,7 @@ export const RestaurantRow = memo(function RestaurantRow({
   onPress: () => void;
 }) {
   const cover = restaurant.imageUrl || restaurant.coverUrl;
+  const status = restaurantClosedLabel(restaurant);
   return (
     <Pressable style={styles.resultCard} onPress={onPress} android_ripple={{ color: '#F1F5F9' }}>
       {cover ? (
@@ -43,6 +45,11 @@ export const RestaurantRow = memo(function RestaurantRow({
           {restaurant.deliveryTime ? <Text style={styles.resultMeta}>{restaurant.deliveryTime}</Text> : null}
           {restaurant.priceForTwo ? <Text style={styles.resultMeta}>{formatInr(restaurant.priceForTwo)} for two</Text> : null}
         </View>
+        {status ? (
+          <Text style={styles.statusText} numberOfLines={2}>
+            {status}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -103,6 +110,7 @@ const styles = StyleSheet.create({
   resultInfo: { flex: 1, justifyContent: 'center', gap: 3 },
   resultName: { fontFamily: fonts.displayBold, fontSize: 15, color: INK },
   resultMeta: { fontFamily: fonts.ui, fontSize: 12, color: MUTED },
+  statusText: { fontFamily: fonts.uiSemi, fontSize: 12, color: '#9A3412', marginTop: 2 },
   resultMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   ratingChip: {
     flexDirection: 'row',

@@ -255,4 +255,10 @@ export const styles = StyleSheet.create({
     fontSize: 10.5,
     color: GREEN,
   },
+  statusLine: {
+    marginTop: 8,
+    fontFamily: fonts.uiBold,
+    fontSize: 13,
+    color: '#9A3412',
+  },
 });

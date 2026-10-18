@@ -253,6 +253,19 @@ export function mapRestaurant(data: Record<string, unknown>): Restaurant {
       typeof data.isOnline === 'boolean' ? data.isOnline : undefined,
     isOpenNow:
       typeof data.isOpenNow === 'boolean' ? data.isOpenNow : undefined,
+    kitchenStatus:
+      data.kitchenStatus === 'online' ||
+      data.kitchenStatus === 'paused' ||
+      data.kitchenStatus === 'offline'
+        ? data.kitchenStatus
+        : undefined,
+    pausedAt: typeof data.pausedAt === 'string' ? data.pausedAt : undefined,
+    pausedUntil:
+      typeof data.pausedUntil === 'string' ? data.pausedUntil : undefined,
+    availabilityLabel:
+      typeof data.availabilityLabel === 'string' && data.availabilityLabel.trim()
+        ? data.availabilityLabel.trim()
+        : undefined,
     nextOpenAt: (data.nextOpenAt as string) || undefined,
     closedReason:
       (data.closedReason as string) ||

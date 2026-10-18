@@ -52,6 +52,7 @@ import {
   formatNextOpenAt,
   resolveRestaurantDistanceKm,
   restaurantDetailEtaLabel,
+  restaurantDutyLabel,
   restaurantOfferBadges,
   restaurantRatingCount,
   restaurantStars,
@@ -448,10 +449,11 @@ export function RestaurantDetailScreen() {
     r.description ||
     `${restaurantName} serves ${(cuisineLine ?? 'great food').toLowerCase()}. Order fresh favourites with live tracking.`;
   const offerBadges = restaurantOfferBadges(r);
+  const dutyLabel = restaurantDutyLabel(r);
 
-  // Prefer live timings API; never assume Open when status is unknown.
-  const timingsOpen = timings.data?.isOpenNow;
-  const dtoOpen = r.isOpenNow ?? r.isOpen ?? r.isOnline;
+  // Hours API ignores pause/offline. Duty on the restaurant card wins.
+  const timingsOpen = dutyLabel ? false : timings.data?.isOpenNow;
+  const dtoOpen = dutyLabel ? false : r.isOpenNow ?? r.isOpen ?? r.isOnline;
   const openNow =
     typeof timingsOpen === 'boolean'
       ? timingsOpen
@@ -566,6 +568,11 @@ export function RestaurantDetailScreen() {
                     {offerBadges.join(' · ')}
                   </Text>
                 ) : null}
+                {dutyLabel ? (
+                  <Text style={styles.dutyLine} numberOfLines={2}>
+                    {dutyLabel}
+                  </Text>
+                ) : null}
               </View>
             </View>
 
@@ -608,7 +615,13 @@ export function RestaurantDetailScreen() {
               ) : kitchenClosed ? (
                 <View style={[styles.statusPill, styles.closedPill]}>
                   <Text style={styles.closedText}>
-                    {nextOpenLabel ? `Opens ${nextOpenLabel}` : 'Closed'}
+                    {dutyLabel
+                      ? dutyLabel.startsWith('On a break')
+                        ? 'On a break'
+                        : 'Offline'
+                      : nextOpenLabel
+                        ? `Opens ${nextOpenLabel}`
+                        : 'Closed'}
                   </Text>
                 </View>
               ) : kitchenOpen ? (
@@ -929,6 +942,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiBold,
     fontSize: 11,
     color: '#FFF',
+  },
+  dutyLine: {
+    marginTop: 4,
+    fontFamily: fonts.uiBold,
+    fontSize: 12,
+    color: '#FDE68A',
   },
   heroFallback: {
     backgroundColor: '#1E293B',

@@ -45,6 +45,12 @@ export type Restaurant = {
   hygieneScore?: number;
   isOnline?: boolean;
   isOpenNow?: boolean;
+  /** `online` while the kitchen toggle is on, even outside hours. */
+  kitchenStatus?: 'online' | 'paused' | 'offline';
+  pausedAt?: string | null;
+  pausedUntil?: string | null;
+  /** Break window or offline copy from the API. */
+  availabilityLabel?: string | null;
   nextOpenAt?: string;
   closedReason?: string;
   hoursToday?: string;

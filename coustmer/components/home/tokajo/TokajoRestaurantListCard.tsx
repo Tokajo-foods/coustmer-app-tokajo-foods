@@ -3,9 +3,10 @@ import { Clock, Heart, MapPin, Star } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { RestaurantClosedOverlay } from '@/components/restaurant/RestaurantCardOverlays';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { styles } from '@/components/home/tokajo/TokajoRestaurantListCard.styles';
-import { restaurantEtaLabel } from '@/lib/restaurant/card-display';
+import { restaurantClosedLabel, restaurantEtaLabel } from '@/lib/restaurant/card-display';
 import type { Restaurant } from '@/lib/restaurant/types';
 import { formatInr } from '@/lib/format/money';
 
@@ -55,6 +56,7 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
   const distance = formatDistance(r);
   const offer =
     r.offer || (Array.isArray(r.offerBadges) ? r.offerBadges[0] : undefined);
+  const statusLabel = restaurantClosedLabel(r);
 
   return (
     <View>
@@ -129,6 +131,8 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
           </View>
         ) : null}
 
+        {statusLabel ? <RestaurantClosedOverlay restaurant={r} /> : null}
+
         {eta ? (
           <View style={styles.etaBadge} pointerEvents="none">
             <Clock color={ORANGE} size={12} strokeWidth={2.8} />
@@ -193,6 +197,11 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
             </View>
           ) : null}
         </View>
+        {statusLabel ? (
+          <Text style={styles.statusLine} numberOfLines={2}>
+            {statusLabel}
+          </Text>
+        ) : null}
       </View>
       </Pressable>
     </View>

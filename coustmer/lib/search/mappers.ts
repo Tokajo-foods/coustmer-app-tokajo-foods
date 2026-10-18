@@ -45,6 +45,19 @@ export function mapSearchRestaurant(raw: Raw): SearchRestaurant {
     costForTwo: num(raw.costForTwo),
     distance: num(raw.distanceKm) ?? num(raw.distance),
     isOpen: bool(raw.isOpenNow) ?? resolveIsOpen(raw),
+    isOnline: bool(raw.isOnline),
+    isOpenNow: bool(raw.isOpenNow),
+    kitchenStatus:
+      raw.kitchenStatus === 'online' ||
+      raw.kitchenStatus === 'paused' ||
+      raw.kitchenStatus === 'offline'
+        ? raw.kitchenStatus
+        : undefined,
+    pausedAt: str(raw.pausedAt) ?? null,
+    pausedUntil: str(raw.pausedUntil) ?? null,
+    availabilityLabel: str(raw.availabilityLabel) ?? null,
+    nextOpenAt: str(raw.nextOpenAt),
+    closedReason: str(raw.closedReason),
     address,
     city,
     isPureVeg: bool(raw.isPureVeg) ?? bool(settings.isPureVeg),

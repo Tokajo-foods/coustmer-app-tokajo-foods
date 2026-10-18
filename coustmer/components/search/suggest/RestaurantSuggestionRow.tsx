@@ -13,8 +13,20 @@ export const RestaurantSuggestionRow = memo(function RestaurantSuggestionRow({ i
   query: string;
   onPress: (item: SearchSuggestion) => void;
 }) {
-  const closed = item.isOpen === false || (item.subtitle?.endsWith('Closed now') ?? false);
-  const cuisines = item.subtitle?.replace(/\s*·\s*Closed now$/, '') || 'Restaurant';
+  const parts = (item.subtitle ?? '').split(' · ');
+  const trailing = parts.length > 1 ? parts[parts.length - 1] : '';
+  const knownStatus =
+    trailing === 'Closed now' ||
+    trailing === 'Restaurant is offline' ||
+    trailing.startsWith('On a break');
+  const status = knownStatus
+    ? trailing
+    : item.isOpen === false
+      ? 'Closed now'
+      : null;
+  const cuisines = knownStatus
+    ? parts.slice(0, -1).join(' · ') || 'Restaurant'
+    : item.subtitle || 'Restaurant';
   return (
     <Pressable
       style={s.row}
@@ -33,7 +45,7 @@ export const RestaurantSuggestionRow = memo(function RestaurantSuggestionRow({ i
         <HighlightedText text={item.text} query={query} style={s.name} highlightStyle={s.hit} />
         <Text style={s.meta} numberOfLines={1}>
           {cuisines}
-          {closed ? <Text style={s.closed}>{'  ·  Closed now'}</Text> : null}
+          {status ? <Text style={s.closed}>{`  ·  ${status}`}</Text> : null}
         </Text>
       </View>
       {item.rating ? (

@@ -27,6 +27,14 @@ export type SearchRestaurant = {
   isPureVeg?: boolean;
   lat?: number;
   lng?: number;
+  isOnline?: boolean;
+  isOpenNow?: boolean;
+  kitchenStatus?: 'online' | 'paused' | 'offline';
+  pausedAt?: string | null;
+  pausedUntil?: string | null;
+  availabilityLabel?: string | null;
+  nextOpenAt?: string;
+  closedReason?: string;
   /** Why it matched: its name, a cuisine tag, or a dish on its menu. */
   matchReason?: SearchMatchReason;
 };

@@ -104,14 +104,53 @@ export function formatNextOpenAt(iso?: string | null): string | null {
   });
 }
 
+/** IST clock for pause windows, e.g. "4:10 pm". */
+function formatIstClock(iso?: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+function pauseStillActive(r: Restaurant): boolean {
+  if (r.kitchenStatus === 'paused') return true;
+  if (!r.pausedUntil) return false;
+  const until = new Date(r.pausedUntil).getTime();
+  return Number.isFinite(until) && until > Date.now();
+}
+
+/** Pause window or offline. Null when the kitchen toggle is still online. */
+export function restaurantDutyLabel(r: Restaurant): string | null {
+  if (pauseStillActive(r)) {
+    const from = formatIstClock(r.pausedAt);
+    const until = formatIstClock(r.pausedUntil);
+    if (from && until) return `On a break from ${from} to ${until}`;
+    if (until) return `On a break until ${until}`;
+    return r.availabilityLabel?.trim() || 'On a break';
+  }
+  if (r.kitchenStatus === 'offline') return 'Restaurant is offline';
+  if (r.availabilityLabel === 'Restaurant is offline') return r.availabilityLabel;
+  if (r.kitchenStatus === 'online') return null;
+  if (r.isOnline === false) return 'Restaurant is offline';
+  return null;
+}
+
 export function restaurantIsClosed(r: Restaurant): boolean {
+  if (restaurantDutyLabel(r)) return true;
   return (
     r.isOpen === false || r.isOpenNow === false || r.isOnline === false
   );
 }
 
-/** Closed card copy: Opens at … → closedReason → generic. */
+/** Closed card copy: break → offline → Opens at … → closedReason → generic. */
 export function restaurantClosedLabel(r: Restaurant): string | null {
+  const duty = restaurantDutyLabel(r);
+  if (duty) return duty;
   if (!restaurantIsClosed(r)) return null;
   const next = formatNextOpenAt(r.nextOpenAt);
   if (next) return `Opens ${next}`;
