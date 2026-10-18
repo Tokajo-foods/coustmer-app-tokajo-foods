@@ -102,6 +102,6 @@ function Header() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: walletPalette.headerTint },
-  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: walletPalette.headerTint },
+  safe: { flex: 1, backgroundColor: '#FFFFFF' },
+  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: '#FFFFFF' },
 });
