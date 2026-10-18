@@ -149,7 +149,9 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
                 <Text style={styles.ratingCount}>({count})</Text>
               ) : null}
             </View>
-          ) : null}
+          ) : (
+            <Text style={styles.noRatings}>No ratings</Text>
+          )}
         </View>
 
         {cuisines ? (

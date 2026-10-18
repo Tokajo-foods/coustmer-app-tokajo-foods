@@ -2,57 +2,43 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from '@tanstack/react-query';
 
+import { orderKeys } from '@/lib/order/hooks';
+import { restaurantKeys } from '@/lib/restaurant/hooks';
 import { reviewApi } from '@/lib/review/api';
 import type {
   ReportReviewPayload,
-  SubmitDishReviewsPayload,
   SubmitOrderReviewPayload,
   SubmitReviewPayload,
 } from '@/lib/review/types';
 
+type ListParams = { page?: number; limit?: number; withComment?: boolean };
+
 export const reviewKeys = {
   all: ['review'] as const,
-  health: () => [...reviewKeys.all, 'health'] as const,
-  ready: () => [...reviewKeys.all, 'ready'] as const,
-  restaurantReviews: (
-    restaurantId: string,
-    params?: { page?: number; limit?: number }
-  ) =>
-    [...reviewKeys.all, 'restaurant', restaurantId, 'list', params ?? {}] as const,
+  restaurant: (restaurantId: string) => [...reviewKeys.all, 'restaurant', restaurantId] as const,
+  restaurantReviews: (restaurantId: string, params?: ListParams) =>
+    [...reviewKeys.restaurant(restaurantId), 'list', params ?? {}] as const,
   restaurantStats: (restaurantId: string) =>
-    [...reviewKeys.all, 'restaurant', restaurantId, 'stats'] as const,
-  orderReview: (orderId: string) =>
-    [...reviewKeys.all, 'order', orderId] as const,
+    [...reviewKeys.restaurant(restaurantId), 'stats'] as const,
+  orderReview: (orderId: string) => [...reviewKeys.all, 'order', orderId] as const,
 };
 
-/** GET /health */
-export function useReviewServiceHealth(enabled = false) {
-  return useQuery({
-    queryKey: reviewKeys.health(),
-    queryFn: reviewApi.health,
-    enabled,
-    staleTime: 60_000,
-    retry: 1,
-  });
-}
-
-/** GET /health/ready */
-export function useReviewServiceReady(enabled = false) {
-  return useQuery({
-    queryKey: reviewKeys.ready(),
-    queryFn: reviewApi.ready,
-    enabled,
-    staleTime: 60_000,
-    retry: 1,
-  });
+/** A rating changes the restaurant's average everywhere: reviews, detail page, home and search cards. */
+function refreshAfterRating(queryClient: QueryClient, restaurantId?: string, orderId?: string) {
+  if (orderId) void queryClient.invalidateQueries({ queryKey: reviewKeys.orderReview(orderId) });
+  if (restaurantId) void queryClient.invalidateQueries({ queryKey: reviewKeys.restaurant(restaurantId) });
+  void queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
+  void queryClient.invalidateQueries({ queryKey: ['customer'] });
+  void queryClient.invalidateQueries({ queryKey: orderKeys.all });
 }
 
 /** GET /restaurants/:restaurantId/reviews */
 export function useRestaurantReviews(
   restaurantId: string,
-  params?: { page?: number; limit?: number },
+  params?: ListParams,
   options?: { enabled?: boolean }
 ) {
   return useQuery({
@@ -78,7 +64,7 @@ export function useRestaurantReviewStats(
   });
 }
 
-/** GET /orders/:orderId/review */
+/** GET /orders/:orderId/review — null until the customer rates. */
 export function useOrderReview(
   orderId: string,
   options?: { enabled?: boolean }
@@ -92,24 +78,12 @@ export function useOrderReview(
   });
 }
 
-/** POST /restaurants/:restaurantId/reviews */
-export function useSubmitRestaurantReview(restaurantId: string) {
+/** POST /orders/:orderId/reviews */
+export function useSubmitOrderReview(orderId: string) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (payload: SubmitReviewPayload) =>
-      reviewApi.submitRestaurantReview(restaurantId, payload),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [...reviewKeys.all, 'restaurant', restaurantId],
-      });
-      if (variables.orderId) {
-        queryClient.invalidateQueries({
-          queryKey: reviewKeys.orderReview(variables.orderId),
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
-    },
+    mutationFn: (payload: SubmitOrderReviewPayload) => reviewApi.submitOrderReview(orderId, payload),
+    onSuccess: (_data, variables) => refreshAfterRating(queryClient, variables.restaurantId, orderId),
   });
 }
 
@@ -119,17 +93,7 @@ export function useUpdateRestaurantReview(restaurantId: string, reviewId: string
   return useMutation({
     mutationFn: (payload: SubmitReviewPayload) =>
       reviewApi.updateRestaurantReview(restaurantId, reviewId, payload),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [...reviewKeys.all, 'restaurant', restaurantId],
-      });
-      if (variables.orderId) {
-        queryClient.invalidateQueries({
-          queryKey: reviewKeys.orderReview(variables.orderId),
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
-    },
+    onSuccess: (_data, variables) => refreshAfterRating(queryClient, restaurantId, variables.orderId),
   });
 }
 
@@ -138,12 +102,7 @@ export function useDeleteRestaurantReview(restaurantId: string, reviewId: string
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => reviewApi.deleteRestaurantReview(restaurantId, reviewId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...reviewKeys.all, 'restaurant', restaurantId],
-      });
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
-    },
+    onSuccess: () => refreshAfterRating(queryClient, restaurantId),
   });
 }
 
@@ -152,30 +111,5 @@ export function useReportRestaurantReview(restaurantId: string, reviewId: string
   return useMutation({
     mutationFn: (payload: ReportReviewPayload) =>
       reviewApi.reportRestaurantReview(restaurantId, reviewId, payload),
-  });
-}
-
-/** POST /orders/:orderId/reviews */
-export function useSubmitOrderReview(orderId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: SubmitOrderReviewPayload) =>
-      reviewApi.submitOrderReview(orderId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewKeys.orderReview(orderId) });
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
-    },
-  });
-}
-
-/** POST /orders/:orderId/reviews/dishes */
-export function useSubmitDishReviews(orderId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: SubmitDishReviewsPayload) =>
-      reviewApi.submitDishReviews(orderId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewKeys.orderReview(orderId) });
-    },
   });
 }

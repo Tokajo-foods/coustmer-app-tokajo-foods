@@ -7,6 +7,7 @@ import { LocationEnablePrompt } from '@/components/location/LocationEnablePrompt
 import { ReplaceCartModal } from '@/components/order/ReplaceCartModal';
 import { RestaurantShareLinkHandler } from '@/components/restaurant/RestaurantShareLinkHandler';
 import { RestaurantNotServiceableModal } from '@/components/restaurant/RestaurantNotServiceableModal';
+import { RatePromptHost } from '@/components/review/prompt/RatePromptHost';
 import { authTheme } from '@/constants/auth-theme';
 import { useDeliveryLocationInit } from '@/lib/location/use-delivery-location-init';
 import {
@@ -53,6 +54,7 @@ export default function AppLayout() {
       <RestaurantNotServiceableModal />
       <ReplaceCartModal />
       <LocationEnablePrompt />
+      <RatePromptHost />
     </View>
   );
 }

@@ -750,51 +750,6 @@ export function RestaurantDetailScreen() {
 
         {tab === 'Reviews' ? (
           <View>
-            {ratingsHistogram.data && (ratingsHistogram.data.totalRatings ?? 0) > 0 && (
-              <View style={styles.histogramWrap}>
-                <Text style={styles.histogramTitle}>Ratings breakdown</Text>
-                <View style={styles.histogramScoreRow}>
-                  <Text style={styles.histogramScore}>
-                    {typeof ratingsHistogram.data.avgRating === 'number'
-                      ? ratingsHistogram.data.avgRating.toFixed(1)
-                      : '—'}
-                  </Text>
-                  <View>
-                    <View style={styles.histogramStarRow}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          size={14}
-                          color="#F59E0B"
-                          fill={
-                            s <= Math.round(ratingsHistogram.data?.avgRating ?? 0)
-                              ? '#F59E0B'
-                              : 'transparent'
-                          }
-                        />
-                      ))}
-                    </View>
-                    <Text style={styles.histogramTotal}>
-                      {ratingsHistogram.data.totalRatings} ratings
-                    </Text>
-                  </View>
-                </View>
-                {([5, 4, 3, 2, 1] as const).map((star) => {
-                  const count = ratingsHistogram.data?.breakdown?.[star] ?? 0;
-                  const total = ratingsHistogram.data?.totalRatings ?? 0;
-                  const pct = total > 0 ? (count / total) * 100 : 0;
-                  return (
-                    <View key={star} style={styles.histogramRow}>
-                      <Text style={styles.histogramStar}>{star}★</Text>
-                      <View style={styles.histogramBarBg}>
-                        <View style={[styles.histogramBar, { width: `${pct}%` as `${number}%` }]} />
-                      </View>
-                      <Text style={styles.histogramCount}>{count}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
             <RestaurantReviewsPanel restaurantId={id} />
           </View>
         ) : null}

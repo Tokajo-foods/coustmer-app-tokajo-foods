@@ -53,8 +53,12 @@ export type RatingDistribution = {
 };
 
 export type ReviewStats = {
+  /** 0–5, one decimal. 0 means nobody has rated yet. */
   average: number;
+  /** Every star rating, with or without text. */
   total: number;
+  /** Ratings that came with written feedback. */
+  writtenReviews: number;
   distribution: RatingDistribution;
 };
 
@@ -87,6 +91,3 @@ export type SubmitOrderReviewPayload = {
   dishes?: { itemId: string; rating: number }[];
 };
 
-export type SubmitDishReviewsPayload = {
-  dishes: { itemId: string; rating: number }[];
-};

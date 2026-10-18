@@ -1,481 +1,113 @@
+import { MessageSquareText, Star } from 'lucide-react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+
 import { Pressable } from '@/components/common/Pressable';
-import { Image } from 'expo-image';
-import { MessageSquareQuote, Star } from 'lucide-react-native';
-import { ActivityIndicator,
-  
-  StyleSheet,
-  Text,
-  View } from 'react-native';
+import { fonts } from '@/constants/typography';
+import { useRestaurantReviewStats, useRestaurantReviews } from '@/lib/review/hooks';
 
-import { StarRatingInput } from '@/components/review/StarRatingInput';
-import { authTheme } from '@/constants/auth-theme';
-import { useRestaurantRatings } from '@/lib/restaurant/hooks';
-import {
-  useReviewServiceHealth,
-  useReviewServiceReady,
-  useRestaurantReviewStats,
-  useRestaurantReviews,
-} from '@/lib/review/hooks';
-import type { RestaurantReview } from '@/lib/review/types';
+import { RatingSummaryCard } from './panel/RatingSummaryCard';
+import { ReviewCard } from './panel/ReviewCard';
 
-type Props = {
-  restaurantId: string;
-};
+const REVIEW_LIMIT = 20;
 
-function formatDate(iso?: string) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function ReviewCard({ review }: { review: RestaurantReview }) {
+function Message({ icon, title, body, onRetry }: {
+  icon: 'empty' | 'error';
+  title: string;
+  body: string;
+  onRetry?: () => void;
+}) {
+  const Icon = icon === 'empty' ? Star : MessageSquareText;
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {(review.userName ?? 'G').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.userName} numberOfLines={1}>
-            {review.userName?.trim() || 'Guest'}
-          </Text>
-          <Text style={styles.date}>{formatDate(review.createdAt)}</Text>
-        </View>
-        <View style={styles.ratingChip}>
-          <Star color="#FFFFFF" fill="#FFFFFF" size={11} />
-          <Text style={styles.ratingChipText}>
-            {review.rating.toFixed(1)}
-          </Text>
-        </View>
-      </View>
-      {review.title ? <Text style={styles.title}>{review.title}</Text> : null}
-      {review.comment ? (
-        <Text style={styles.comment}>{review.comment}</Text>
-      ) : null}
-      {review.photos?.length ? (
-        <View style={styles.photoRow}>
-          {review.photos.slice(0, 3).map((uri, idx) => (
-            <Image
-              key={`${uri}-${idx}`}
-              source={{ uri }}
-              style={styles.photoThumb}
-              contentFit="cover"
-            />
-          ))}
-        </View>
-      ) : null}
-      {review.reply?.text ? (
-        <View style={styles.replyBox}>
-          <Text style={styles.replyLabel}>
-            {review.reply.repliedBy?.trim() || 'Restaurant'} replied
-          </Text>
-          <Text style={styles.replyText}>{review.reply.text}</Text>
-          {review.reply.repliedAt ? (
-            <Text style={styles.replyDate}>
-              {formatDate(review.reply.repliedAt)}
-            </Text>
-          ) : null}
-        </View>
+    <View style={styles.center}>
+      <Icon color="#D4D4D8" size={36} strokeWidth={1.6} />
+      <Text style={styles.centerTitle}>{title}</Text>
+      <Text style={styles.centerBody}>{body}</Text>
+      {onRetry ? (
+        <Pressable style={styles.retry} onPress={onRetry}>
+          <Text style={styles.retryText}>Try again</Text>
+        </Pressable>
       ) : null}
     </View>
   );
 }
 
-export function RestaurantReviewsPanel({ restaurantId }: Props) {
-  const health = useReviewServiceHealth(Boolean(restaurantId));
-  const ready = useReviewServiceReady(Boolean(restaurantId));
-  const histogram = useRestaurantRatings(restaurantId);
+/** Restaurant page "Reviews" tab: rating summary + star distribution + written reviews. */
+export function RestaurantReviewsPanel({ restaurantId }: { restaurantId: string }) {
   const stats = useRestaurantReviewStats(restaurantId);
-  const reviews = useRestaurantReviews(restaurantId, { page: 1, limit: 20 });
+  const reviews = useRestaurantReviews(restaurantId, { page: 1, limit: REVIEW_LIMIT, withComment: true });
 
-  const avg =
-    histogram.data && histogram.data.avgRating > 0
-      ? histogram.data.avgRating
-      : stats.data?.average ?? 0;
-  const total =
-    histogram.data && histogram.data.totalRatings > 0
-      ? histogram.data.totalRatings
-      : stats.data?.total ?? reviews.data?.reviews.length ?? 0;
-  const distribution = histogram.data?.breakdown ?? stats.data?.distribution;
-  const maxDist = distribution
-    ? Math.max(1, ...Object.values(distribution))
-    : 1;
-
-  if (histogram.isLoading && stats.isLoading && reviews.isLoading) {
+  if (stats.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={authTheme.brand} />
-        <Text style={styles.muted}>Loading reviews…</Text>
+        <ActivityIndicator color="#F97316" />
       </View>
     );
   }
 
-  if (stats.isError && reviews.isError) {
+  if (stats.isError || !stats.data) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorTitle}>Couldn&apos;t load reviews</Text>
-        <Text style={styles.muted}>
-          {stats.error instanceof Error
-            ? stats.error.message
-            : 'Please try again'}
-        </Text>
-        <Pressable
-          style={styles.retry}
-          onPress={() => {
-            histogram.refetch();
-            stats.refetch();
-            reviews.refetch();
-          }}
-        >
-          <Text style={styles.retryText}>Retry</Text>
-        </Pressable>
-      </View>
+      <Message
+        icon="error"
+        title="Couldn't load ratings"
+        body={stats.error instanceof Error ? stats.error.message : 'Please try again.'}
+        onRetry={() => {
+          void stats.refetch();
+          void reviews.refetch();
+        }}
+      />
+    );
+  }
+
+  if (stats.data.total === 0) {
+    return (
+      <Message
+        icon="empty"
+        title="No ratings for this restaurant yet"
+        body="Order from here and be the first to rate it."
+      />
     );
   }
 
   const list = reviews.data?.reviews ?? [];
+  const written = stats.data.writtenReviews;
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.serviceStatusRow}>
-        <Text style={styles.serviceStatusLabel}>Review service</Text>
-        <View
-          style={[
-            styles.serviceStatusPill,
-            health.data && ready.data
-              ? styles.serviceStatusPillUp
-              : styles.serviceStatusPillDown,
-          ]}
-        >
-          <Text
-            style={[
-              styles.serviceStatusPillText,
-              !(health.data && ready.data) && { color: '#991B1B' },
-            ]}
-          >
-            {health.isLoading || ready.isLoading
-              ? 'Checking...'
-              : health.data && ready.data
-                ? 'LIVE'
-                : 'DEGRADED'}
-          </Text>
-        </View>
-      </View>
-      {ready.data === false ? (
-        <View style={styles.readyWarn}>
-          <Text style={styles.readyWarnText}>
-            Reviews are syncing right now. You may see limited data.
-          </Text>
-        </View>
-      ) : null}
-      <View style={styles.statsCard}>
-        <View style={styles.avgBlock}>
-          <Text style={styles.avgValue}>
-            {avg > 0 ? avg.toFixed(1) : '-'}
-          </Text>
-          <StarRatingInput value={avg} readonly size={16} />
-          <Text style={styles.avgCount}>
-            {total} review{total === 1 ? '' : 's'}
-          </Text>
-        </View>
+      <RatingSummaryCard stats={stats.data} />
 
-        <View style={styles.bars}>
-          {([5, 4, 3, 2, 1] as const).map((star) => {
-            const count = distribution?.[star] ?? 0;
-            const ratio = Math.max(0, Math.min(1, count / maxDist));
-            return (
-              <View key={star} style={styles.barRow}>
-                <Text style={styles.barLabel}>{star}</Text>
-                <View style={styles.barTrack}>
-                  <View
-                    style={[styles.barFill, { flex: ratio || 0.0001 }]}
-                  />
-                  <View style={{ flex: Math.max(0.0001, 1 - ratio) }} />
-                </View>
-                <Text style={styles.barCount}>{count}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </View>
+      <Text style={styles.listTitle}>
+        Reviews{written ? <Text style={styles.listCount}>{`  ${written.toLocaleString('en-IN')}`}</Text> : null}
+      </Text>
 
       {reviews.isLoading ? (
-        <ActivityIndicator color={authTheme.brand} style={{ marginTop: 16 }} />
+        <ActivityIndicator color="#F97316" style={styles.listSpinner} />
+      ) : reviews.isError ? (
+        <Message
+          icon="error"
+          title="Couldn't load reviews"
+          body={reviews.error instanceof Error ? reviews.error.message : 'Please try again.'}
+          onRetry={() => void reviews.refetch()}
+        />
       ) : list.length === 0 ? (
-        <View style={styles.empty}>
-          <MessageSquareQuote color={authTheme.textDim} size={36} />
-          <Text style={styles.emptyTitle}>No reviews yet</Text>
-          <Text style={styles.muted}>
-            Be the first to rate this restaurant after your order.
-          </Text>
-        </View>
+        <Text style={styles.noWritten}>
+          People have rated this restaurant but nobody has written a review yet.
+        </Text>
       ) : (
-        <View style={styles.list}>
-          {list.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </View>
+        list.map((review) => <ReviewCard key={review.id} review={review} />)
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  serviceStatusRow: {
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  serviceStatusLabel: {
-    color: authTheme.textDim,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  serviceStatusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  serviceStatusPillUp: {
-    backgroundColor: '#DCFCE7',
-  },
-  serviceStatusPillDown: {
-    backgroundColor: '#FEE2E2',
-  },
-  serviceStatusPillText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#14532D',
-  },
-  readyWarn: {
-    marginBottom: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    backgroundColor: '#FFFBEB',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  readyWarnText: {
-    color: '#92400E',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-    gap: 8,
-    paddingHorizontal: 24,
-  },
-  muted: {
-    color: authTheme.textMuted,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  errorTitle: {
-    color: authTheme.error,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  retry: {
-    marginTop: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: authTheme.brand,
-  },
-  retryText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  statsCard: {
-    flexDirection: 'row',
-    gap: 16,
-    backgroundColor: authTheme.card,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: authTheme.cardBorder,
-    padding: 16,
-  },
-  avgBlock: {
-    width: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  avgValue: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: authTheme.text,
-  },
-  avgCount: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: authTheme.textMuted,
-    textAlign: 'center',
-  },
-  bars: {
-    flex: 1,
-    gap: 6,
-    justifyContent: 'center',
-  },
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  barLabel: {
-    width: 12,
-    fontSize: 11,
-    fontWeight: '700',
-    color: authTheme.textMuted,
-  },
-  barTrack: {
-    flex: 1,
-    height: 7,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
-    overflow: 'hidden',
-    flexDirection: 'row',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: '#F59E0B',
-  },
-  barCount: {
-    width: 22,
-    fontSize: 10,
-    fontWeight: '600',
-    color: authTheme.textDim,
-    textAlign: 'right',
-  },
-  list: {
-    marginTop: 14,
-  },
-  card: {
-    backgroundColor: authTheme.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: authTheme.cardBorder,
-    padding: 14,
-    marginBottom: 10,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: authTheme.brandSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: authTheme.brand,
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: authTheme.text,
-  },
-  date: {
-    marginTop: 1,
-    fontSize: 11,
-    color: authTheme.textDim,
-    fontWeight: '600',
-  },
-  ratingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#16A34A',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  ratingChipText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 11,
-  },
-  title: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: '700',
-    color: authTheme.text,
-  },
-  comment: {
-    marginTop: 6,
-    fontSize: 13,
-    lineHeight: 19,
-    color: authTheme.textMuted,
-  },
-  photoRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  photoThumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
-    backgroundColor: '#F1F5F9',
-  },
-  replyBox: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    borderLeftWidth: 3,
-    borderLeftColor: authTheme.brand,
-  },
-  replyLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: authTheme.text,
-    marginBottom: 4,
-  },
-  replyText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: authTheme.textMuted,
-  },
-  replyDate: {
-    marginTop: 6,
-    fontSize: 11,
-    fontWeight: '600',
-    color: authTheme.textDim,
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: authTheme.text,
-  },
+  wrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 },
+  listTitle: { fontFamily: fonts.displayBold, fontSize: 17, color: '#18181B', marginTop: 24, marginBottom: 2 },
+  listCount: { fontFamily: fonts.uiMedium, fontSize: 14, color: '#A1A1AA' },
+  listSpinner: { marginTop: 20 },
+  noWritten: { fontFamily: fonts.ui, fontSize: 14, color: '#71717A', marginTop: 10, lineHeight: 20 },
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24, gap: 8 },
+  centerTitle: { fontFamily: fonts.displayBold, fontSize: 16, color: '#18181B', textAlign: 'center', marginTop: 6 },
+  centerBody: { fontFamily: fonts.ui, fontSize: 14, color: '#71717A', textAlign: 'center', lineHeight: 20 },
+  retry: { marginTop: 10, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, backgroundColor: '#F97316' },
+  retryText: { fontFamily: fonts.uiBold, fontSize: 13, color: '#FFFFFF' },
 });

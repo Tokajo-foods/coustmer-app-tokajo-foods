@@ -106,7 +106,11 @@ export const TokajoRestaurantCard = memo(function TokajoRestaurantCard({
               {count ? ` (${count})` : ''}
             </Text>
           </View>
-        ) : null}
+        ) : (
+          <View style={[styles.ratingPill, styles.ratingPillNone]}>
+            <Text style={styles.ratingPillText}>No ratings</Text>
+          </View>
+        )}
 
         <SmoothPressable
           style={styles.heart}
@@ -210,6 +214,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.uiBold,
     fontSize: 11,
   },
+  ratingPillNone: { backgroundColor: 'rgba(24,24,27,0.72)' },
   etaBadge: {
     position: 'absolute',
     top: 10,

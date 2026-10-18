@@ -76,7 +76,7 @@ export function RestaurantListCard({
           </View>
         ) : (
           <View style={[styles.ratingBadge, styles.ratingNew]}>
-            <Text style={styles.ratingText}>NEW</Text>
+            <Text style={styles.ratingText}>No ratings</Text>
           </View>
         )}
         {closed ? (
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
   },
   ratingNew: {
-    backgroundColor: '#F97316',
+    backgroundColor: 'rgba(24,24,27,0.72)',
   },
   ratingText: {
     color: '#FFFFFF',

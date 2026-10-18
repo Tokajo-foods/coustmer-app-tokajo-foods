@@ -37,7 +37,9 @@ export const RestaurantRow = memo(function RestaurantRow({
               <Star color="#FFF" fill="#FFF" size={9} />
               <Text style={styles.ratingText}>{restaurant.rating.toFixed(1)}</Text>
             </View>
-          ) : null}
+          ) : (
+            <Text style={styles.resultMeta}>No ratings</Text>
+          )}
           {restaurant.deliveryTime ? <Text style={styles.resultMeta}>{restaurant.deliveryTime}</Text> : null}
           {restaurant.priceForTwo ? <Text style={styles.resultMeta}>{formatInr(restaurant.priceForTwo)} for two</Text> : null}
         </View>

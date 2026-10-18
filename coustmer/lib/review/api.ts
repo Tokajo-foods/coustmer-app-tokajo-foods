@@ -1,15 +1,23 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 import { api } from '@/lib/api';
+import {
+  asRecord,
+  clampRating,
+  emptyDistribution,
+  extractList,
+  extractMeta,
+  mapDishRatings,
+  mapReview,
+  mapStats,
+  requireStarRating,
+} from '@/lib/review/mappers';
 import type {
   PaginationMeta,
   ReportReviewPayload,
-  RatingDistribution,
   RestaurantReview,
   ReviewListResult,
-  ReviewOwnerReply,
   ReviewStats,
-  SubmitDishReviewsPayload,
   SubmitOrderReviewPayload,
   SubmitReviewPayload,
 } from '@/lib/review/types';
@@ -109,236 +117,6 @@ async function request<T>(
   }
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object'
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function extractList(data: unknown): Record<string, unknown>[] {
-  if (Array.isArray(data)) return data as Record<string, unknown>[];
-  if (!data || typeof data !== 'object') return [];
-  const record = data as Record<string, unknown>;
-  const nested =
-    record.reviews ??
-    record.items ??
-    record.results ??
-    record.docs ??
-    record.list ??
-    record.data ??
-    [];
-  if (Array.isArray(nested)) return nested as Record<string, unknown>[];
-  if (nested && typeof nested === 'object') return extractList(nested);
-  return [];
-}
-
-function extractMeta(
-  data: unknown,
-  envelopeMeta?: PaginationMeta
-): PaginationMeta | undefined {
-  if (envelopeMeta) return envelopeMeta;
-  if (!data || typeof data !== 'object') return undefined;
-  const record = data as Record<string, unknown>;
-  if (record.meta && typeof record.meta === 'object') {
-    return record.meta as PaginationMeta;
-  }
-  const total = typeof record.total === 'number' ? record.total : undefined;
-  const page = typeof record.page === 'number' ? record.page : undefined;
-  const limit = typeof record.limit === 'number' ? record.limit : undefined;
-  const totalPages =
-    typeof record.totalPages === 'number' ? record.totalPages : undefined;
-  const hasNext =
-    typeof record.hasNext === 'boolean' ? record.hasNext : undefined;
-  if (
-    total === undefined &&
-    page === undefined &&
-    limit === undefined &&
-    totalPages === undefined
-  ) {
-    return undefined;
-  }
-  return { total, page, limit, totalPages, hasNext };
-}
-
-function clampRating(value: unknown): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return 0;
-  return Math.min(5, Math.max(0, Math.round(n)));
-}
-
-/** Ensure a 1–5 int for review-service Zod (coerce of undefined → NaN). */
-function requireStarRating(value: unknown, label = 'rating'): number {
-  const n = clampRating(value);
-  if (n < 1 || n > 5) {
-    throw new Error(`Please select a ${label} from 1 to 5 stars.`);
-  }
-  return n;
-}
-
-function mapDishRatings(
-  dishes: Array<{ itemId: string; rating: number }> | undefined
-): Array<{ itemId: string; rating: number }> | undefined {
-  if (!dishes?.length) return undefined;
-  return dishes
-    .map((d) => ({
-      itemId: String(d.itemId ?? '').trim(),
-      rating: requireStarRating(d.rating, 'dish rating'),
-    }))
-    .filter((d) => d.itemId.length > 0);
-}
-
-function mapReply(raw: Record<string, unknown>): ReviewOwnerReply | undefined {
-  const replyObj =
-    raw.reply && typeof raw.reply === 'object'
-      ? (raw.reply as Record<string, unknown>)
-      : undefined;
-
-  const text = String(
-    replyObj?.text ??
-      replyObj?.comment ??
-      replyObj?.message ??
-      raw.ownerReply ??
-      raw.restaurantReply ??
-      raw.replyText ??
-      (typeof raw.reply === 'string' ? raw.reply : '') ??
-      ''
-  ).trim();
-
-  if (!text) return undefined;
-
-  return {
-    text,
-    repliedAt:
-      (replyObj?.repliedAt as string) ||
-      (replyObj?.createdAt as string) ||
-      (raw.repliedAt as string) ||
-      undefined,
-    repliedBy:
-      (replyObj?.repliedBy as string) ||
-      (replyObj?.author as string) ||
-      (raw.repliedBy as string) ||
-      'Restaurant',
-  };
-}
-
-export function mapReview(raw: Record<string, unknown>): RestaurantReview {
-  const user =
-    raw.user && typeof raw.user === 'object'
-      ? (raw.user as Record<string, unknown>)
-      : undefined;
-
-  return {
-    id: String(raw._id ?? raw.id ?? ''),
-    restaurantId: raw.restaurantId
-      ? String(raw.restaurantId)
-      : raw.restaurant
-        ? String(raw.restaurant)
-        : undefined,
-    orderId: raw.orderId
-      ? String(raw.orderId)
-      : raw.order
-        ? String(raw.order)
-        : undefined,
-    userId: raw.userId
-      ? String(raw.userId)
-      : user?.id
-        ? String(user.id)
-        : user?._id
-          ? String(user._id)
-          : undefined,
-    userName:
-      (raw.userName as string) ||
-      (raw.customerName as string) ||
-      (user?.name as string) ||
-      ([user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
-        undefined) ||
-      (raw.name as string) ||
-      undefined,
-    rating: clampRating(raw.rating ?? raw.stars ?? raw.score),
-    comment:
-      (raw.comment as string) ||
-      (raw.review as string) ||
-      (raw.text as string) ||
-      (raw.body as string) ||
-      undefined,
-    title: (raw.title as string) || undefined,
-    photos: Array.isArray(raw.photos)
-      ? raw.photos.map((p) => String(p)).filter(Boolean)
-      : Array.isArray(raw.images)
-        ? raw.images.map((p) => String(p)).filter(Boolean)
-        : undefined,
-    reply: mapReply(raw),
-    createdAt:
-      (raw.createdAt as string) ||
-      (raw.created_at as string) ||
-      undefined,
-    updatedAt:
-      (raw.updatedAt as string) ||
-      (raw.updated_at as string) ||
-      undefined,
-  };
-}
-
-function emptyDistribution(): RatingDistribution {
-  return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-}
-
-function mapStats(data: unknown): ReviewStats {
-  const record = asRecord(data);
-  const distRaw = asRecord(
-    record.distribution ??
-      record.ratingDistribution ??
-      record.breakdown ??
-      record.ratingBreakdown ??
-      {}
-  );
-
-  const distribution = emptyDistribution();
-  ([1, 2, 3, 4, 5] as const).forEach((star) => {
-    const value =
-      distRaw[String(star)] ??
-      distRaw[`${star}star`] ??
-      distRaw[`${star}Star`] ??
-      distRaw[`star${star}`];
-    distribution[star] = Number(value) || 0;
-  });
-
-  // Some APIs nest counts as array [{star:5,count:10}, ...]
-  if (
-    Array.isArray(record.distribution) ||
-    Array.isArray(record.ratingDistribution)
-  ) {
-    const arr = (record.distribution ??
-      record.ratingDistribution) as unknown[];
-    for (const row of arr) {
-      const item = asRecord(row);
-      const star = clampRating(item.star ?? item.rating ?? item.stars);
-      const count = Number(item.count ?? item.total ?? 0) || 0;
-      if (star >= 1 && star <= 5) {
-        distribution[star as 1 | 2 | 3 | 4 | 5] = count;
-      }
-    }
-  }
-
-  return {
-    average: clampRating(
-      record.average ??
-        record.avgRating ??
-        record.averageRating ??
-        record.rating ??
-        0
-    ),
-    total:
-      Number(
-        record.total ??
-          record.totalReviews ??
-          record.count ??
-          record.reviewCount ??
-          0
-      ) || 0,
-    distribution,
-  };
-}
 
 function isNotFoundError(error: unknown): boolean {
   const status = (error as Error & { status?: number }).status;
@@ -367,34 +145,15 @@ function isServiceUnavailable(error: unknown): boolean {
 }
 
 export const reviewApi = {
-  /** GET /health */
-  health: async (): Promise<boolean> => {
-    try {
-      const res = await request<unknown>(`${REVIEW_SERVICE}/health`);
-      return res.success !== false;
-    } catch {
-      return false;
-    }
-  },
-
-  /** GET /health/ready */
-  ready: async (): Promise<boolean> => {
-    try {
-      const res = await request<unknown>(`${REVIEW_SERVICE}/health/ready`);
-      return res.success !== false;
-    } catch {
-      return false;
-    }
-  },
-
-  /** GET /restaurants/:restaurantId/reviews */
+  /** GET /restaurants/:restaurantId/reviews — `withComment` keeps only reviews with written text. */
   getRestaurantReviews: async (
     restaurantId: string,
-    params?: { page?: number; limit?: number }
+    params?: { page?: number; limit?: number; withComment?: boolean }
   ): Promise<ReviewListResult> => {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit ?? 20));
+    if (params?.withComment) query.set('withComment', 'true');
     const qs = query.toString();
 
     try {
@@ -420,7 +179,7 @@ export const reviewApi = {
         },
       };
     } catch (error) {
-      if (isServiceUnavailable(error) || isNotFoundError(error)) {
+      if (isNotFoundError(error)) {
         return { reviews: [], meta: { total: 0, page: 1, limit: params?.limit ?? 20 } };
       }
       throw error;
@@ -437,42 +196,11 @@ export const reviewApi = {
       );
       return mapStats(res.data);
     } catch (error) {
-      if (isServiceUnavailable(error) || isNotFoundError(error)) {
-        return { average: 0, total: 0, distribution: emptyDistribution() };
+      if (isNotFoundError(error)) {
+        return { average: 0, total: 0, writtenReviews: 0, distribution: emptyDistribution() };
       }
       throw error;
     }
-  },
-
-  /** POST /restaurants/:restaurantId/reviews (auth) */
-  submitRestaurantReview: async (
-    restaurantId: string,
-    payload: SubmitReviewPayload
-  ): Promise<RestaurantReview> => {
-    if (!restaurantId) {
-      throw new Error('Restaurant is missing for this order.');
-    }
-    const rating = clampRating(payload.rating);
-    if (rating < 1) {
-      throw new Error('Please select a rating from 1 to 5 stars.');
-    }
-
-    const body = {
-      rating,
-      comment: payload.comment?.trim() || undefined,
-      review: payload.comment?.trim() || undefined,
-      title: payload.title?.trim() || undefined,
-      orderId: payload.orderId || undefined,
-      photos: payload.photos?.filter(Boolean),
-      images: payload.photos?.filter(Boolean),
-    };
-
-    const res = await request<Record<string, unknown>>(
-      `${REVIEW_SERVICE}/restaurants/${restaurantId}/reviews`,
-      { method: 'POST', body }
-    );
-
-    return mapReview(asRecord(res.data ?? {}));
   },
 
   /** PUT /restaurants/:restaurantId/reviews/:reviewId (auth) */
@@ -554,7 +282,7 @@ export const reviewApi = {
     }
   },
 
-  /** POST /orders/:orderId/reviews — combined restaurant + packaging + photos */
+  /** POST /orders/:orderId/reviews — restaurant stars + optional written review */
   submitOrderReview: async (
     orderId: string,
     payload: SubmitOrderReviewPayload
@@ -587,19 +315,5 @@ export const reviewApi = {
         ? asRecord(data.review)
         : data;
     return mapReview(reviewRaw);
-  },
-
-  /** POST /orders/:orderId/reviews/dishes — per-item ratings (1–5) */
-  submitDishReviews: async (
-    orderId: string,
-    payload: SubmitDishReviewsPayload
-  ): Promise<void> => {
-    if (!orderId) throw new Error('Order ID is missing.');
-    const dishes = mapDishRatings(payload.dishes);
-    if (!dishes?.length) throw new Error('Add at least one dish rating.');
-    await request<unknown>(`${REVIEW_SERVICE}/orders/${orderId}/reviews/dishes`, {
-      method: 'POST',
-      body: { dishes },
-    });
   },
 };

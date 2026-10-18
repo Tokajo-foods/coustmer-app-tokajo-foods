@@ -168,6 +168,11 @@ export const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#9A9A9A',
   },
+  noRatings: {
+    fontFamily: fonts.uiMedium,
+    fontSize: 12,
+    color: '#9A9A9A',
+  },
   cuisines: {
     fontFamily: fonts.ui,
     fontSize: 13,

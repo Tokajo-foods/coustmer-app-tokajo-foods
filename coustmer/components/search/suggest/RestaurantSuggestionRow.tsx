@@ -41,7 +41,9 @@ export const RestaurantSuggestionRow = memo(function RestaurantSuggestionRow({ i
           <Text style={s.ratingText}>{item.rating.toFixed(1)}</Text>
           <Star color="#FFFFFF" fill="#FFFFFF" size={9} />
         </View>
-      ) : null}
+      ) : (
+        <Text style={s.meta}>No ratings</Text>
+      )}
     </Pressable>
   );
 });
