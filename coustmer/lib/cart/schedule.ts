@@ -7,14 +7,34 @@ export type ScheduleSlot = {
   startIso: string;
 };
 
+/** IST delivery window, `end` may be `24:00`. */
+export type ScheduleWindow = { start: string; end: string };
+
 export type ScheduleDay = {
   date: string;
+  isOpen: boolean;
+  windows: ScheduleWindow[];
   slots: ScheduleSlot[];
+};
+
+export type SchedulePolicy = {
+  minLeadMinutes: number;
+  maxAdvanceDays: number;
+  stepMinutes: number;
+  kitchenLeadMinutes: number;
+};
+
+export const DEFAULT_SCHEDULE_POLICY: SchedulePolicy = {
+  minLeadMinutes: 45,
+  maxAdvanceDays: 3,
+  stepMinutes: 15,
+  kitchenLeadMinutes: 45,
 };
 
 export type ScheduleSlotsResponse = {
   timezone: string;
   scheduleSupported: boolean;
+  policy: SchedulePolicy;
   /** Single-day shape */
   date?: string;
   slots?: ScheduleSlot[];
@@ -65,9 +85,9 @@ export function formatScheduledForDisplay(iso: string | null | undefined): strin
   }).format(when);
 }
 
-function formatIstTime12h(hhmm: string): string {
+export function formatIstTime12h(hhmm: string): string {
   const [hRaw, mRaw] = hhmm.split(':');
-  const h = Number(hRaw);
+  const h = Number(hRaw) % 24;
   const m = Number(mRaw);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm;
   const period = h >= 12 ? 'PM' : 'AM';
@@ -104,30 +124,56 @@ export function normalizeScheduleSlotsResponse(raw: unknown): ScheduleSlotsRespo
     };
   };
 
+  const mapWindows = (raw: unknown): ScheduleWindow[] =>
+    Array.isArray(raw)
+      ? raw
+          .map((w) => {
+            const row = w && typeof w === 'object' ? (w as Record<string, unknown>) : {};
+            return { start: String(row.start ?? ''), end: String(row.end ?? '') };
+          })
+          .filter((w) => /^\d{2}:\d{2}$/.test(w.start) && /^\d{2}:\d{2}$/.test(w.end))
+      : [];
+
+  const policyRaw =
+    record.policy && typeof record.policy === 'object'
+      ? (record.policy as Record<string, unknown>)
+      : {};
+  const num = (v: unknown, fallback: number) =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback;
+  const policy: SchedulePolicy = {
+    minLeadMinutes: num(policyRaw.minLeadMinutes, DEFAULT_SCHEDULE_POLICY.minLeadMinutes),
+    maxAdvanceDays: num(policyRaw.maxAdvanceDays, DEFAULT_SCHEDULE_POLICY.maxAdvanceDays),
+    stepMinutes: num(policyRaw.stepMinutes, DEFAULT_SCHEDULE_POLICY.stepMinutes),
+    kitchenLeadMinutes: num(policyRaw.kitchenLeadMinutes, DEFAULT_SCHEDULE_POLICY.kitchenLeadMinutes),
+  };
+
+  const mapDay = (raw: unknown, fallbackDate: string): ScheduleDay => {
+    const d = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+    const windows = mapWindows(d.windows);
+    return {
+      date: String(d.date ?? fallbackDate),
+      isOpen: d.isOpen === true || windows.length > 0,
+      windows,
+      slots: Array.isArray(d.slots) ? d.slots.map(mapSlot) : [],
+    };
+  };
+
   if (Array.isArray(record.days)) {
     return {
       timezone,
       scheduleSupported,
-      days: record.days.map((day) => {
-        const d = day as Record<string, unknown>;
-        return {
-          date: String(d.date ?? ''),
-          slots: Array.isArray(d.slots) ? d.slots.map(mapSlot) : [],
-        };
-      }),
+      policy,
+      days: record.days.map((day) => mapDay(day, '')),
     };
   }
 
-  const date = String(record.date ?? istTodayYmd());
-  const slots = Array.isArray(record.slots) ? record.slots.map(mapSlot) : [];
-  return { timezone, scheduleSupported, date, slots };
-}
-
-export function pickAvailableSlots(days: ScheduleDay[]): ScheduleDay[] {
-  return days
-    .map((day) => ({
-      ...day,
-      slots: day.slots.filter((s) => s.available && s.startIso),
-    }))
-    .filter((day) => day.slots.length > 0);
+  const single = mapDay(record, istTodayYmd());
+  return {
+    timezone,
+    scheduleSupported,
+    policy,
+    date: single.date,
+    slots: single.slots,
+    days: [single],
+  };
 }

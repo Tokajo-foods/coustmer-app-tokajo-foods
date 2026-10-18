@@ -974,18 +974,15 @@ export const cartApi = {
     const params = new URLSearchParams();
     if (opts?.date) params.set('date', opts.date);
     if (opts?.days != null) params.set('days', String(opts.days));
-    else if (!opts?.date) params.set('days', '7');
+    else if (!opts?.date) params.set('days', '4');
     const qs = params.toString();
     const res = await request<unknown>(`${CART_BASE}/slots${qs ? `?${qs}` : ''}`);
     return normalizeScheduleSlotsResponse(res.data ?? res);
   },
 
-  /** PUT /cart/schedule */
+  /** PUT /cart/schedule — errors: SCHEDULE_TOO_SOON | SCHEDULE_TOO_FAR | SCHEDULE_OUTSIDE_HOURS | SCHEDULE_INVALID_TIME */
   setSchedule: async (scheduledFor: string | null): Promise<Cart> => {
-    return mutateCart(`${CART_BASE}/schedule`, 'PUT', [
-      { scheduledFor },
-      { scheduledAt: scheduledFor },
-    ]);
+    return mutateCart(`${CART_BASE}/schedule`, 'PUT', [{ scheduledFor }]);
   },
 
   /** PUT /cart/wallet — amount optional; omit / apply:true covers full bill up to balance */

@@ -271,9 +271,10 @@ export function useCartSlots(opts?: { date?: string; days?: number; enabled?: bo
   const enabled = opts?.enabled ?? true;
   return useQuery({
     queryKey: cartKeys.slots(opts?.date, opts?.days),
-    queryFn: () => cartApi.getSlots({ date: opts?.date, days: opts?.days ?? 7 }),
+    queryFn: () => cartApi.getSlots({ date: opts?.date, days: opts?.days ?? 4 }),
     enabled,
     staleTime: 60_000,
+    refetchInterval: enabled ? 5 * 60_000 : false,
   });
 }
 

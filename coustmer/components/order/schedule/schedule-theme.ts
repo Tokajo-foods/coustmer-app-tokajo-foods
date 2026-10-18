@@ -1,0 +1,15 @@
+export const SCHEDULE_COLORS = {
+  orange: '#F97316',
+  orangeDark: '#EA580C',
+  orangeSoft: '#FFF7ED',
+  orangeBorder: '#FED7AA',
+  text: '#0B1220',
+  textSec: '#64748B',
+  textMuted: '#94A3B8',
+  border: '#E5E7EB',
+  disabledBg: '#F8FAFC',
+  error: '#DC2626',
+  errorSoft: '#FEF2F2',
+  errorBorder: '#FECACA',
+  white: '#FFFFFF',
+} as const;

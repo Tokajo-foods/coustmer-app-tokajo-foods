@@ -238,7 +238,7 @@ export function CartScreen() {
     normalizedDeliveryType,
     Boolean(items.length)
   );
-  const slots = useCartSlots({ days: 7, enabled: isLoggedIn && items.length > 0 });
+  const slots = useCartSlots({ enabled: isLoggedIn && items.length > 0 });
   const setSchedule = useSetCartSchedule();
   const clearRemote = useClearRemoteCart();
   const updateAddress = useUpdateCartDeliveryAddress();
@@ -480,7 +480,14 @@ export function CartScreen() {
   };
 
   const handleScheduleNow = () => handleScheduleSlot(null);
-  const handleSchedulePick = (startIso: string) => handleScheduleSlot(startIso);
+  const handleSchedulePick = async (startIso: string) => {
+    if (!isLoggedIn) {
+      requireLogin('schedule your order');
+      return;
+    }
+    const cart = await setSchedule.mutateAsync(startIso);
+    useCartStore.getState().setScheduledFor(cart.scheduledFor ?? startIso);
+  };
 
   const handleClear = () => {
     setMenuOpen(false);
@@ -785,6 +792,7 @@ export function CartScreen() {
             isError={slots.isError}
             scheduledFor={scheduledFor}
             busy={setSchedule.isPending}
+            onRetry={() => void slots.refetch()}
             onSelectNow={handleScheduleNow}
             onSelectSlot={handleSchedulePick}
           />
