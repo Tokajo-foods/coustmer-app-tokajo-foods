@@ -57,10 +57,6 @@ export type LanguagePreferencePayload = {
   language: string;
 };
 
-export type UpdateEmailPayload = {
-  email: string;
-};
-
 export type UserSession = {
   id: string;
   deviceName?: string;

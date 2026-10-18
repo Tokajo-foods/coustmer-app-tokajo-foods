@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ForgotPasswordFormContent } from '@/components/auth/ForgotPasswordFormContent';
 import { LoginFormContent } from '@/components/auth/LoginFormContent';
 import { RegisterFormContent } from '@/components/auth/RegisterFormContent';
-import { VerifyOtpFormContent } from '@/components/auth/VerifyOtpFormContent';
 import { authTheme } from '@/constants/auth-theme';
 import { type AuthSheetView } from '@/store/auth-sheet-store';
 
@@ -31,25 +30,22 @@ function sheetHeightFor(view: AuthSheetView) {
   return view === 'register' ? AUTH_SHEET_HEIGHT_REGISTER : AUTH_SHEET_HEIGHT;
 }
 
-type OtpNavOptions = {
-  otpIdentifier?: string;
-  otpVerificationId?: string;
+type SheetNavOptions = {
+  registerPhone?: string;
 };
 
 type Props = {
   visible: boolean;
   view: AuthSheetView;
-  otpIdentifier?: string;
-  otpVerificationId?: string;
+  registerPhone?: string;
   onClose: () => void;
-  onViewChange: (view: AuthSheetView, options?: OtpNavOptions) => void;
+  onViewChange: (view: AuthSheetView, options?: SheetNavOptions) => void;
 };
 
 export function AuthBottomSheet({
   visible,
   view,
-  otpIdentifier,
-  otpVerificationId,
+  registerPhone,
   onClose,
   onViewChange,
 }: Props) {
@@ -147,7 +143,7 @@ export function AuthBottomSheet({
     transform: [{ translateY: translateY.value }],
   }));
 
-  const changeViewWithSlide = (next: AuthSheetView, options?: OtpNavOptions) => {
+  const changeViewWithSlide = (next: AuthSheetView, options?: SheetNavOptions) => {
     onViewChange(next, options);
   };
 
@@ -175,32 +171,20 @@ export function AuthBottomSheet({
       case 'register':
         return (
           <RegisterFormContent
+            key={registerPhone ?? 'register'}
+            initialPhone={registerPhone}
             onSignIn={() => changeViewWithSlide('login')}
             onRegisterSuccess={onClose}
           />
         );
       case 'forgot-password':
         return <ForgotPasswordFormContent onBackToLogin={() => changeViewWithSlide('login')} />;
-      case 'verify-otp':
-        return (
-          <VerifyOtpFormContent
-            identifier={otpIdentifier}
-            verificationId={otpVerificationId}
-            onBackToLogin={() => changeViewWithSlide('login')}
-            onVerifySuccess={onClose}
-          />
-        );
       default:
         return (
           <LoginFormContent
             onForgotPassword={() => changeViewWithSlide('forgot-password')}
             onSignUp={() => changeViewWithSlide('register')}
-            onOtpSent={(payload) =>
-              changeViewWithSlide('verify-otp', {
-                otpIdentifier: payload.identifier,
-                otpVerificationId: payload.verificationId,
-              })
-            }
+            onCreateAccount={(phone) => changeViewWithSlide('register', { registerPhone: phone })}
             onLoginSuccess={onClose}
           />
         );

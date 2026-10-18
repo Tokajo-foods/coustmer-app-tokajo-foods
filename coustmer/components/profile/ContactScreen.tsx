@@ -1,64 +1,27 @@
 import { Pressable } from '@/components/common/Pressable';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator,
-  
-  StyleSheet,
-  Text,
-  View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { AuthInput } from '@/components/auth/AuthInput';
+import { EmailChangeSection } from '@/components/profile/EmailChangeSection';
 import { PhoneChangeSection } from '@/components/profile/PhoneChangeSection';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
 import { formatPhoneForDisplay } from '@/lib/auth/phone-number';
-import { useUpdateEmail, useUserProfile } from '@/lib/profile/hooks';
+import { useUserProfile } from '@/lib/profile/hooks';
 
 export function ContactScreen() {
   const { data: profile } = useUserProfile();
-  const updateEmail = useUpdateEmail();
-
   const [changingPhone, setChangingPhone] = useState(false);
-  const [email, setEmail] = useState('');
-  const [banner, setBanner] = useState<{
-    message: string;
-    type: 'error' | 'success';
-  } | null>(null);
-
-  useEffect(() => {
-    if (!profile) return;
-    setEmail(profile.email ?? '');
-  }, [profile]);
-
-  const handleUpdateEmail = () => {
-    setBanner(null);
-    updateEmail.mutate(
-      { email: email.trim() },
-      {
-        onSuccess: (message) => setBanner({ message, type: 'success' }),
-        onError: (error) =>
-          setBanner({
-            message: error instanceof Error ? error.message : 'Update failed',
-            type: 'error',
-          }),
-      }
-    );
-  };
+  const [changingEmail, setChangingEmail] = useState(false);
 
   return (
-    <ProfileFormLayout
-      title="Phone & email"
-      subtitle="Updates may require verification"
-      banner={banner}
-    >
+    <ProfileFormLayout title="Phone & email" subtitle="Changes are verified with a one-time code">
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Phone number</Text>
         {!profile ? (
           <ActivityIndicator color={authTheme.brand} style={styles.loader} />
         ) : changingPhone ? (
-          <PhoneChangeSection
-            currentPhone={profile.phone}
-            onDone={() => setChangingPhone(false)}
-          />
+          <PhoneChangeSection currentPhone={profile.phone} onDone={() => setChangingPhone(false)} />
         ) : (
           <>
             <Text style={styles.value}>
@@ -67,7 +30,11 @@ export function ContactScreen() {
             <Text style={styles.hint}>
               We verify your current number and the new number with an OTP.
             </Text>
-            <Pressable style={styles.button} onPress={() => setChangingPhone(true)}>
+            <Pressable
+              style={styles.button}
+              disabled={changingEmail}
+              onPress={() => setChangingPhone(true)}
+            >
               <Text style={styles.buttonText}>
                 {profile.phone ? 'Change phone number' : 'Add phone number'}
               </Text>
@@ -78,28 +45,25 @@ export function ContactScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Email address</Text>
-        <AuthInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <Text style={styles.hint}>
-          A verification link will be sent to your new email.
-        </Text>
-        <Pressable
-          style={styles.button}
-          onPress={handleUpdateEmail}
-          disabled={updateEmail.isPending}
-        >
-          {updateEmail.isPending ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <Text style={styles.buttonText}>Update email</Text>
-          )}
-        </Pressable>
+        {!profile ? (
+          <ActivityIndicator color={authTheme.brand} style={styles.loader} />
+        ) : changingEmail ? (
+          <EmailChangeSection currentEmail={profile.email} onDone={() => setChangingEmail(false)} />
+        ) : (
+          <>
+            <Text style={styles.value}>{profile.email || 'No email yet'}</Text>
+            <Text style={styles.hint}>
+              We email a code to your current address and the new address.
+            </Text>
+            <Pressable
+              style={styles.button}
+              disabled={changingPhone}
+              onPress={() => setChangingEmail(true)}
+            >
+              <Text style={styles.buttonText}>{profile.email ? 'Change email' : 'Add email'}</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     </ProfileFormLayout>
   );

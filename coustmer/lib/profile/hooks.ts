@@ -12,7 +12,6 @@ import type {
   LanguagePreferencePayload,
   NotificationPreferences,
   RegisterDevicePayload,
-  UpdateEmailPayload,
   UpdateProfilePayload,
 } from '@/lib/profile/types';
 import { setStoredUser } from '@/lib/auth/storage';
@@ -141,12 +140,6 @@ export function useUpdateLanguagePreference() {
       queryClient.invalidateQueries({ queryKey: profileKeys.preferences() });
       queryClient.invalidateQueries({ queryKey: profileKeys.me() });
     },
-  });
-}
-
-export function useUpdateEmail() {
-  return useMutation({
-    mutationFn: (payload: UpdateEmailPayload) => profileApi.updateEmail(payload),
   });
 }
 

@@ -34,9 +34,10 @@ export type OtpVerifyPayload = {
   purpose?: OtpPurpose;
 };
 
-/** Legacy emailed reset link (`/reset-password?token=`). */
+/** Emailed reset link (`token`) or an identifier whose forgot_password OTP was confirmed. */
 export type ResetPasswordPayload = {
-  token: string;
+  token?: string;
+  identifier?: string;
   password: string;
   confirmPassword?: string;
 };

@@ -13,6 +13,8 @@ import {
   type ForgotStep,
 } from '@/components/auth/ForgotPasswordSteps';
 import { forgotPasswordStyles as styles } from '@/components/auth/forgot-password-styles';
+import { authApi } from '@/lib/auth/api';
+import { getApiErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/store/auth-store';
 import {
   validateConfirmPassword,
@@ -36,10 +38,25 @@ function maskEmail(email: string) {
 }
 
 export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
-  const sendForgotPasswordOtp = useAuthStore((s) => s.sendForgotPasswordOtp);
-  const confirmForgotPasswordOtp = useAuthStore((s) => s.confirmForgotPasswordOtp);
+  const requestOtp = useAuthStore((s) => s.sendOtp);
   const resetPassword = useAuthStore((s) => s.resetPassword);
-  const isLoading = useAuthStore((s) => s.isLoading);
+  const storeLoading = useAuthStore((s) => s.isLoading);
+  const [confirming, setConfirming] = useState(false);
+  const isLoading = storeLoading || confirming;
+
+  const sendForgotPasswordOtp = (value: string) =>
+    requestOtp({ emailOrPhone: value, purpose: 'forgot_password' });
+
+  const confirmForgotPasswordOtp = async (value: string, code: string) => {
+    setConfirming(true);
+    try {
+      await authApi.confirmForgotPasswordOtp(value, code);
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Invalid code'));
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   const [channel, setChannel] = useState<'phone' | 'email'>('phone');
   const [step, setStep] = useState<ForgotStep>('email');

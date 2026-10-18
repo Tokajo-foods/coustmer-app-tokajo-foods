@@ -1,21 +1,6 @@
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect } from 'expo-router';
 
+/** Old deep link. Phone OTP now lives inside the sign-in sheet. */
 export default function VerifyOtpPage() {
-  const { identifier, verificationId } = useLocalSearchParams<{
-    identifier?: string;
-    verificationId?: string;
-  }>();
-
-  return (
-    <Redirect
-      href={{
-        pathname: '/',
-        params: {
-          auth: 'verify-otp',
-          ...(identifier ? { identifier: String(identifier) } : {}),
-          ...(verificationId ? { verificationId: String(verificationId) } : {}),
-        },
-      }}
-    />
-  );
+  return <Redirect href={{ pathname: '/', params: { auth: 'login' } }} />;
 }

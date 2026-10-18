@@ -48,11 +48,23 @@ export const authApi = {
     return ensureCustomerAuth(normalizeAuthResponse(data));
   },
 
-  /** Legacy emailed reset link (`/reset-password?token=`). Phone reset uses phoneAuthApi. */
+  /** Email reset step 2: confirm the forgot_password code sent by `sendOtp`. */
+  confirmForgotPasswordOtp: async (identifier: string, otp: string) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-forgot-password`, {
+      method: 'POST',
+      body: { identifier, otp },
+    });
+    return normalizeMessageResponse(data);
+  },
+
+  /** Reset link token, or the email confirmed above. Phone reset uses phoneAuthApi. */
   resetPassword: async (payload: ResetPasswordPayload) => {
+    const body = payload.token?.trim()
+      ? { token: payload.token.trim(), newPassword: payload.password }
+      : { identifier: payload.identifier?.trim() ?? '', newPassword: payload.password };
     const data = await apiRequest<unknown>(`${AUTH_BASE}/reset-password`, {
       method: 'POST',
-      body: { token: payload.token.trim(), newPassword: payload.password },
+      body,
     });
     return normalizeMessageResponse(data);
   },

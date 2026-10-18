@@ -9,7 +9,6 @@ import type {
   NotificationPreferences,
   ReferralInfo,
   RegisterDevicePayload,
-  UpdateEmailPayload,
   UpdateProfilePayload,
   UserDevice,
   UserPreferences,
@@ -214,14 +213,6 @@ export const profileApi = {
       { method: 'PUT', body: payload }
     );
     return mapProfile(res.data ?? {});
-  },
-
-  updateEmail: async (payload: UpdateEmailPayload): Promise<string> => {
-    const res = await request<unknown>(`${USERS_BASE}/email`, {
-      method: 'PUT',
-      body: payload,
-    });
-    return res.message ?? 'Verification email sent';
   },
 
   getSessions: async (): Promise<UserSession[]> => {

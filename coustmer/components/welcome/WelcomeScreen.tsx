@@ -19,7 +19,7 @@ function resolveAuthParam(auth?: string | string[]): AuthSheetView | null {
   if (value === 'login') return 'login';
   if (value === 'sign-up' || value === 'register') return 'register';
   if (value === 'forgot-password') return 'forgot-password';
-  if (value === 'verify-otp') return 'verify-otp';
+  if (value === 'verify-otp') return 'login';
   return null;
 }
 
@@ -28,17 +28,12 @@ function resolveAuthParam(auth?: string | string[]): AuthSheetView | null {
  * over the painted "Get Started" pill so any tap on that button continues.
  */
 export function WelcomeScreen({ openAuthOnMount }: Props) {
-  const { auth, identifier, verificationId } = useLocalSearchParams<{
-    auth?: string;
-    identifier?: string;
-    verificationId?: string;
-  }>();
+  const { auth } = useLocalSearchParams<{ auth?: string }>();
   const { height: screenH, width: screenW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const visible = useAuthSheetStore((s) => s.visible);
   const view = useAuthSheetStore((s) => s.view);
-  const otpIdentifier = useAuthSheetStore((s) => s.otpIdentifier);
-  const otpVerificationId = useAuthSheetStore((s) => s.otpVerificationId);
+  const registerPhone = useAuthSheetStore((s) => s.registerPhone);
   const open = useAuthSheetStore((s) => s.open);
   const close = useAuthSheetStore((s) => s.close);
   const setView = useAuthSheetStore((s) => s.setView);
@@ -49,17 +44,8 @@ export function WelcomeScreen({ openAuthOnMount }: Props) {
 
   useEffect(() => {
     const resolved = resolveAuthParam(auth);
-    if (!resolved) return;
-    if (resolved === 'verify-otp' && identifier) {
-      const vid = Array.isArray(verificationId) ? verificationId[0] : verificationId;
-      open('verify-otp', {
-        otpIdentifier: String(identifier),
-        ...(vid ? { otpVerificationId: String(vid) } : {}),
-      });
-      return;
-    }
-    open(resolved);
-  }, [auth, identifier, verificationId, open]);
+    if (resolved) open(resolved);
+  }, [auth, open]);
 
   const handleGetStarted = () => {
     void completeOnboarding().finally(() => {
@@ -102,8 +88,7 @@ export function WelcomeScreen({ openAuthOnMount }: Props) {
       <AuthBottomSheet
         visible={visible}
         view={view}
-        otpIdentifier={otpIdentifier}
-        otpVerificationId={otpVerificationId}
+        registerPhone={registerPhone}
         onClose={close}
         onViewChange={setView}
       />
