@@ -9,6 +9,7 @@ import { authTheme } from '@/constants/auth-theme';
 import { EMPTY_COPY, groupByDay, walletPalette } from '@/lib/payment/wallet-display';
 import { useWalletHistory, useWalletOverview } from '@/lib/payment/wallet-hooks';
 import type { WalletFilter, WalletHistoryItem } from '@/lib/payment/wallet-types';
+import { WalletAddMoneyCard } from './WalletAddMoneyCard';
 import { WalletAwaitingBanner } from './WalletAwaitingBanner';
 import { WalletBalancePanel } from './WalletBalancePanel';
 import { WalletHistoryFilters } from './WalletHistoryFilters';
@@ -76,6 +77,7 @@ export function WalletScreen() {
         stickySectionHeadersEnabled={false}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={overview.isRefetching || (history.isRefetching && !history.isFetchingNextPage)}
@@ -90,15 +92,20 @@ export function WalletScreen() {
         }}
         ListHeaderComponent={
           <View>
-            <WalletBalancePanel overview={data} onAddMoney={(amount) => setTopup({ open: true, amount: amount ?? null })} />
+            <WalletBalancePanel overview={data} />
             {data.awaitingCredit.count > 0 ? (
               <View style={styles.banner}>
                 <WalletAwaitingBanner amount={data.awaitingCredit.amount} count={data.awaitingCredit.count} />
               </View>
             ) : null}
+            {data.topUp.enabled && !data.isLocked ? (
+              <WalletAddMoneyCard overview={data} onProceed={(amount) => setTopup({ open: true, amount })} />
+            ) : !data.isLocked ? (
+              <Text style={styles.paused}>Adding money is unavailable right now. Please try again later.</Text>
+            ) : null}
             <View style={styles.passbookHead}>
               <View style={styles.titleRow}>
-                <Text style={styles.title}>Passbook</Text>
+                <Text style={styles.title}>Transactions</Text>
                 {data.transactionCount > 0 ? (
                   <Text style={styles.count}>
                     {data.transactionCount} {data.transactionCount === 1 ? 'entry' : 'entries'}
@@ -176,6 +183,7 @@ const styles = StyleSheet.create({
   },
   list: { paddingBottom: 120, flexGrow: 1 },
   banner: { paddingHorizontal: 16, paddingTop: 12 },
+  paused: { marginHorizontal: 20, marginTop: 14, color: walletPalette.amber, fontSize: 13, fontWeight: '500' },
   passbookHead: { marginTop: 24, paddingHorizontal: 16, gap: 12 },
   titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   title: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
