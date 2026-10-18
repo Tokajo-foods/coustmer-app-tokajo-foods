@@ -19,8 +19,9 @@ import type { SearchCategorySource, SearchSuggestion } from '@/lib/search/types'
 import { SearchHeader } from './SearchHeader';
 import { SearchMorphGhost } from './SearchMorphGhost';
 import { SearchDiscover } from './discover/SearchDiscover';
-import { SearchMessage, SearchResults, SuggestionList } from './SearchSections';
+import { SearchMessage, SearchResults } from './SearchSections';
 import { searchStyles as s } from './search-styles';
+import { SuggestionSections } from './suggest/SuggestionSections';
 
 function errorText(error: unknown): string | null {
   if (!error) return null;
@@ -79,12 +80,6 @@ export function SearchScreen() {
     performSearch(item.text);
   }, [openCategory, openRestaurant, performSearch, remember]);
 
-  const fillQuery = useCallback((text: string) => {
-    setQuery(`${text} `);
-    setSubmitted(false);
-    inputRef.current?.focus();
-  }, []);
-
   const typed = query.trim();
   const showingDiscover = !submitted && typed.length === 0;
   const showingSuggestions = !submitted && typed.length >= 1;
@@ -132,12 +127,11 @@ export function SearchScreen() {
               <SearchMessage kind="empty" title={`Nothing near you for “${typed}”`}
                 body="Try a dish, a cuisine like “Chinese”, or a restaurant name." />
             ) : (
-              <SuggestionList
+              <SuggestionSections
                 query={query}
                 items={suggestionItems}
                 correctedQuery={suggestions.data?.correctedQuery}
                 onPick={openSuggestion}
-                onFill={fillQuery}
                 onSearchAll={() => performSearch(query)}
               />
             )

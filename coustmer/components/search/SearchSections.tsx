@@ -1,16 +1,15 @@
-import { Search, SearchX, WifiOff } from 'lucide-react-native';
+import { SearchX, WifiOff } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { PREMIUM_LIST } from '@/lib/motion/premium';
-import type { SearchCategory, SearchDish, SearchRestaurant, SearchSuggestion } from '@/lib/search/types';
+import type { SearchCategory, SearchDish, SearchRestaurant } from '@/lib/search/types';
 
 import { CategoryChips } from './CategoryChips';
 import { searchColors, searchStyles as s } from './search-styles';
 import { DishRow, RestaurantRow, ResultSkeleton } from './SearchResultRows';
-import { SuggestionRow } from './SuggestionRow';
 
-const { muted: MUTED, orange: ORANGE } = searchColors;
+const { muted: MUTED } = searchColors;
 
 export function SearchMessage({ kind, title, body, onRetry }: {
   kind: 'empty' | 'error';
@@ -42,40 +41,6 @@ function Corrected({ query }: { query?: string }) {
   );
 }
 
-export function SuggestionList({ query, items, correctedQuery, onPick, onFill, onSearchAll }: {
-  query: string;
-  items: SearchSuggestion[];
-  correctedQuery?: string;
-  onPick: (item: SearchSuggestion) => void;
-  onFill: (text: string) => void;
-  onSearchAll: () => void;
-}) {
-  return (
-    <FlatList
-      data={items}
-      keyExtractor={(item) => item.id}
-      {...PREMIUM_LIST}
-      keyboardShouldPersistTaps="handled"
-      style={s.list}
-      contentContainerStyle={s.resultsList}
-      ListHeaderComponent={
-        <>
-          <Pressable style={s.searchAllRow} onPress={onSearchAll} android_ripple={{ color: '#F1F5F9' }}>
-            <View style={s.searchAllIcon}>
-              <Search color={ORANGE} size={15} strokeWidth={2.6} />
-            </View>
-            <Text style={s.searchAllText} numberOfLines={1}>
-              See all results for <Text style={s.searchAllQuery}>“{query.trim()}”</Text>
-            </Text>
-          </Pressable>
-          <Corrected query={correctedQuery} />
-        </>
-      }
-      renderItem={({ item }) => <SuggestionRow item={item} query={correctedQuery || query} onPress={onPick} onFill={onFill} />}
-    />
-  );
-}
-
 type ResultItem =
   | { type: 'header'; label: string }
   | { type: 'restaurant'; data: SearchRestaurant }
@@ -97,13 +62,13 @@ export function SearchResults({ query, loading, error, onRetry, correctedQuery, 
 }) {
   const data = useMemo<ResultItem[]>(() => {
     const out: ResultItem[] = [];
-    if (restaurants.length) {
-      out.push({ type: 'header', label: `Restaurants (${restaurants.length})` });
-      restaurants.forEach((r) => out.push({ type: 'restaurant', data: r }));
-    }
     if (dishes.length) {
       out.push({ type: 'header', label: `Dishes (${dishes.length})` });
       dishes.forEach((d) => out.push({ type: 'dish', data: d }));
+    }
+    if (restaurants.length) {
+      out.push({ type: 'header', label: `Restaurants (${restaurants.length})` });
+      restaurants.forEach((r) => out.push({ type: 'restaurant', data: r }));
     }
     return out;
   }, [restaurants, dishes]);
