@@ -7,10 +7,10 @@ import { formatInr } from '@/lib/format/money';
 import { walletPalette } from '@/lib/payment/wallet-display';
 import type { WalletOverview } from '@/lib/payment/wallet-types';
 
-type Props = { overview: WalletOverview; onProceed: (amount: number) => void };
+type Props = { overview: WalletOverview; onProceed: (amount: number) => void; plain?: boolean };
 
 /** Inline add-money entry; payment method + Razorpay continue in the top-up sheet. */
-export function WalletAddMoneyCard({ overview, onProceed }: Props) {
+export function WalletAddMoneyCard({ overview, onProceed, plain }: Props) {
   const [amount, setAmount] = useState('');
   const { minAmount, maxAmount, quickAmounts } = overview.topUp;
   const value = Number(amount) || 0;
@@ -30,7 +30,7 @@ export function WalletAddMoneyCard({ overview, onProceed }: Props) {
   };
 
   return (
-    <View style={styles.card}>
+    <View style={plain ? styles.plain : styles.card}>
       <Text style={styles.title}>Add money to wallet</Text>
 
       <View style={[styles.inputBox, error ? styles.inputBoxError : null]}>
@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
     borderColor: walletPalette.hairline,
     padding: 18,
   },
+  plain: { paddingHorizontal: 18, paddingTop: 4, paddingBottom: 18 },
   title: { color: walletPalette.ink, fontSize: 15.5, fontWeight: '700' },
   inputBox: {
     marginTop: 14,

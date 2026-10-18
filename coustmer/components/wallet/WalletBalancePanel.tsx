@@ -5,11 +5,11 @@ import { walletPalette } from '@/lib/payment/wallet-display';
 import type { WalletOverview } from '@/lib/payment/wallet-types';
 import { WalletStatsRow } from './WalletStatsRow';
 
-/** Balance + lifetime totals. */
-export function WalletBalancePanel({ overview }: { overview: WalletOverview }) {
+/** Balance + lifetime totals. Pass `plain` when nested in a parent sheet. */
+export function WalletBalancePanel({ overview, plain }: { overview: WalletOverview; plain?: boolean }) {
   const locked = overview.isLocked;
   return (
-    <View style={styles.card}>
+    <View style={plain ? styles.plain : styles.card}>
       <Text style={styles.label}>Available balance</Text>
       <Text style={styles.balance} numberOfLines={1} adjustsFontSizeToFit>
         {formatInr(overview.balance)}
@@ -40,6 +40,7 @@ const styles = StyleSheet.create({
     borderColor: walletPalette.hairline,
     padding: 18,
   },
+  plain: { paddingHorizontal: 18, paddingTop: 18 },
   label: { color: walletPalette.muted, fontSize: 13, fontWeight: '500' },
   balance: { marginTop: 4, color: walletPalette.ink, fontSize: 32, fontWeight: '700', letterSpacing: -0.6 },
   note: { marginTop: 4, color: walletPalette.muted, fontSize: 13, fontWeight: '400', lineHeight: 18 },
