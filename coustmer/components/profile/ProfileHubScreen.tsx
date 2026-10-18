@@ -12,6 +12,7 @@ import {
   LogOut,
   MapPin,
   MonitorSmartphone,
+  KeyRound,
   Phone,
   Receipt,
   Settings2,
@@ -292,6 +293,11 @@ export function ProfileHubScreen() {
               icon={Phone}
               title="Phone & email"
               onPress={() => router.push('/profile/contact')}
+            />
+            <Row
+              icon={KeyRound}
+              title="Change password"
+              onPress={() => router.push('/change-password' as import('expo-router').Href)}
             />
             <Row
               icon={Settings2}
