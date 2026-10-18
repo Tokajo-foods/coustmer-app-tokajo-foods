@@ -135,9 +135,7 @@ export function WalletScreen() {
           </View>
         }
         ListFooterComponent={
-          <View style={styles.cardBottom}>
-            {history.isFetchingNextPage ? <ActivityIndicator color={authTheme.brand} style={styles.loader} /> : null}
-          </View>
+          history.isFetchingNextPage ? <ActivityIndicator color={authTheme.brand} style={styles.loader} /> : null
         }
       />
 
@@ -161,34 +159,32 @@ function Header() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: walletPalette.canvas },
-  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 4, backgroundColor: walletPalette.canvas },
-  list: { paddingBottom: 40, flexGrow: 1 },
-  banner: { paddingHorizontal: 16, paddingTop: 12 },
-  passbookHead: {
-    marginTop: 16,
-    marginHorizontal: 16,
+  safe: { flex: 1, backgroundColor: '#FFFFFF' },
+  header: {
     paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: walletPalette.hairline,
+  },
+  list: { paddingBottom: 40, flexGrow: 1, backgroundColor: walletPalette.canvas },
+  banner: { paddingHorizontal: 16, paddingTop: 14, backgroundColor: walletPalette.canvas },
+  passbookHead: {
+    marginTop: 10,
+    paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 6,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderTopWidth: 1,
+    borderTopColor: walletPalette.hairline,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
-  title: { color: walletPalette.ink, fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
+  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 },
+  title: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
   count: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
-  dateBand: { marginHorizontal: 16, backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 2 },
-  dateText: { color: '#9A9CA6', fontSize: 12.5, fontWeight: '700' },
-  rowWrap: { marginHorizontal: 16, backgroundColor: '#FFFFFF' },
-  rowDivider: { height: 1, backgroundColor: '#F2F2F5', marginHorizontal: 16 },
-  emptyWrap: { marginHorizontal: 16, backgroundColor: '#FFFFFF' },
-  cardBottom: {
-    marginHorizontal: 16,
-    minHeight: 18,
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
-  },
+  dateBand: { backgroundColor: walletPalette.canvas, paddingHorizontal: 20, paddingVertical: 8 },
+  dateText: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '600' },
+  rowWrap: { backgroundColor: '#FFFFFF', paddingHorizontal: 4 },
+  rowDivider: { height: 1, backgroundColor: '#F2F2F5', marginLeft: 16 },
+  emptyWrap: { backgroundColor: '#FFFFFF' },
   loader: { marginVertical: 24 },
 });
