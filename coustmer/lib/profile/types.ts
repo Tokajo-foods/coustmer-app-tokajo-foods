@@ -57,10 +57,6 @@ export type LanguagePreferencePayload = {
   language: string;
 };
 
-export type UpdatePhonePayload = {
-  phone: string;
-};
-
 export type UpdateEmailPayload = {
   email: string;
 };

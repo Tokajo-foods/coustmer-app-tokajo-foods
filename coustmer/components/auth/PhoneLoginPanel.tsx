@@ -9,6 +9,7 @@ import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
 import { VerifiedPhoneChip } from '@/components/auth/VerifiedPhoneChip';
 import { getAuthErrorCode } from '@/lib/auth/http';
 import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
+import { precheckPhone } from '@/lib/auth/phone-precheck';
 import { useAuthStore } from '@/store/auth-store';
 
 type Props = {
@@ -20,9 +21,19 @@ type Props = {
 
 type Failure = { message: string; notFound: boolean };
 
+const NO_CUSTOMER_ACCOUNT = new Set(['USER_NOT_FOUND', 'ACCOUNT_NOT_FOUND', 'ROLE_NOT_ALLOWED']);
+
 export function PhoneLoginPanel({ initialPhone, onLoginSuccess, onCreateAccount }: Props) {
   const router = useRouter();
-  const otp = useFirebasePhoneOtp({ initialPhone });
+  const [unknownPhone, setUnknownPhone] = useState<string | null>(null);
+  const otp = useFirebasePhoneOtp({
+    initialPhone,
+    precheck: async (phone) => {
+      const miss = await precheckPhone(phone, 'login');
+      setUnknownPhone(miss?.code && NO_CUSTOMER_ACCOUNT.has(miss.code) ? phone : null);
+      return miss?.message ?? null;
+    },
+  });
   const loginWithPhone = useAuthStore((s) => s.loginWithPhone);
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -41,7 +52,7 @@ export function PhoneLoginPanel({ initialPhone, onLoginSuccess, onCreateAccount 
         otp.requireReverify(message);
         return;
       }
-      setFailure({ message, notFound: code === 'USER_NOT_FOUND' || code === 'ACCOUNT_NOT_FOUND' });
+      setFailure({ message, notFound: Boolean(code && NO_CUSTOMER_ACCOUNT.has(code)) });
     } finally {
       setSubmitting(false);
     }
@@ -67,13 +78,20 @@ export function PhoneLoginPanel({ initialPhone, onLoginSuccess, onCreateAccount 
 
   if (otp.step !== 'verified' || !otp.phone) {
     return (
-      <PhoneOtpStep
-        otp={otp}
-        onVerify={(code) => void handleVerify(code)}
-        submitting={submitting}
-        phoneTip="We’ll text a 6-digit code to sign you in. No password needed."
-        verifyLabel="Verify & sign in"
-      />
+      <>
+        <PhoneOtpStep
+          otp={otp}
+          onVerify={(code) => void handleVerify(code)}
+          submitting={submitting}
+          phoneTip="We’ll text a 6-digit code to sign you in. No password needed."
+          verifyLabel="Verify & sign in"
+        />
+        {otp.step === 'phone' && otp.phoneError && unknownPhone && onCreateAccount ? (
+          <Pressable style={styles.submitBtn} onPress={() => onCreateAccount(unknownPhone)}>
+            <Text style={styles.submitBtnTextCalm}>Create account with this number</Text>
+          </Pressable>
+        ) : null}
+      </>
     );
   }
 

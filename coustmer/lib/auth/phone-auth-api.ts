@@ -11,6 +11,8 @@ import {
 } from '@/lib/auth/http';
 import type {
   PhoneAuthStatus,
+  PhoneCheckPurpose,
+  PhoneCheckResult,
   PhoneForgotPasswordResult,
   PhoneLoginPayload,
   PhoneRegisterPayload,
@@ -35,6 +37,22 @@ export const phoneAuthApi = {
       otpLength: Number(raw?.otpLength ?? 6),
       resendCooldownSeconds: Number(raw?.resendCooldownSeconds ?? 30),
       tokenMaxAgeSeconds: Number(raw?.tokenMaxAgeSeconds ?? 600),
+    };
+  },
+
+  /** Before the Firebase SMS: throws USER_NOT_FOUND / ROLE_NOT_ALLOWED / PHONE_ALREADY_REGISTERED. */
+  check: async (phone: string, purpose: PhoneCheckPurpose): Promise<PhoneCheckResult> => {
+    const raw = unwrapData<Partial<PhoneCheckResult>>(
+      await apiRequest<unknown>(`${PHONE_BASE}/check`, {
+        method: 'POST',
+        body: { phone, role: CUSTOMER_ROLE, purpose },
+      }),
+    );
+    return {
+      phone: String(raw?.phone ?? phone),
+      maskedPhone: String(raw?.maskedPhone ?? ''),
+      exists: Boolean(raw?.exists),
+      linkExistingAccount: Boolean(raw?.linkExistingAccount),
     };
   },
 

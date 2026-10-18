@@ -20,6 +20,8 @@ type Props = {
   phoneTip?: string;
   sendLabel?: string;
   verifyLabel?: string;
+  /** The number is fixed (account's own phone) — no editing, no "Change number". */
+  lockPhone?: boolean;
 };
 
 /** Phone entry → Firebase SMS → 6-digit code. Hosts the reCAPTCHA verifier. */
@@ -30,6 +32,7 @@ export function PhoneOtpStep({
   phoneTip = 'We’ll text a 6-digit code to verify this number.',
   sendLabel = 'Send OTP',
   verifyLabel = 'Verify & continue',
+  lockPhone = false,
 }: Props) {
   const busy = otp.sending || otp.verifying || submitting;
   const blocked = Boolean(otp.blockedReason);
@@ -62,7 +65,7 @@ export function PhoneOtpStep({
             onChangeText={otp.setPhoneInput}
             onSubmit={() => void otp.send()}
             error={otp.phoneError}
-            editable={!busy}
+            editable={!busy && !lockPhone}
           />
           <Pressable
             style={[styles.submitBtn, (busy || blocked) && styles.submitBtnDisabled]}
@@ -85,9 +88,11 @@ export function PhoneOtpStep({
                 {otp.phone ? formatPhoneForDisplay(otp.phone) : ''}
               </Text>
               .{' '}
-              <Text style={styles.resendLink} onPress={busy ? undefined : otp.changeNumber}>
-                Change number
-              </Text>
+              {lockPhone ? null : (
+                <Text style={styles.resendLink} onPress={busy ? undefined : otp.changeNumber}>
+                  Change number
+                </Text>
+              )}
             </Text>
           </View>
           <OtpCodeInput

@@ -8,6 +8,7 @@ import {
 import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
 import { getAuthErrorCode } from '@/lib/auth/http';
 import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
+import { precheckPhone } from '@/lib/auth/phone-precheck';
 import { useAuthStore } from '@/store/auth-store';
 import {
   validateConfirmPassword,
@@ -38,7 +39,15 @@ const EMPTY_VALUES: RegisterValues = {
 /** Phone → Firebase OTP → details → POST /auth/phone/register. */
 export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSuccess }: Options) {
   const router = useRouter();
-  const otp = useFirebasePhoneOtp({ initialPhone });
+  const [numberTaken, setNumberTaken] = useState(false);
+  const otp = useFirebasePhoneOtp({
+    initialPhone,
+    precheck: async (phone) => {
+      const miss = await precheckPhone(phone, 'register');
+      setNumberTaken(miss?.code === 'PHONE_ALREADY_REGISTERED');
+      return miss?.message ?? null;
+    },
+  });
   const registerWithPhone = useAuthStore((s) => s.registerWithPhone);
   const loginWithPhone = useAuthStore((s) => s.loginWithPhone);
 
@@ -153,6 +162,8 @@ export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSucces
     errors,
     banner,
     alreadyRegistered,
+    /** Pre-check found the number already registered (before any SMS). */
+    numberTaken: numberTaken && Boolean(otp.phoneError),
     submitting,
     handleVerify,
     handleRegister,

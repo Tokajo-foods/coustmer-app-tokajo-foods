@@ -7,20 +7,17 @@ import { ActivityIndicator,
   View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
+import { PhoneChangeSection } from '@/components/profile/PhoneChangeSection';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
-import {
-  useUpdateEmail,
-  useUpdatePhone,
-  useUserProfile,
-} from '@/lib/profile/hooks';
+import { formatPhoneForDisplay } from '@/lib/auth/phone-number';
+import { useUpdateEmail, useUserProfile } from '@/lib/profile/hooks';
 
 export function ContactScreen() {
   const { data: profile } = useUserProfile();
-  const updatePhone = useUpdatePhone();
   const updateEmail = useUpdateEmail();
 
-  const [phone, setPhone] = useState('');
+  const [changingPhone, setChangingPhone] = useState(false);
   const [email, setEmail] = useState('');
   const [banner, setBanner] = useState<{
     message: string;
@@ -29,24 +26,8 @@ export function ContactScreen() {
 
   useEffect(() => {
     if (!profile) return;
-    setPhone(profile.phone ?? '');
     setEmail(profile.email ?? '');
   }, [profile]);
-
-  const handleUpdatePhone = () => {
-    setBanner(null);
-    updatePhone.mutate(
-      { phone: phone.trim() },
-      {
-        onSuccess: (message) => setBanner({ message, type: 'success' }),
-        onError: (error) =>
-          setBanner({
-            message: error instanceof Error ? error.message : 'Update failed',
-            type: 'error',
-          }),
-      }
-    );
-  };
 
   const handleUpdateEmail = () => {
     setBanner(null);
@@ -71,27 +52,28 @@ export function ContactScreen() {
     >
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Phone number</Text>
-        <AuthInput
-          label="Phone"
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="+919876543210"
-          keyboardType="phone-pad"
-        />
-        <Text style={styles.hint}>
-          Changing your phone may trigger OTP verification.
-        </Text>
-        <Pressable
-          style={styles.button}
-          onPress={handleUpdatePhone}
-          disabled={updatePhone.isPending}
-        >
-          {updatePhone.isPending ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <Text style={styles.buttonText}>Update phone</Text>
-          )}
-        </Pressable>
+        {!profile ? (
+          <ActivityIndicator color={authTheme.brand} style={styles.loader} />
+        ) : changingPhone ? (
+          <PhoneChangeSection
+            currentPhone={profile.phone}
+            onDone={() => setChangingPhone(false)}
+          />
+        ) : (
+          <>
+            <Text style={styles.value}>
+              {profile.phone ? formatPhoneForDisplay(profile.phone) : 'No phone number yet'}
+            </Text>
+            <Text style={styles.hint}>
+              We verify your current number and the new number with an OTP.
+            </Text>
+            <Pressable style={styles.button} onPress={() => setChangingPhone(true)}>
+              <Text style={styles.buttonText}>
+                {profile.phone ? 'Change phone number' : 'Add phone number'}
+              </Text>
+            </Pressable>
+          </>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -132,6 +114,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     marginBottom: 4,
+  },
+  value: {
+    color: authTheme.text,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  loader: {
+    marginTop: 12,
   },
   hint: {
     color: authTheme.textMuted,

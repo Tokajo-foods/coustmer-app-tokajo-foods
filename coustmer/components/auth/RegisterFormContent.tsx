@@ -42,12 +42,19 @@ export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess 
         />
 
         {!verified ? (
-          <PhoneOtpStep
-            otp={otp}
-            onVerify={(code) => void flow.handleVerify(code)}
-            phoneTip="Your mobile number is your login. We’ll text a 6-digit code to verify it."
-            verifyLabel="Verify number"
-          />
+          <>
+            <PhoneOtpStep
+              otp={otp}
+              onVerify={(code) => void flow.handleVerify(code)}
+              phoneTip="Your mobile number is your login. We’ll text a 6-digit code to verify it."
+              verifyLabel="Verify number"
+            />
+            {otp.step === 'phone' && flow.numberTaken ? (
+              <Pressable style={styles.submitBtn} onPress={flow.handleSignIn}>
+                <Text style={styles.submitBtnTextCalm}>Sign in instead</Text>
+              </Pressable>
+            ) : null}
+          </>
         ) : (
           <>
             <VerifiedPhoneChip

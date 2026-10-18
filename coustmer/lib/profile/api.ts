@@ -10,7 +10,6 @@ import type {
   ReferralInfo,
   RegisterDevicePayload,
   UpdateEmailPayload,
-  UpdatePhonePayload,
   UpdateProfilePayload,
   UserDevice,
   UserPreferences,
@@ -215,14 +214,6 @@ export const profileApi = {
       { method: 'PUT', body: payload }
     );
     return mapProfile(res.data ?? {});
-  },
-
-  updatePhone: async (payload: UpdatePhonePayload): Promise<string> => {
-    const res = await request<unknown>(`${USERS_BASE}/phone`, {
-      method: 'PUT',
-      body: payload,
-    });
-    return res.message ?? 'Phone update initiated';
   },
 
   updateEmail: async (payload: UpdateEmailPayload): Promise<string> => {

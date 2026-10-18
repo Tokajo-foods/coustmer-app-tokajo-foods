@@ -13,7 +13,6 @@ import type {
   NotificationPreferences,
   RegisterDevicePayload,
   UpdateEmailPayload,
-  UpdatePhonePayload,
   UpdateProfilePayload,
 } from '@/lib/profile/types';
 import { setStoredUser } from '@/lib/auth/storage';
@@ -140,16 +139,6 @@ export function useUpdateLanguagePreference() {
       profileApi.updateLanguagePreference(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileKeys.preferences() });
-      queryClient.invalidateQueries({ queryKey: profileKeys.me() });
-    },
-  });
-}
-
-export function useUpdatePhone() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: UpdatePhonePayload) => profileApi.updatePhone(payload),
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileKeys.me() });
     },
   });

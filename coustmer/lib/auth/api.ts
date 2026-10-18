@@ -6,7 +6,6 @@ import {
   normalizeMessageResponse,
 } from '@/lib/auth/http';
 import type {
-  ChangePasswordPayload,
   LoginPayload,
   OtpSendPayload,
   OtpVerifyPayload,
@@ -70,18 +69,6 @@ export const authApi = {
 
   logoutAll: async () => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/logout-all`, { method: 'POST' });
-    return normalizeMessageResponse(data);
-  },
-
-  changePassword: async (payload: ChangePasswordPayload) => {
-    const data = await apiRequest<unknown>(`${AUTH_BASE}/change-password`, {
-      method: 'POST',
-      body: {
-        currentPassword: payload.oldPassword,
-        newPassword: payload.newPassword,
-        confirmPassword: payload.confirmPassword ?? payload.newPassword,
-      },
-    });
     return normalizeMessageResponse(data);
   },
 

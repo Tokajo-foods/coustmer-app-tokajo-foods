@@ -8,6 +8,7 @@ import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
 import { getAuthErrorCode } from '@/lib/auth/http';
 import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
 import { phoneAuthApi } from '@/lib/auth/phone-auth-api';
+import { precheckPhone } from '@/lib/auth/phone-precheck';
 import { signOutFirebase } from '@/lib/auth/firebase-phone';
 import { validateConfirmPassword, validatePassword } from '@/utils/validation';
 
@@ -17,7 +18,9 @@ type Props = {
 
 /** Forgot password via Firebase phone OTP, then a one-time reset token. */
 export function ForgotPhoneReset({ onDone }: Props) {
-  const otp = useFirebasePhoneOtp();
+  const otp = useFirebasePhoneOtp({
+    precheck: async (phone) => (await precheckPhone(phone, 'forgot_password'))?.message ?? null,
+  });
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');

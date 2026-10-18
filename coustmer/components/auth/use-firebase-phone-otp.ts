@@ -28,8 +28,14 @@ const LOCKED_MESSAGE = 'Too many wrong codes. Request a new OTP.';
 export type PhoneOtpStep = 'phone' | 'code' | 'verified';
 export type VerifiedPhone = { idToken: string; phone: string };
 
+type Options = {
+  initialPhone?: string;
+  /** Runs before the first SMS for a number; a returned message blocks the send. Skipped on resend. */
+  precheck?: (phoneE164: string) => Promise<string | null>;
+};
+
 /** Firebase SMS OTP: phone → reCAPTCHA → code → Firebase ID token. */
-export function useFirebasePhoneOtp({ initialPhone }: { initialPhone?: string } = {}) {
+export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const firebaseConfig = useMemo(() => getFirebaseWebConfig(), []);
   const clientReady = isFirebasePhoneConfigured();
@@ -82,7 +88,7 @@ export function useFirebasePhoneOtp({ initialPhone }: { initialPhone?: string } 
     setCodeError(message);
   }, []);
 
-  const send = async (target?: string): Promise<boolean> => {
+  const send = async (target?: string, { skipPrecheck = false } = {}): Promise<boolean> => {
     const raw = target ?? phoneInput;
     const invalid = validatePhoneE164(raw);
     setError(null);
@@ -103,6 +109,14 @@ export function useFirebasePhoneOtp({ initialPhone }: { initialPhone?: string } 
     const e164 = normalizePhoneE164(raw);
     setBusy('sending');
     try {
+      if (precheck && !skipPrecheck) {
+        const blocked = await precheck(e164);
+        if (blocked) {
+          setStep('phone');
+          setPhoneError(blocked);
+          return false;
+        }
+      }
       const id = await startFirebasePhoneOtp(e164, verifier);
       setPhone(e164);
       setVerificationId(id);
@@ -129,7 +143,7 @@ export function useFirebasePhoneOtp({ initialPhone }: { initialPhone?: string } 
 
   const resendCode = async () => {
     if (resend.active || busy !== 'idle' || !phone) return false;
-    return send(phone);
+    return send(phone, { skipPrecheck: true });
   };
 
   const verify = async (value?: string): Promise<VerifiedPhone | null> => {

@@ -41,12 +41,6 @@ export type ResetPasswordPayload = {
   confirmPassword?: string;
 };
 
-export type ChangePasswordPayload = {
-  oldPassword: string;
-  newPassword: string;
-  confirmPassword?: string;
-};
-
 export type MessageResponse = {
   message: string;
 };
@@ -81,6 +75,27 @@ export type PhoneForgotPasswordResult = {
   expiresInSeconds: number;
   /** Masked, e.g. +91******3210 */
   phone: string;
+};
+
+export type PhoneCheckPurpose = 'login' | 'register' | 'forgot_password';
+
+/** `POST /auth/phone/check` — the number may receive an OTP for this purpose. */
+export type PhoneCheckResult = {
+  phone: string;
+  maskedPhone: string;
+  exists: boolean;
+  linkExistingAccount: boolean;
+};
+
+/** `POST /auth/password/change/start`. */
+export type PasswordChangeStart = {
+  emailRequired: boolean;
+  phoneRequired: boolean;
+  maskedEmail: string | null;
+  phone: string | null;
+  maskedPhone: string | null;
+  emailOtpSent: boolean;
+  cooldownSeconds: number;
 };
 
 /** Normalize role strings from user-service. */
