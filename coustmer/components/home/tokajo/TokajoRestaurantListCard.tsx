@@ -128,6 +128,15 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
             </Text>
           </View>
         ) : null}
+
+        {eta ? (
+          <View style={styles.etaBadge} pointerEvents="none">
+            <Clock color={ORANGE} size={12} strokeWidth={2.8} />
+            <Text style={styles.etaBadgeText} numberOfLines={1}>
+              {eta}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.body}>
@@ -162,22 +171,15 @@ export const TokajoRestaurantListCard = memo(function TokajoRestaurantListCard({
         ) : null}
 
         <View style={styles.metaRow}>
-          {eta ? (
-            <View style={styles.metaItem}>
-              <Clock color={ORANGE} size={13} strokeWidth={2.6} />
-              <Text style={styles.metaText}>{eta}</Text>
-            </View>
-          ) : null}
           {distance ? (
             <View style={styles.metaItem}>
-              {eta ? <View style={styles.dot} /> : null}
               <MapPin color={ORANGE} size={13} strokeWidth={2.6} />
               <Text style={styles.metaText}>{distance}</Text>
             </View>
           ) : null}
           {cost > 0 ? (
             <View style={styles.metaItem}>
-              {eta || distance ? <View style={styles.dot} /> : null}
+              {distance ? <View style={styles.dot} /> : null}
               <Text style={styles.metaText}>{formatInr(cost)} for two</Text>
             </View>
           ) : null}
