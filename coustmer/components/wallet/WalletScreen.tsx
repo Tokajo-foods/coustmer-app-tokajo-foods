@@ -1,31 +1,33 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/common/ScreenHeader';
-import { EmptyView, ErrorView, LoadingView } from '@/components/common/StateViews';
-import { authTheme } from '@/constants/auth-theme';
-import { EMPTY_COPY, groupByDay, walletPalette } from '@/lib/payment/wallet-display';
-import { useWalletHistory, useWalletOverview } from '@/lib/payment/wallet-hooks';
-import type { WalletFilter, WalletHistoryItem } from '@/lib/payment/wallet-types';
-import { WalletAddMoneyCard } from './WalletAddMoneyCard';
-import { WalletAwaitingBanner } from './WalletAwaitingBanner';
-import { WalletBalancePanel } from './WalletBalancePanel';
-import { WalletHistoryFilters } from './WalletHistoryFilters';
+import { ErrorView, LoadingView } from '@/components/common/StateViews';
+import { paymentKeys } from '@/lib/payment/hooks';
+import { walletPalette } from '@/lib/payment/wallet-display';
+import { useWalletOverview } from '@/lib/payment/wallet-hooks';
+import type { WalletHistoryItem } from '@/lib/payment/wallet-types';
+import { WalletOverviewTab } from './WalletOverviewTab';
+import { WalletTabs, type WalletTab } from './WalletTabs';
 import { WalletTopupModal } from './WalletTopupModal';
+import { WalletTransactionsTab } from './WalletTransactionsTab';
 import { WalletTxDetailSheet } from './WalletTxDetailSheet';
-import { WalletTxRow } from './WalletTxRow';
 
 type Topup = { open: boolean; amount: number | null };
 
 export function WalletScreen() {
-  const [filter, setFilter] = useState<WalletFilter>('all');
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState<WalletTab>('wallet');
   const [topup, setTopup] = useState<Topup>({ open: false, amount: null });
   const [selected, setSelected] = useState<WalletHistoryItem | null>(null);
-
   const overview = useWalletOverview();
-  const history = useWalletHistory(filter);
+
+  const refreshAll = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: paymentKeys.wallet() });
+  }, [queryClient]);
 
   const firstFocus = useRef(true);
   useFocusEffect(
@@ -34,20 +36,12 @@ export function WalletScreen() {
         firstFocus.current = false;
         return;
       }
-      void overview.refetch();
-      void history.refetch();
+      refreshAll();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );
 
-  const items = useMemo(() => history.data?.pages.flatMap((p) => p.items) ?? [], [history.data]);
-  const sections = useMemo(() => groupByDay(items), [items]);
-  const onRowPress = useCallback((item: WalletHistoryItem) => setSelected(item), []);
-
-  const refresh = () => {
-    void overview.refetch();
-    void history.refetch();
-  };
+  const onOpenTx = useCallback((item: WalletHistoryItem) => setSelected(item), []);
 
   if (overview.isLoading || overview.isError || !overview.data) {
     return (
@@ -58,7 +52,7 @@ export function WalletScreen() {
         ) : (
           <ErrorView
             message={overview.error instanceof Error ? overview.error.message : 'Could not load your wallet.'}
-            onRetry={refresh}
+            onRetry={refreshAll}
           />
         )}
       </SafeAreaView>
@@ -66,91 +60,24 @@ export function WalletScreen() {
   }
 
   const data = overview.data;
-  const empty = EMPTY_COPY[filter];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Header />
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id}
-        stickySectionHeadersEnabled={false}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={overview.isRefetching || (history.isRefetching && !history.isFetchingNextPage)}
-            onRefresh={refresh}
-            tintColor={authTheme.brand}
-            colors={[authTheme.brand]}
-          />
-        }
-        onEndReachedThreshold={0.4}
-        onEndReached={() => {
-          if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
-        }}
-        ListHeaderComponent={
-          <View>
-            <WalletBalancePanel overview={data} />
-            {data.awaitingCredit.count > 0 ? (
-              <View style={styles.banner}>
-                <WalletAwaitingBanner amount={data.awaitingCredit.amount} count={data.awaitingCredit.count} />
-              </View>
-            ) : null}
-            {data.topUp.enabled && !data.isLocked ? (
-              <WalletAddMoneyCard overview={data} onProceed={(amount) => setTopup({ open: true, amount })} />
-            ) : !data.isLocked ? (
-              <Text style={styles.paused}>Adding money is unavailable right now. Please try again later.</Text>
-            ) : null}
-            <View style={styles.passbookHead}>
-              <View style={styles.titleRow}>
-                <Text style={styles.title}>Transactions</Text>
-                {data.transactionCount > 0 ? (
-                  <Text style={styles.count}>
-                    {data.transactionCount} {data.transactionCount === 1 ? 'entry' : 'entries'}
-                  </Text>
-                ) : null}
-              </View>
-              <WalletHistoryFilters value={filter} onChange={setFilter} />
-            </View>
-          </View>
-        }
-        renderSectionHeader={({ section }) => (
-          <View style={styles.dateBand}>
-            <Text style={styles.dateText}>{section.title}</Text>
-          </View>
-        )}
-        renderItem={({ item, index, section }) => (
-          <View
-            style={[
-              styles.rowWrap,
-              index === 0 && styles.rowFirst,
-              index === section.data.length - 1 && styles.rowLast,
-            ]}
-          >
-            {index > 0 ? <View style={styles.rowDivider} /> : null}
-            <WalletTxRow item={item} onPress={onRowPress} />
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            {history.isLoading ? (
-              <ActivityIndicator color={authTheme.brand} style={styles.loader} />
-            ) : history.isError ? (
-              <ErrorView
-                message={history.error instanceof Error ? history.error.message : 'Could not load transactions.'}
-                onRetry={() => void history.refetch()}
-              />
-            ) : (
-              <EmptyView title={empty.title} subtitle={empty.subtitle} />
-            )}
-          </View>
-        }
-        ListFooterComponent={
-          history.isFetchingNextPage ? <ActivityIndicator color={authTheme.brand} style={styles.loader} /> : null
-        }
-      />
+      <WalletTabs value={tab} onChange={setTab} />
+
+      {tab === 'wallet' ? (
+        <WalletOverviewTab
+          overview={data}
+          refreshing={overview.isRefetching}
+          onRefresh={refreshAll}
+          onProceed={(amount) => setTopup({ open: true, amount })}
+          onOpenTx={onOpenTx}
+          onViewAll={() => setTab('transactions')}
+        />
+      ) : (
+        <WalletTransactionsTab totalCount={data.transactionCount} onOpenTx={onOpenTx} />
+      )}
 
       <WalletTopupModal
         visible={topup.open}
@@ -173,41 +100,5 @@ function Header() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: walletPalette.canvas },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: walletPalette.hairline,
-  },
-  list: { paddingBottom: 120, flexGrow: 1 },
-  banner: { paddingHorizontal: 16, paddingTop: 12 },
-  paused: { marginHorizontal: 20, marginTop: 14, color: walletPalette.amber, fontSize: 13, fontWeight: '500' },
-  passbookHead: { marginTop: 24, paddingHorizontal: 16, gap: 12 },
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  title: { color: walletPalette.ink, fontSize: 17, fontWeight: '700' },
-  count: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '500' },
-  dateBand: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8 },
-  dateText: { color: walletPalette.muted, fontSize: 12.5, fontWeight: '600' },
-  rowWrap: {
-    marginHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: walletPalette.hairline,
-    overflow: 'hidden',
-  },
-  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
-  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 14, borderBottomRightRadius: 14 },
-  rowDivider: { height: 1, backgroundColor: '#F2F2F5', marginLeft: 16 },
-  emptyWrap: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: walletPalette.hairline,
-  },
-  loader: { marginVertical: 24 },
+  header: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, backgroundColor: '#FFFFFF' },
 });
