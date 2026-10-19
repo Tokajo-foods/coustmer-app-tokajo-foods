@@ -20,6 +20,8 @@ const FINISHED_KINDS = new Set([
   'restaurant_cancelled', 'accept_timeout', 'no_partner_available',
 ]);
 
+const WALLET_STATUSES = new Set(['wallet_credited', 'wallet_debited']);
+
 const PROMO_CATEGORIES = new Set(['offer', 'offers', 'promo', 'promotion', 'marketing']);
 
 function str(value: unknown): string {
@@ -33,6 +35,11 @@ export function routeForNotificationData(raw: unknown): NotificationRoute | null
   const data = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const kind = str(data.kind);
   if (kind.startsWith('internet_call') || str(data.pushStyle)) return null;
+
+  const ticketId = str(data.ticketId ?? data.ticket_id);
+  if (ticketId) {
+    return { pathname: '/support/[ticketId]', params: { ticketId } };
+  }
 
   const orderId = str(data.orderId ?? data.order_id ?? data.order);
   if (orderId && kind === 'restaurant_chat') {
@@ -59,6 +66,10 @@ export function routeForNotificationData(raw: unknown): NotificationRoute | null
       pathname: '/restaurants/[restaurantId]',
       params: { restaurantId },
     };
+  }
+  const status = str(data.status);
+  if (WALLET_STATUSES.has(status) || (status === 'refund_success' && str(data.method) === 'wallet')) {
+    return { pathname: '/profile/wallet', params: {} };
   }
   const paymentId = str(data.paymentId ?? data.payment_id ?? data.payment);
   if (paymentId) {

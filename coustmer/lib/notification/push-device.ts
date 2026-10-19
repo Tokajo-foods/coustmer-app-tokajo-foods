@@ -31,6 +31,15 @@ export async function registerCustomerPushDevice(N: NotificationsModule): Promis
   return token;
 }
 
+/** notification-service id of this phone's push registration, if it registered. */
+export async function getCustomerPushDeviceId(): Promise<string | null> {
+  return AsyncStorage.getItem(DEVICE_ID_KEY).catch(() => null);
+}
+
+export async function forgetCustomerPushDevice(): Promise<void> {
+  await AsyncStorage.removeItem(DEVICE_ID_KEY).catch(() => undefined);
+}
+
 /** Call while still authenticated, so a signed-out phone stops receiving that account's order pushes. */
 export async function unregisterCustomerPushDevice(): Promise<void> {
   await releaseVoipDevice();

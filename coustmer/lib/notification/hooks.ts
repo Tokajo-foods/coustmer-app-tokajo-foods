@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import { notificationApi } from '@/lib/notification/api';
-import type { AppNotification, NotificationPreferences } from '@/lib/notification/types';
+import type { AppNotification } from '@/lib/notification/types';
 
 export const notificationKeys = {
   all: ['notification'] as const,
@@ -46,7 +46,7 @@ export function useNotificationServiceReady(enabled = false) {
   });
 }
 
-/** GET /notifications — keeps list fresh with light polling while screen is focused. */
+/** GET /notifications â€” keeps list fresh with light polling while screen is focused. */
 export function useNotifications(
   params?: { page?: number; limit?: number; unread?: boolean },
   options?: { refetchInterval?: number | false; enabled?: boolean }
@@ -64,7 +64,7 @@ export function useNotifications(
 
 /**
  * GET /notifications/unread-count
- * Polled for badge — short interval, stays snappy without hammering the API.
+ * Polled for badge â€” short interval, stays snappy without hammering the API.
  */
 export function useUnreadNotificationCount(options?: {
   refetchInterval?: number | false;
@@ -83,7 +83,7 @@ export function useUnreadNotificationCount(options?: {
   });
 }
 
-/** PUT /notifications/:id/read — optimistic for instant UI. */
+/** PUT /notifications/:id/read â€” optimistic for instant UI. */
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
 
@@ -291,67 +291,3 @@ export function useClearAllNotifications() {
   });
 }
 
-/** GET /devices */
-export function useNotificationDevices(enabled = true) {
-  return useQuery({
-    queryKey: notificationKeys.devices(),
-    queryFn: notificationApi.getDevices,
-    enabled,
-    staleTime: 30_000,
-    retry: 1,
-  });
-}
-
-/** POST /devices/register */
-export function useRegisterNotificationDevice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: {
-      token: string;
-      platform: 'android' | 'ios' | 'web';
-      app?: 'customer';
-    }) => notificationApi.registerDevice(payload),
-    onSettled: () => invalidateNotificationQueries(queryClient),
-  });
-}
-
-/** DELETE /devices/:deviceId */
-export function useUnregisterNotificationDevice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (deviceId: string) => notificationApi.unregisterDevice(deviceId),
-    onSettled: () => invalidateNotificationQueries(queryClient),
-  });
-}
-
-/** GET /preferences */
-export function useNotificationPreferences(enabled = true) {
-  return useQuery({
-    queryKey: notificationKeys.preferences(),
-    queryFn: notificationApi.getPreferences,
-    enabled,
-    staleTime: 15_000,
-    retry: 1,
-  });
-}
-
-/** PUT /preferences — flips the switch instantly, rolls back if the server refuses. */
-export function useUpdateNotificationPreferences() {
-  const queryClient = useQueryClient();
-  const key = notificationKeys.preferences();
-  return useMutation({
-    mutationFn: (payload: Partial<NotificationPreferences>) =>
-      notificationApi.updatePreferences(payload),
-    onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<NotificationPreferences>(key);
-      if (previous) queryClient.setQueryData(key, { ...previous, ...payload });
-      return { previous };
-    },
-    onError: (_err, _payload, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(key, ctx.previous);
-    },
-    onSuccess: (saved) => queryClient.setQueryData(key, saved),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
-  });
-}

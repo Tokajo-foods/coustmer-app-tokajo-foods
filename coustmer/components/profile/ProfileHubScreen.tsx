@@ -12,6 +12,7 @@ import {
   LogOut,
   MapPin,
   MonitorSmartphone,
+  Bell,
   KeyRound,
   Phone,
   Receipt,
@@ -289,6 +290,11 @@ export function ProfileHubScreen() {
           </MenuGroup>
 
           <MenuGroup title="Account">
+            <Row
+              icon={Bell}
+              title="Notifications"
+              onPress={() => router.push('/notifications')}
+            />
             <Row
               icon={Phone}
               title="Phone & email"

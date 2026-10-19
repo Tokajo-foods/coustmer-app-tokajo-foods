@@ -67,23 +67,6 @@ export type UserSession = {
   [key: string]: unknown;
 };
 
-export type UserDevice = {
-  id: string;
-  deviceId: string;
-  deviceType: string;
-  deviceName?: string;
-  platform?: string;
-  lastSeen?: string;
-  [key: string]: unknown;
-};
-
-export type RegisterDevicePayload = {
-  deviceId: string;
-  deviceType: string;
-  deviceName?: string;
-  deviceToken?: string;
-};
-
 export type ReferralInfo = {
   referralCode: string;
   referralCount: number;

@@ -6,8 +6,21 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AuthInput } from '@/components/auth/AuthInput';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
+import { loadNotifications } from '@/lib/notification/load-notifications';
+import {
+  registerCustomerPushDevice,
+  unregisterCustomerPushDevice,
+} from '@/lib/notification/push-device';
 import { useDeleteAccount } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
+
+/** Deletion failed after unbinding — put this phone back on the account's pushes. */
+async function restorePushRegistration(): Promise<void> {
+  const N = await loadNotifications();
+  if (!N) return;
+  const { status } = await N.getPermissionsAsync().catch(() => ({ status: 'denied' as const }));
+  if (status === 'granted') await registerCustomerPushDevice(N).catch(() => null);
+}
 
 export function DeleteAccountScreen() {
   const router = useRouter();
@@ -30,21 +43,28 @@ export function DeleteAccountScreen() {
     }
 
     setBanner(null);
-    deleteAccount.mutate(
-      { reason: reason.trim() },
-      {
-        onSuccess: async (message) => {
-          await clearSession();
-          setBanner({ message, type: 'success' });
-          setTimeout(() => router.replace('/login'), 1500);
-        },
-        onError: (error) =>
-          setBanner({
-            message: error instanceof Error ? error.message : 'Deletion failed',
-            type: 'error',
-          }),
-      }
-    );
+    const run = async () => {
+      // Unbind this phone while the session is still valid; a deleted account cannot do it later.
+      await unregisterCustomerPushDevice();
+      deleteAccount.mutate(
+        { reason: reason.trim() },
+        {
+          onSuccess: async (message) => {
+            await clearSession();
+            setBanner({ message, type: 'success' });
+            setTimeout(() => router.replace('/login'), 1500);
+          },
+          onError: (error) => {
+            void restorePushRegistration();
+            setBanner({
+              message: error instanceof Error ? error.message : 'Deletion failed',
+              type: 'error',
+            });
+          },
+        }
+      );
+    };
+    void run();
   };
 
   return (

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { ToggleRow } from '@/components/profile/ToggleRow';
 import { authTheme } from '@/constants/auth-theme';
@@ -6,9 +6,8 @@ import { getApiErrorMessage } from '@/lib/errors';
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
-} from '@/lib/notification/hooks';
-import { loadNotifications } from '@/lib/notification/load-notifications';
-import { registerCustomerPushDevice } from '@/lib/notification/push-device';
+} from '@/lib/notification/settings-hooks';
+import { enablePushOnThisPhone } from '@/lib/notification/enable-push';
 import type { NotificationPreferences } from '@/lib/notification/types';
 
 type Key = keyof NotificationPreferences;
@@ -23,26 +22,6 @@ const OTHER_ROWS: Array<{ key: Key; label: string }> = [
   { key: 'email', label: 'Email' },
   { key: 'whatsapp', label: 'WhatsApp' },
 ];
-
-/** Makes sure the phone lets this app show pushes once the customer turns them back on. */
-async function ensureDevicePermission(): Promise<void> {
-  const N = await loadNotifications();
-  if (!N) return;
-  let status = (await N.getPermissionsAsync()).status;
-  if (status !== 'granted') status = (await N.requestPermissionsAsync()).status;
-  if (status !== 'granted') {
-    Alert.alert(
-      'Notifications are blocked on this phone',
-      'Allow notifications for this app in your phone settings to receive them.',
-      [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Open settings', onPress: () => void Linking.openSettings() },
-      ]
-    );
-    return;
-  }
-  await registerCustomerPushDevice(N).catch(() => null);
-}
 
 /** Server-backed notification switches (notification-service `/preferences`); each tap saves instantly. */
 export function NotificationSettingsList({ enabled = true }: { enabled?: boolean }) {
@@ -72,7 +51,7 @@ export function NotificationSettingsList({ enabled = true }: { enabled?: boolean
       { [key]: value },
       {
         onSuccess: () => {
-          if (key === 'push' && value) void ensureDevicePermission();
+          if (key === 'push' && value) void enablePushOnThisPhone().catch(() => null);
         },
         onError: (e) => Alert.alert('Could not update', getApiErrorMessage(e)),
       }

@@ -25,6 +25,7 @@ import { KitchenAlertsBlock } from '@/components/notification/KitchenAlertsBlock
 import { NotificationPrefsCard } from '@/components/notification/NotificationPrefsCard';
 import { NotificationRow } from '@/components/notification/NotificationRow';
 import { PushPermissionBanner } from '@/components/notification/PushPermissionBanner';
+import { SignedOutInbox } from '@/components/notification/SignedOutInbox';
 import { hubStyles as styles } from '@/components/notification/notifications-hub-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -119,6 +120,17 @@ export function NotificationsHubScreen() {
       ]
     );
   };
+
+  if (!authed) {
+    return (
+      <View style={[styles.safe, { paddingTop: Math.max(insets.top, 32) }]}>
+        <View style={styles.container}>
+          <ScreenHeader title="Notifications" />
+          <SignedOutInbox />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View

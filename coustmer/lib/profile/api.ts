@@ -6,11 +6,8 @@ import type {
   DeleteAccountPayload,
   DietaryPreferences,
   LanguagePreferencePayload,
-  NotificationPreferences,
   ReferralInfo,
-  RegisterDevicePayload,
   UpdateProfilePayload,
-  UserDevice,
   UserPreferences,
   UserProfile,
   UserSession,
@@ -112,17 +109,6 @@ function mapSession(data: Record<string, unknown>): UserSession {
   };
 }
 
-function mapDevice(data: Record<string, unknown>): UserDevice {
-  return {
-    id: String(data._id ?? data.id ?? ''),
-    deviceId: String(data.deviceId ?? ''),
-    deviceType: String(data.deviceType ?? ''),
-    deviceName: (data.deviceName as string) || undefined,
-    platform: (data.platform as string) || undefined,
-    lastSeen: (data.lastSeen as string) || (data.updatedAt as string),
-  };
-}
-
 export const profileApi = {
   getProfile: async (): Promise<UserProfile> => {
     const res = await request<Record<string, unknown>>(USERS_BASE);
@@ -185,16 +171,6 @@ export const profileApi = {
     };
   },
 
-  updateNotificationPreferences: async (
-    payload: NotificationPreferences
-  ): Promise<UserProfile> => {
-    const res = await request<Record<string, unknown>>(
-      `${USERS_BASE}/preferences/notifications`,
-      { method: 'PUT', body: payload }
-    );
-    return mapProfile(res.data ?? {});
-  },
-
   updateDietaryPreferences: async (
     payload: DietaryPreferences
   ): Promise<UserProfile> => {
@@ -225,26 +201,6 @@ export const profileApi = {
       method: 'DELETE',
     });
     return res.message ?? 'Session revoked';
-  },
-
-  getDevices: async (): Promise<UserDevice[]> => {
-    const res = await request<Record<string, unknown>[]>(`${USERS_BASE}/devices`);
-    return Array.isArray(res.data) ? res.data.map(mapDevice) : [];
-  },
-
-  registerDevice: async (payload: RegisterDevicePayload): Promise<string> => {
-    const res = await request<unknown>(`${USERS_BASE}/devices`, {
-      method: 'POST',
-      body: payload,
-    });
-    return res.message ?? 'Device registered';
-  },
-
-  removeDevice: async (deviceId: string): Promise<string> => {
-    const res = await request<unknown>(`${USERS_BASE}/devices/${deviceId}`, {
-      method: 'DELETE',
-    });
-    return res.message ?? 'Device removed';
   },
 
   getReferral: async (): Promise<ReferralInfo> => {

@@ -22,7 +22,10 @@ import type {
 import { setUnauthorizedHandler } from '@/lib/auth/unauthorized';
 import { clearCartOnLogout, mergeGuestCartOnLogin } from '@/lib/cart/session-handoff';
 import { getApiErrorMessage } from '@/lib/errors';
-import { unregisterCustomerPushDevice } from '@/lib/notification/push-device';
+import {
+  forgetCustomerPushDevice,
+  unregisterCustomerPushDevice,
+} from '@/lib/notification/push-device';
 import { completeOnboarding } from '@/lib/onboarding';
 import { getStoredSessionCookies } from '@/lib/session-cookies';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
@@ -244,4 +247,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }));
 
-setUnauthorizedHandler(() => useAuthStore.getState().clearSession());
+setUnauthorizedHandler(async () => {
+  // The session is already gone, so the server cannot unbind this phone; forget it locally so
+  // the next sign-in re-registers the token under the new account.
+  await forgetCustomerPushDevice();
+  await useAuthStore.getState().clearSession();
+});

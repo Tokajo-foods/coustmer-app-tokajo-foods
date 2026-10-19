@@ -10,8 +10,6 @@ import type {
   DeleteAccountPayload,
   DietaryPreferences,
   LanguagePreferencePayload,
-  NotificationPreferences,
-  RegisterDevicePayload,
   UpdateProfilePayload,
 } from '@/lib/profile/types';
 import { setStoredUser } from '@/lib/auth/storage';
@@ -23,7 +21,6 @@ export const profileKeys = {
   me: () => [...profileKeys.all, 'me'] as const,
   preferences: () => [...profileKeys.all, 'preferences'] as const,
   sessions: () => [...profileKeys.all, 'sessions'] as const,
-  devices: () => [...profileKeys.all, 'devices'] as const,
   referral: () => [...profileKeys.all, 'referral'] as const,
 };
 
@@ -109,17 +106,6 @@ export function usePreferences() {
   });
 }
 
-export function useUpdateNotificationPreferences() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: NotificationPreferences) =>
-      profileApi.updateNotificationPreferences(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileKeys.preferences() });
-    },
-  });
-}
-
 export function useUpdateDietaryPreferences() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -156,34 +142,6 @@ export function useRevokeSession() {
     mutationFn: (sessionId: string) => profileApi.revokeSession(sessionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileKeys.sessions() });
-    },
-  });
-}
-
-export function useDevices() {
-  return useQuery({
-    queryKey: profileKeys.devices(),
-    queryFn: profileApi.getDevices,
-  });
-}
-
-export function useRegisterDevice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: RegisterDevicePayload) =>
-      profileApi.registerDevice(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileKeys.devices() });
-    },
-  });
-}
-
-export function useRemoveDevice() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (deviceId: string) => profileApi.removeDevice(deviceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileKeys.devices() });
     },
   });
 }
