@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 3.8.2",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -23,8 +23,9 @@
       }
     },
     "production": {
+      "autoIncrement": true,
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.tokajofoods.com",
@@ -33,6 +34,11 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "track": "alpha",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }

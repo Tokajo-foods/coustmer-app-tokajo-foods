@@ -42,7 +42,7 @@ const config = {
       'expo-location',
       {
         locationWhenInUsePermission:
-          'Allow Food Delivery to access your location to set your delivery address and find restaurants near you.',
+          'Allow TOKAJO FOODS to access your location to set your delivery address and find restaurants near you.',
       },
     ],
     [
@@ -84,7 +84,7 @@ const config = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.fooddeliveryapp.customer',
+    bundleIdentifier: 'com.tokajofoods.customer',
     entitlements: {
       'com.apple.developer.usernotifications.time-sensitive': true,
     },
@@ -93,7 +93,7 @@ const config = {
     },
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
-        'Allow Food Delivery to access your location to set your delivery address and find restaurants near you.',
+        'Allow TOKAJO FOODS to access your location to set your delivery address and find restaurants near you.',
       NSMicrophoneUsageDescription:
         'Allow TOKAJO FOODS to use the microphone for in-app calls on an order. Your mobile number stays hidden.',
       UIBackgroundModes: ['audio', 'voip', 'remote-notification', 'fetch'],
@@ -105,7 +105,7 @@ const config = {
     },
   },
   android: {
-    package: 'com.fooddeliveryapp.customer',
+    package: 'com.tokajofoods.customer',
     versionCode: 2,
     ...(googleServicesFile ? { googleServicesFile } : {}),
     softwareKeyboardLayoutMode: 'resize',
