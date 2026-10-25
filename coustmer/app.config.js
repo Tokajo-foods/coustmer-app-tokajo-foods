@@ -106,7 +106,6 @@ const config = {
   },
   android: {
     package: 'com.tokajofoods.customer',
-    versionCode: 2,
     ...(googleServicesFile ? { googleServicesFile } : {}),
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
