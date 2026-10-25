@@ -31,7 +31,7 @@ config.resolver.blockList = [
  * because they don't send a browser Origin header.
  */
 const API_PROXY_TARGET = (
-  process.env.EXPO_PUBLIC_API_URL || 'http://api.viharfood.in'
+  process.env.EXPO_PUBLIC_API_URL || 'https://api.tokajofoods.com'
 ).replace(/\/+$/, '');
 
 function shouldProxyApi(url = '') {

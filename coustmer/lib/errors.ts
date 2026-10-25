@@ -14,7 +14,7 @@ export function getApiErrorMessage(
 
       const detail = error.message?.toLowerCase() ?? '';
       if (detail.includes('network error') || detail.includes('network request failed')) {
-        return `Cannot reach ${API_BASE_URL}. On mobile, open http://api.viharfood.in/health in your browser — if it fails, use Wi‑Fi/mobile data with internet or ask backend to enable HTTPS.`;
+        return `Cannot reach ${API_BASE_URL}. Check your Wi‑Fi or mobile data and try again.`;
       }
 
       return error.message || 'Cannot reach the server. Check your internet connection.';

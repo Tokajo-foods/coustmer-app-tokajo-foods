@@ -7,7 +7,7 @@ const googleServicesFile =
   (fs.existsSync(path.join(__dirname, 'google-services.json')) ? './google-services.json' : undefined);
 const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
 const apiUrl =
-  process.env.EXPO_PUBLIC_API_URL?.trim() || 'http://api.viharfood.in';
+  process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://api.tokajofoods.com';
 const firebaseApiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim() || '';
 const firebaseAuthDomain =
   process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() || '';

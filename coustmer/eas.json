@@ -9,7 +9,7 @@
       "distribution": "internal",
       "node": "20.19.5",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://api.viharfood.in",
+        "EXPO_PUBLIC_API_URL": "https://api.tokajofoods.com",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDtqlNuzkFM6Ix8GKcQcV06Dz6j1_FVRjo"
       }
     },
@@ -18,7 +18,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://api.viharfood.in",
+        "EXPO_PUBLIC_API_URL": "https://api.tokajofoods.com",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDtqlNuzkFM6Ix8GKcQcV06Dz6j1_FVRjo"
       }
     },
@@ -27,7 +27,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://api.viharfood.in",
+        "EXPO_PUBLIC_API_URL": "https://api.tokajofoods.com",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDtqlNuzkFM6Ix8GKcQcV06Dz6j1_FVRjo"
       }
     }

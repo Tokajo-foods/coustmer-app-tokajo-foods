@@ -113,7 +113,7 @@ cp .env.example .env
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `EXPO_PUBLIC_API_URL` | Backend REST API base URL | `http://localhost:3000/api` |
+| `EXPO_PUBLIC_API_URL` | Backend REST API base URL | `https://api.tokajofoods.com` (production) · LAN IP like `http://192.168.x.x:4000` (local) |
 
 Expo exposes only variables prefixed with `EXPO_PUBLIC_` to the client bundle.
 
