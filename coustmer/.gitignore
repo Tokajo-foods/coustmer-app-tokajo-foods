@@ -45,3 +45,6 @@ yarn-error.*
 *.log
 *.txt
 *.bak
+
+# Firebase Android config (contains API key) - keep local / EAS file env
+google-services.json
