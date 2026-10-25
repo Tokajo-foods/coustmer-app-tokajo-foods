@@ -34,9 +34,9 @@ import {
   useDeleteNotification,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
-  useNotifications,
   useUnreadNotificationCount,
 } from '@/lib/notification/hooks';
+import { useInboxPages } from '@/lib/notification/inbox-pages';
 import { routeForNotificationData } from '@/lib/notification/push-route';
 import type { AppNotification } from '@/lib/notification/types';
 import { useKitchenAlerts } from '@/lib/restaurant/hooks';
@@ -55,14 +55,13 @@ export function NotificationsHubScreen() {
     (a) => a.active !== false
   );
 
-  const listQuery = useNotifications(
-    {
-      page: 1,
-      limit: 50,
-      unread: filter === 'unread' ? true : undefined,
-    },
-    { refetchInterval: 20_000, enabled: authed }
-  );
+  const [pageCount, setPageCount] = useState(1);
+  const listQuery = useInboxPages(pageCount, {
+    unread: filter === 'unread' ? true : undefined,
+    enabled: authed,
+    refetchInterval: 20_000,
+  });
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const unreadCount = useUnreadNotificationCount({
     refetchInterval: 12_000,
     enabled: authed,
@@ -72,7 +71,22 @@ export function NotificationsHubScreen() {
   const deleteOne = useDeleteNotification();
   const clearAll = useClearAllNotifications();
 
-  const notifications = listQuery.data?.notifications ?? [];
+  const notifications = listQuery.notifications;
+  const changeFilter = (next: Filter) => {
+    setFilter(next);
+    setPageCount(1);
+  };
+  const loadMore = () => {
+    if (listQuery.hasMore && !listQuery.isFetchingMore) setPageCount((n) => n + 1);
+  };
+  const onPullRefresh = async () => {
+    setPullRefreshing(true);
+    try {
+      await Promise.all([listQuery.refetch(), unreadCount.refetch(), kitchenAlerts.refetch()]);
+    } finally {
+      setPullRefreshing(false);
+    }
+  };
   const count = unreadCount.data ?? 0;
 
   const subtitle = useMemo(() => {
@@ -185,7 +199,7 @@ export function NotificationsHubScreen() {
         <View style={styles.segmentedControl}>
           <Pressable
             style={[styles.segmentBtn, filter === 'all' && styles.segmentBtnActive]}
-            onPress={() => setFilter('all')}
+            onPress={() => changeFilter('all')}
           >
             <Text
               style={[
@@ -198,7 +212,7 @@ export function NotificationsHubScreen() {
           </Pressable>
           <Pressable
             style={[styles.segmentBtn, filter === 'unread' && styles.segmentBtnActive]}
-            onPress={() => setFilter('unread')}
+            onPress={() => changeFilter('unread')}
           >
             <Text
               style={[
@@ -250,15 +264,13 @@ export function NotificationsHubScreen() {
             contentContainerStyle={styles.list}
             refreshControl={
               <RefreshControl
-                refreshing={listQuery.isRefetching}
-                onRefresh={() => {
-                  listQuery.refetch();
-                  unreadCount.refetch();
-                  kitchenAlerts.refetch();
-                }}
+                refreshing={pullRefreshing}
+                onRefresh={() => void onPullRefresh()}
                 tintColor={authTheme.brand}
               />
             }
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.4}
             renderItem={({ item }) => (
               <NotificationRow
                 notification={item}
@@ -267,7 +279,11 @@ export function NotificationsHubScreen() {
               />
             )}
             ListFooterComponent={
-              <Text style={styles.hint}>Long-press a notification to delete</Text>
+              listQuery.isFetchingMore ? (
+                <ActivityIndicator color={authTheme.brand} style={{ marginVertical: 12 }} />
+              ) : (
+                <Text style={styles.hint}>Long-press a notification to delete</Text>
+              )
             }
           />
         )}

@@ -161,7 +161,7 @@ function mapDevice(raw: Record<string, unknown>): NotificationDevice {
     token: (raw.token as string) || (raw.fcmToken as string) || (raw.apnsToken as string) || undefined,
     platform: (raw.platform as string) || undefined,
     app: (raw.app as string) || undefined,
-    createdAt: (raw.createdAt as string) || undefined,
+    createdAt: (raw.registeredAt as string) || (raw.createdAt as string) || undefined,
   };
 }
 
@@ -170,7 +170,7 @@ function mapPrefs(raw: unknown): NotificationPreferences {
   return {
     push: r.pushEnabled !== false,
     orders: r.ordersPush !== false,
-    offers: r.offersPush !== false && r.promoPush !== false,
+    offers: r.offersPush !== false || r.promoPush !== false,
     sms: r.sms !== false,
     email: r.email !== false,
     whatsapp: r.whatsapp === true,
@@ -273,7 +273,9 @@ export const notificationApi = {
   /** GET /devices */
   getDevices: async (): Promise<NotificationDevice[]> => {
     const res = await request<unknown>(`${NOTIFICATION_SERVICE}/devices`);
-    return extractList(res.data).map(mapDevice).filter((d) => d.id);
+    const devices = asRecord(res.data).devices;
+    const rows = Array.isArray(devices) ? devices : extractList(res.data);
+    return (rows as Record<string, unknown>[]).map(mapDevice).filter((d) => d.id);
   },
 
   /** POST /devices/register */

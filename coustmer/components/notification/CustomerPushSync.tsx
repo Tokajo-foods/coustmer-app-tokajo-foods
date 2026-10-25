@@ -1,9 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { isCallPush } from '@/lib/call/call-push';
+import { notificationApi } from '@/lib/notification/api';
 import { notificationKeys } from '@/lib/notification/hooks';
 import { loadNotifications } from '@/lib/notification/load-notifications';
 import { ensureCustomerPushSetup } from '@/lib/notification/push-channel';
@@ -47,9 +48,18 @@ export function CustomerPushSync() {
     const open = (response: NotificationResponse): boolean => {
       const id = `${response.notification.request.identifier}:${response.actionIdentifier}`;
       if (handledResponses.has(id)) return false;
-      const route = routeForNotificationData(response.notification.request.content.data);
+      const data = response.notification.request.content.data;
+      const route = routeForNotificationData(data);
       if (!route) return false;
       handledResponses.add(id);
+      const notificationId =
+        data && typeof data === 'object' ? (data as { notificationId?: unknown }).notificationId : null;
+      if (typeof notificationId === 'string' && notificationId) {
+        void notificationApi
+          .markRead(notificationId)
+          .then(() => queryClient.invalidateQueries({ queryKey: notificationKeys.all }))
+          .catch(() => undefined);
+      }
       router.push(route as never);
       return true;
     };
@@ -94,8 +104,13 @@ export function CustomerPushSync() {
         if (status !== 'granted' || cancelled) return;
 
         await registerCustomerPushDevice(N);
-        track(N.addPushTokenListener(() => {
+        const reRegister = () => {
           void registerCustomerPushDevice(N).catch((err) => console.warn('[push] re-register failed', err));
+        };
+        track(N.addPushTokenListener(reRegister));
+        // Re-bind on foreground so a token the server pruned (or one removed on another phone) comes back.
+        track(AppState.addEventListener('change', (state) => {
+          if (state === 'active') reRegister();
         }));
       } catch (err) {
         // Expo Go on Android cannot receive remote push. A dev/EAS build with google-services.json can.
