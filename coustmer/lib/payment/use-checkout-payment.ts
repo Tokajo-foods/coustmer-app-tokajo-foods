@@ -10,6 +10,7 @@ import { normalizeOrderStatus } from '@/lib/order/types';
 import { PaymentApiError } from '@/lib/payment/api';
 import { useInitiatePayment } from '@/lib/payment/hooks';
 import type { PaymentMethodType } from '@/lib/payment/types';
+import type { RazorpayUpiApp } from '@/lib/payment/upi-app';
 import { useOrderPaymentResult } from '@/lib/payment/use-order-payment-result';
 
 /** Online order created and waiting for money. Retries pay this order — never create a second one. */
@@ -19,6 +20,7 @@ export type UnpaidOrder = {
   amount: number;
   method: PaymentMethodType;
   methodId?: string;
+  upiApp?: RazorpayUpiApp;
 };
 
 type Options = {
@@ -83,6 +85,7 @@ export function useCheckoutPayment({ customerName, contact, setPhase }: Options)
           customerName,
           contact,
           description: `Order ${order.orderNumber || order.id}`,
+          upiApp: order.upiApp,
         });
         setOpen(true);
       } catch (err) {

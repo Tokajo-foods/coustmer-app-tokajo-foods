@@ -16,6 +16,7 @@ import { WebView } from 'react-native-webview';
 import { authTheme } from '@/constants/auth-theme';
 import { formatInr } from '@/lib/format/money';
 import { isNativeRazorpayAvailable, openNativeRazorpay } from '@/lib/payment/razorpay-native';
+import { upiIntentConfig, type RazorpayUpiApp } from '@/lib/payment/upi-app';
 
 export type RazorpayResult = {
   gatewayPaymentId?: string;
@@ -34,6 +35,7 @@ export type RazorpaySession = {
   email?: string;
   contact?: string;
   description?: string;
+  upiApp?: RazorpayUpiApp;
 };
 
 type Props = {
@@ -132,8 +134,8 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
         },
         theme: { color: "#F97316" },
         retry: { enabled: true },
-        method: { upi: true, card: true, netbanking: true, wallet: true },
-        config: {
+        method: ${session.upiApp ? '{ upi: true, card: false, netbanking: false, wallet: false }' : '{ upi: true, card: true, netbanking: true, wallet: true }'},
+        config: ${session.upiApp ? JSON.stringify(upiIntentConfig(session.upiApp)) : `{
           display: {
             blocks: {
               upi: {
@@ -144,7 +146,7 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
             sequence: ["block.upi"],
             preferences: { show_default_blocks: true }
           }
-        },
+        }`},
         handler: function(resp){
           post({
             type:'PAYMENT_COMPLETE',

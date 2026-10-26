@@ -27,6 +27,7 @@ import { buildCheckoutOrder, resolveCheckoutMethod } from '@/lib/order/build-che
 import { usePaymentMethods, usePaymentWallet } from '@/lib/payment/hooks';
 import { needsOnlinePayment, type PaymentMethodType } from '@/lib/payment/types';
 import { preflightCheckoutMethod } from '@/lib/payment/checkout-preflight';
+import { upiAppForChoice } from '@/lib/payment/upi-app';
 import { useCheckoutPayment } from '@/lib/payment/use-checkout-payment';
 import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
@@ -158,26 +159,18 @@ export function OrderSummaryScreen() {
       if (!needsOnlinePayment(mappedMethod)) {
         setOrderPlacementPhase('placed');
         await new Promise((r) => setTimeout(r, 1200));
-        router.replace({
-          pathname: '/orders/[orderId]/tracking',
-          params: { orderId: order.id, newOrder: 'true' },
-        });
+        router.replace({ pathname: '/orders/[orderId]/tracking', params: { orderId: order.id, newOrder: 'true' } });
         setOrderPlacementPhase('none');
         return;
       }
 
       await checkout.pay({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        amount,
-        method: mappedMethod as PaymentMethodType,
-        methodId: mappedMethodId,
+        id: order.id, orderNumber: order.orderNumber, amount,
+        method: mappedMethod as PaymentMethodType, methodId: mappedMethodId,
+        upiApp: upiAppForChoice(paymentMethod),
       });
     } catch (err) {
-      Alert.alert(
-        'Could not place order',
-        err instanceof Error ? err.message : 'Please try again.'
-      );
+      Alert.alert('Could not place order', err instanceof Error ? err.message : 'Please try again.');
       setOrderPlacementPhase('none');
     } finally {
       setPaying(false);

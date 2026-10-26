@@ -1,6 +1,7 @@
 import { NativeModules, TurboModuleRegistry } from 'react-native';
 
 import type { RazorpayResult, RazorpaySession } from '@/components/payment/RazorpayCheckoutModal';
+import { upiIntentConfig } from '@/lib/payment/upi-app';
 
 type NativeSuccess = {
   razorpay_payment_id?: string;
@@ -55,6 +56,12 @@ export async function openNativeRazorpay(
       theme: { color: '#F97316' },
       retry: { enabled: true, max_count: 3 },
       send_sms_hash: true,
+      ...(session.upiApp
+        ? {
+            method: { upi: true, card: false, netbanking: false, wallet: false },
+            config: upiIntentConfig(session.upiApp),
+          }
+        : {}),
     })) as NativeSuccess;
     return {
       success: Boolean(res?.razorpay_payment_id),
