@@ -26,6 +26,7 @@ import { useCreateOrder } from '@/lib/order/hooks';
 import { buildCheckoutOrder, resolveCheckoutMethod } from '@/lib/order/build-checkout-order';
 import { usePaymentMethods, usePaymentWallet } from '@/lib/payment/hooks';
 import { needsOnlinePayment, type PaymentMethodType } from '@/lib/payment/types';
+import { preflightCheckoutMethod } from '@/lib/payment/checkout-preflight';
 import { useCheckoutPayment } from '@/lib/payment/use-checkout-payment';
 import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
@@ -55,18 +56,12 @@ export function OrderSummaryScreen() {
   const cartData = remoteCart.data;
 
   const billPin = useMemo(() => {
-    if (location?.lat != null && location?.lng != null) {
-      return { lat: location.lat, lng: location.lng };
-    }
+    if (location?.lat != null && location?.lng != null) return { lat: location.lat, lng: location.lng };
     const addr = cartData?.deliveryAddress;
-    if (addr?.lat != null && addr?.lng != null) {
-      return { lat: addr.lat, lng: addr.lng };
-    }
-    return null;
+    return addr?.lat != null && addr?.lng != null ? { lat: addr.lat, lng: addr.lng } : null;
   }, [location?.lat, location?.lng, cartData?.deliveryAddress]);
 
-  const normalizedDeliveryType =
-    deliveryType === 'takeaway' ? ('takeaway' as const) : ('delivery' as const);
+  const normalizedDeliveryType = deliveryType === 'takeaway' ? ('takeaway' as const) : ('delivery' as const);
 
   const hasItems = items.length > 0;
   const bill = useCartBill(billPin?.lat, billPin?.lng, hasItems, normalizedDeliveryType, hasItems);
@@ -130,9 +125,16 @@ export function OrderSummaryScreen() {
         paymentMethod,
         paymentMethods.data
       );
-      if (mappedMethod === 'wallet') {
-        await ensureWalletCoversCheckout();
-        void bill.refetch();
+      const blocked = await preflightCheckoutMethod(mappedMethod, {
+        amount: payable, restaurantId: restaurant.id, isTakeaway, lat: billPin?.lat, lng: billPin?.lng,
+      });
+      if (mappedMethod === 'wallet') void bill.refetch();
+      if (blocked) {
+        setOrderPlacementPhase('none');
+        Alert.alert('Choose another way to pay', blocked, [
+          { text: 'Change', onPress: () => setPaymentModalOpen(true) },
+        ]);
+        return;
       }
 
       const order = await createOrder.mutateAsync(
