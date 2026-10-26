@@ -25,7 +25,7 @@ const config = {
   version: '1.0.1',
   scheme: 'fooddeliveryapp',
   orientation: 'portrait',
-  icon: './assets/icon.png',
+  icon: './assets/tokajo-customer-icon.png',
   userInterfaceStyle: 'automatic',
   plugins: [
     'expo-router',
@@ -109,9 +109,9 @@ const config = {
     ...(googleServicesFile ? { googleServicesFile } : {}),
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
-      foregroundImage: './assets/android-icon-foreground.png',
-      monochromeImage: './assets/android-icon-monochrome.png',
-      backgroundColor: '#FFFFFF',
+      foregroundImage: './assets/tokajo-customer-adaptive.png',
+      monochromeImage: './assets/tokajo-customer-monochrome.png',
+      backgroundColor: '#F9C008',
     },
     predictiveBackGestureEnabled: false,
     permissions: [
@@ -131,6 +131,13 @@ const config = {
       'android.permission.FOREGROUND_SERVICE_PHONE_CALL',
       'android.permission.POST_NOTIFICATIONS',
       'android.permission.VIBRATE',
+    ],
+    // Template/library-added permissions the app never uses: no alarm-triggered notifications, no shared-storage
+    // writes, and overlay access is never requested from the user (declaring it alone grants nothing).
+    blockedPermissions: [
+      'android.permission.SCHEDULE_EXACT_ALARM',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.SYSTEM_ALERT_WINDOW',
     ],
     config: {
       googleMaps: {
