@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ShieldCheck } from 'lucide-react-native';
 import { useState } from 'react';
@@ -41,6 +42,7 @@ export function RetryOnlinePayment({
   orderStatus,
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const initiate = useInitiatePayment();
   const { confirm, confirming } = useOrderPaymentResult();
   const [session, setSession] = useState<RazorpaySession | null>(null);
@@ -109,9 +111,10 @@ export function RetryOnlinePayment({
   const onResult = async (success: boolean, data: RazorpayResult) => {
     setOpen(false);
     if (!success || !paymentId) {
+      void queryClient.invalidateQueries({ queryKey: ['order'] });
       Alert.alert(
-        'Payment not completed',
-        'No money was taken. You can try again from this order.'
+        data.reason === 'dismissed' ? 'Payment cancelled' : 'Payment not completed',
+        'You can try again from this order. If money was deducted, the order is confirmed or the money refunded automatically within a few minutes.'
       );
       return;
     }
