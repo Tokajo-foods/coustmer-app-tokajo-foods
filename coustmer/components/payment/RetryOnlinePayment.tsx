@@ -130,8 +130,7 @@ export function RetryOnlinePayment({
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Payment pending</Text>
           <Text style={styles.sub}>
-            Pay {formatInr(amount)} in the secure Razorpay window. UPI, cards, and
-            netbanking are inside it.
+            Pay {formatInr(amount)}. The amount is filled in. If it does not go through, try again from here.
           </Text>
         </View>
       </View>

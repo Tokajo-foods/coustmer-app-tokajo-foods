@@ -38,12 +38,15 @@ export function paymentMethodHint(method: string): string {
     case 'cod':
       return 'Cash or UPI at delivery';
     case 'paytm_upi':
+      return 'Opens Paytm with the order amount';
     case 'gpay':
+      return 'Opens Google Pay with the order amount';
     case 'phonepe':
+      return 'Opens PhonePe with the order amount';
     case 'upi':
-      return 'Opens a secure Razorpay window';
+      return 'Opens your UPI app with the order amount';
     case 'netbanking':
-      return 'Pay from your bank in Razorpay';
+      return 'Choose your bank on the secure payment screen';
     case 'wallet':
       return 'Pay from Tokajo Foods Wallet';
     case 'card':

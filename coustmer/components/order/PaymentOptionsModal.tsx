@@ -218,7 +218,7 @@ export function PaymentOptionsModal({
               </View>
             </LinearGradient>
 
-            <Text style={styles.sectionTitle}>UPI & wallets</Text>
+            <Text style={styles.sectionTitle}>UPI</Text>
             <View style={styles.cardGroup}>
               <Pressable
                 style={styles.cardItem}
@@ -234,7 +234,7 @@ export function PaymentOptionsModal({
                   </View>
                   <View style={styles.cardItemBody}>
                     <Text style={styles.cardItemText}>Paytm UPI</Text>
-                    <Text style={styles.cardItemSubtext}>Pay via Paytm</Text>
+                    <Text style={styles.cardItemSubtext}>Opens Paytm with the order amount</Text>
                   </View>
                   <SelectMark selected={selectedMethod === 'paytm_upi'} />
                 </View>
@@ -254,7 +254,7 @@ export function PaymentOptionsModal({
                   </View>
                   <View style={styles.cardItemBody}>
                     <Text style={styles.cardItemText}>Google Pay</Text>
-                    <Text style={styles.cardItemSubtext}>UPI apps</Text>
+                    <Text style={styles.cardItemSubtext}>Opens Google Pay with the order amount</Text>
                   </View>
                   <SelectMark selected={selectedMethod === 'gpay'} />
                 </View>
@@ -274,7 +274,7 @@ export function PaymentOptionsModal({
                   </View>
                   <View style={styles.cardItemBody}>
                     <Text style={styles.cardItemText}>PhonePe</Text>
-                    <Text style={styles.cardItemSubtext}>UPI apps</Text>
+                    <Text style={styles.cardItemSubtext}>Opens PhonePe with the order amount</Text>
                   </View>
                   <SelectMark selected={selectedMethod === 'phonepe'} />
                 </View>
@@ -395,7 +395,7 @@ export function PaymentOptionsModal({
                   <View style={styles.cardItemBody}>
                     <Text style={styles.cardItemText}>Netbanking</Text>
                     <Text style={styles.cardItemSubtext}>
-                      Opens Razorpay — pick your bank there
+                      Choose your bank on the secure payment screen
                     </Text>
                   </View>
                   <SelectMark selected={selectedMethod === 'netbanking'} />

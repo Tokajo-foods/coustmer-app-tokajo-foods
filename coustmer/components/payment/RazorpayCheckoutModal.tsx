@@ -211,8 +211,8 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
             <Text style={styles.headerTitle}>Secure Payment</Text>
             <Text style={styles.headerSubtitle}>
               {session?.keyId.startsWith('rzp_test_')
-                ? 'Test: open UPI, enter success@razorpay'
-                : `${formatInr(Number(session?.amount ?? 0))} • Razorpay`}
+                ? `${formatInr(Number(session?.amount ?? 0))} · Test payment`
+                : `${formatInr(Number(session?.amount ?? 0))} · Secure checkout`}
             </Text>
           </View>
           <Pressable
