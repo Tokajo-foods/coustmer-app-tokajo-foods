@@ -41,7 +41,14 @@ export function CategoryHero({ title, art, dishCount, restaurantCount, loading, 
       <View style={styles.artWrap}>
         <View style={styles.artGlow} />
         {art ? (
-          <Image source={art} style={styles.art} contentFit="cover" transition={200} />
+          <View style={styles.art}>
+            <Image
+              source={art}
+              style={[styles.artImg, typeof art === 'number' && styles.artBundled]}
+              contentFit="cover"
+              transition={200}
+            />
+          </View>
         ) : (
           <View style={[styles.art, styles.artFallback]}>
             <Text style={styles.artLetter}>{title.charAt(0).toUpperCase()}</Text>
@@ -81,7 +88,26 @@ const styles = StyleSheet.create({
     borderRadius: (ART + 12) / 2,
     backgroundColor: 'rgba(249,115,22,0.14)',
   },
-  art: { width: ART, height: ART, borderRadius: ART / 2, backgroundColor: '#FFFFFF' },
+  art: {
+    width: ART,
+    height: ART,
+    borderRadius: ART / 2,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  artImg: { width: '100%', height: '100%' },
+  // Bundled circle art has wide transparent padding (home strip zooms it 2.75x).
+  artBundled: {
+    position: 'absolute',
+    width: ART * 2.75,
+    height: ART * 2.75,
+    left: -(ART * 1.75) / 2,
+    top: -(ART * 1.75) / 2,
+  },
   artFallback: { alignItems: 'center', justifyContent: 'center' },
   artLetter: { fontFamily: fonts.displayBold, fontSize: 44, color: searchColors.orange },
 });

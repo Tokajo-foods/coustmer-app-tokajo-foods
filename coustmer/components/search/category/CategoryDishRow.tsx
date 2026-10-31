@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { Star, Store } from 'lucide-react-native';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { DishPrice } from '@/components/restaurant/DishPrice';
 import { fonts } from '@/constants/typography';
 import type { SearchDish } from '@/lib/search/types';
@@ -19,8 +20,9 @@ export const CategoryDishRow = memo(function CategoryDishRow({
 }) {
   const closed = dish.restaurantIsOpen === false;
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    <SmoothPressable
+      style={styles.card}
+      pressScale={0.985}
       onPress={() => onPress(dish)}
       accessibilityLabel={`${dish.name} from ${dish.restaurantName ?? 'restaurant'}${closed ? ', closed now' : ''}`}
     >
@@ -65,7 +67,7 @@ export const CategoryDishRow = memo(function CategoryDishRow({
           <Text style={[styles.ctaText, closed && styles.ctaTextClosed]}>{closed ? 'CLOSED' : 'VIEW'}</Text>
         </View>
       </View>
-    </Pressable>
+    </SmoothPressable>
   );
 });
 
@@ -89,7 +91,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  pressed: { transform: [{ scale: 0.985 }], opacity: 0.96 },
   info: { flex: 1, gap: 5 },
   tags: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 16 },
   veg: {
