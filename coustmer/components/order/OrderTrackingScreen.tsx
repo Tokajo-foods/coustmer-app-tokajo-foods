@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OrderContactCard } from '@/components/call/OrderContactCard';
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
+import { TrackingCancelBar } from '@/components/order/tracking/TrackingCancelBar';
 import { TrackingCompletedActions } from '@/components/order/tracking/TrackingCompletedActions';
 import { TrackingDeliveryControls } from '@/components/order/tracking/TrackingDeliveryControls';
 import { formatDistance } from '@/components/order/tracking/tracking-eta';
@@ -161,6 +162,8 @@ export function OrderTrackingScreen() {
           {showControls ? <TrackingDeliveryControls orderId={id} phase={phase} /> : null}
 
           <TrackingOrderSummary order={o} active={phase.active} pickup={pickup} />
+
+          {phase.active ? <TrackingCancelBar order={o} /> : null}
         </ScrollView>
       </View>
     </View>
