@@ -1,8 +1,7 @@
-import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
 import { BadgeCheck, Eye, EyeOff, Lock } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { memo, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
 import { changePasswordStyles as styles } from '@/components/auth/change-password-styles';
@@ -14,18 +13,9 @@ import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
 import { validateConfirmPassword, validatePassword } from '@/utils/validation';
 
-function screenSubtitle(flow: ReturnType<typeof usePasswordChangeFlow>): string {
-  if (flow.stage === 'loading') {
-    if (flow.busy) return 'Sending verification codes to your registered contacts…';
-    if (flow.banner) return 'We could not start verification. Fix the issue below and try again.';
-    return 'Preparing verification…';
-  }
-  if (flow.stage === 'verify') {
-    return 'For your security, confirm the codes sent to your email and phone on file.';
-  }
-  if (flow.stage === 'password') return 'Choose a strong password you have not used on this account before.';
-  return '';
-}
+const HEADER_SUBTITLE = 'Verify your identity with OTP, then choose a new password.';
+
+const VerifyStep = memo(PasswordChangeVerifyStep);
 
 /** Profile → change password: email + phone OTP, then set a new password. */
 export function ChangePasswordScreen() {
@@ -35,8 +25,6 @@ export function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
-
-  const subtitle = useMemo(() => screenSubtitle(flow), [flow]);
 
   const banner = flow.banner
     ? ({ message: flow.banner, type: 'error' as const })
@@ -53,7 +41,11 @@ export function ChangePasswordScreen() {
   };
 
   const eye = (
-    <Pressable onPress={() => setShow((v) => !v)} accessibilityLabel={show ? 'Hide password' : 'Show password'}>
+    <Pressable
+      onPress={() => setShow((v) => !v)}
+      hitSlop={8}
+      accessibilityLabel={show ? 'Hide password' : 'Show password'}
+    >
       {show ? <EyeOff color={authTheme.textMuted} size={18} /> : <Eye color={authTheme.textMuted} size={18} />}
     </Pressable>
   );
@@ -82,18 +74,21 @@ export function ChangePasswordScreen() {
   return (
     <ProfileFormLayout
       title="Change password"
-      subtitle={subtitle}
+      subtitle={HEADER_SUBTITLE}
       banner={banner}
       backFallback="/profile"
       onSave={flow.stage === 'password' ? handleSave : undefined}
       saveLabel="Save new password"
-      saving={flow.busy}
+      saving={flow.busy && flow.stage === 'password'}
       saveDisabled={flow.stage !== 'password'}
     >
       {flow.stage === 'loading' ? (
         <View style={styles.loaderWrap}>
           {flow.busy ? (
-            <ActivityIndicator color={authTheme.brand} size="large" />
+            <>
+              <ActivityIndicator color={authTheme.brand} size="large" />
+              <Text style={styles.loadingHint}>Sending verification codes…</Text>
+            </>
           ) : (
             <>
               {flow.errorCode === 'CONTACT_MISSING' ? (
@@ -116,7 +111,7 @@ export function ChangePasswordScreen() {
       {flow.stage === 'verify' ? (
         <>
           <Text style={styles.stepLabel}>Step 1 of 2 · Verify it's you</Text>
-          <PasswordChangeVerifyStep flow={flow} />
+          <VerifyStep flow={flow} />
         </>
       ) : null}
 
@@ -134,7 +129,7 @@ export function ChangePasswordScreen() {
             error={errors.newPassword}
             rightElement={eye}
           />
-          <PasswordStrengthMeter password={newPassword} />
+          <PasswordStrengthMeter password={newPassword} compact />
           <AuthInput
             label="Confirm new password"
             icon={Lock}

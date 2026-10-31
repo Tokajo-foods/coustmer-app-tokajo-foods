@@ -21,7 +21,7 @@ export function useOtpCountdown(endsAtMs: number | null) {
     if (!endsAtMs) return;
     const id = setInterval(() => {
       setSecondsLeft(remainingSeconds(endsAtMs));
-    }, 250);
+    }, 1000);
     return () => clearInterval(id);
   }, [endsAtMs]);
 

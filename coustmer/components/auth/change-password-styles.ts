@@ -14,6 +14,14 @@ export const changePasswordStyles = StyleSheet.create({
   loaderWrap: {
     paddingVertical: 32,
     alignItems: 'center',
+    gap: 12,
+    minHeight: 120,
+  },
+  loadingHint: {
+    color: authTheme.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   doneCard: {
     alignItems: 'center',

@@ -19,15 +19,20 @@ const LEVELS = [
   { label: 'Strong', color: authTheme.success },
 ];
 
+type Props = {
+  password: string;
+  /** Fixed-height bar only — avoids layout jump while typing on settings screens. */
+  compact?: boolean;
+};
+
 /** Mirrors the backend rule: 8–128 chars with upper, lower, digit and special. */
-export function PasswordStrengthMeter({ password }: { password: string }) {
-  if (!password) return null;
+export function PasswordStrengthMeter({ password, compact = false }: Props) {
   const passed = RULES.map((r) => r.test(password));
-  const score = passed.filter(Boolean).length;
+  const score = password ? passed.filter(Boolean).length : 0;
   const level = LEVELS[Math.max(0, score - 1)];
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, compact && styles.wrapCompact]}>
       <View style={styles.barRow}>
         {RULES.map((_, i) => (
           <View
@@ -35,26 +40,31 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
             style={[styles.bar, { backgroundColor: i < score ? level.color : authTheme.inputBorder }]}
           />
         ))}
-        <Text style={[styles.levelText, { color: level.color }]}>{level.label}</Text>
+        <Text style={[styles.levelText, { color: password ? level.color : authTheme.textDim }]}>
+          {password ? level.label : 'Strength'}
+        </Text>
       </View>
-      <View style={styles.rules}>
-        {RULES.map((rule, i) => (
-          <View key={rule.label} style={styles.rule}>
-            {passed[i] ? (
-              <Check size={12} color={authTheme.success} strokeWidth={3} />
-            ) : (
-              <X size={12} color={authTheme.textDim} strokeWidth={3} />
-            )}
-            <Text style={[styles.ruleText, passed[i] && styles.ruleTextOk]}>{rule.label}</Text>
-          </View>
-        ))}
-      </View>
+      {compact ? null : (
+        <View style={styles.rules}>
+          {RULES.map((rule, i) => (
+            <View key={rule.label} style={styles.rule}>
+              {passed[i] ? (
+                <Check size={12} color={authTheme.success} strokeWidth={3} />
+              ) : (
+                <X size={12} color={authTheme.textDim} strokeWidth={3} />
+              )}
+              <Text style={[styles.ruleText, passed[i] && styles.ruleTextOk]}>{rule.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { marginTop: -6, marginBottom: 14, paddingHorizontal: 4 },
+  wrapCompact: { marginBottom: 10, minHeight: 28 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
   bar: { flex: 1, height: 4, borderRadius: 2 },
   levelText: { fontSize: 11, fontWeight: '700', marginLeft: 6, minWidth: 54, textAlign: 'right' },

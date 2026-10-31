@@ -1,12 +1,4 @@
-import { Pressable } from '@/components/common/Pressable';
-import { ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  
-  ScrollView,
-  StyleSheet,
-  Text,
-  View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
@@ -38,37 +30,33 @@ export function ProfileFormLayout({
 }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.container}>
-          <ScreenHeader title={title} subtitle={subtitle} backFallback={backFallback} />
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.scroll}
-          >
-            {banner ? (
-              <AuthMessageBanner message={banner.message} type={banner.type} />
-            ) : null}
-            {children}
-            {onSave ? (
-              <Pressable
-                style={[styles.saveButton, (saving || saveDisabled) && styles.saveDisabled]}
-                onPress={onSave}
-                disabled={saving || saveDisabled}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.saveText}>{saveLabel}</Text>
-                )}
-              </Pressable>
-            ) : null}
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+      <View style={styles.container}>
+        <ScreenHeader title={title} subtitle={subtitle} backFallback={backFallback} />
+        <ScrollView
+          style={styles.flex}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentContainerStyle={styles.scroll}
+        >
+          {banner ? <AuthMessageBanner message={banner.message} type={banner.type} /> : null}
+          {children}
+          {onSave ? (
+            <Pressable
+              style={[styles.saveButton, (saving || saveDisabled) && styles.saveDisabled]}
+              onPress={onSave}
+              disabled={saving || saveDisabled}
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.saveText}>{saveLabel}</Text>
+              )}
+            </Pressable>
+          ) : null}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -93,8 +81,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
     backgroundColor: authTheme.brand,
     borderRadius: 14,
+    minHeight: 52,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   saveDisabled: {
     opacity: 0.6,
