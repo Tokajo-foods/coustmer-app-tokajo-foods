@@ -1,22 +1,25 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import { useCallback } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SmoothPressable } from '@/components/common/SmoothPressable';
+import { circleCategoryFor } from '@/components/home/tokajo/circle-categories';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
-import { fonts } from '@/constants/typography';
-import { PREMIUM_LIST } from '@/lib/motion/premium';
+import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { useSearchCategoryDishes, useSearchScope } from '@/lib/search/hooks';
 import { openSearchDish } from '@/lib/search/open-search-dish';
 import type { SearchCategorySource, SearchDish } from '@/lib/search/types';
 
-import { searchColors } from '../search-styles';
 import { SearchMessage } from '../SearchSections';
 import { ResultSkeleton } from '../SearchResultRows';
+import { applyCategoryFilters, restaurantsFromDishes, toggleCategoryFilter, type CategoryFilterId } from './category-filters';
 import { CategoryDishRow } from './CategoryDishRow';
+import { CategoryFilterBar } from './CategoryFilterBar';
+import { CategoryHero } from './CategoryHero';
+import { CategoryRestaurantRail } from './CategoryRestaurantRail';
+import { CategoryTopBar } from './CategoryTopBar';
 
 function one(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? '';
@@ -25,6 +28,7 @@ function one(value: string | string[] | undefined): string {
 /** Every dish near the customer for a tapped cuisine or food category. */
 export function SearchCategoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ slug?: string; name?: string; source?: string }>();
   const slug = one(params.slug);
   const name = one(params.name);
@@ -34,65 +38,91 @@ export function SearchCategoryScreen() {
 
   const scope = useSearchScope();
   const query = useSearchCategoryDishes({ slug, name: name || undefined, source });
-  const title = query.data?.category.name || name || slug.replace(/-/g, ' ');
-  const dishes = query.data?.dishes ?? [];
-  const restaurants = query.data?.restaurantCount ?? 0;
+  const [filters, setFilters] = useState<CategoryFilterId[]>([]);
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+
+  const title = query.data?.category.name || name || slug.replace(/[-_]/g, ' ');
+  const allDishes = useMemo(() => query.data?.dishes ?? [], [query.data?.dishes]);
+  const dishes = useMemo(() => applyCategoryFilters(allDishes, filters), [allDishes, filters]);
+  const restaurants = useMemo(() => restaurantsFromDishes(allDishes), [allDishes]);
+  const art = useMemo(() => {
+    const local = circleCategoryFor(slug, name)?.image;
+    if (local) return local;
+    const remote = query.data?.category.imageUrl;
+    return remote ? { uri: remote } : undefined;
+  }, [slug, name, query.data?.category.imageUrl]);
 
   const openDish = useCallback((dish: SearchDish) => openSearchDish(router, dish), [router]);
+  const openRestaurant = useCallback(
+    (id: string) => openRestaurantMenu(router, id, { params: { category: slug } }),
+    [router, slug],
+  );
   const goBack = useCallback(() => (router.canGoBack() ? router.back() : router.replace('/home')), [router]);
+  const toggle = useCallback((id: CategoryFilterId) => setFilters((f) => toggleCategoryFilter(f, id)), []);
 
-  const subtitle = query.isLoading
-    ? 'Finding dishes near you…'
-    : dishes.length
-      ? `${dishes.length} dish${dishes.length === 1 ? '' : 'es'} from ${restaurants} restaurant${restaurants === 1 ? '' : 's'} near you`
-      : 'Near you';
+  const loading = Boolean(scope) && query.isLoading;
+  const hasData = Boolean(scope) && !loading && allDishes.length > 0;
+
+  const header = (
+    <>
+      <CategoryHero
+        title={title}
+        art={art}
+        dishCount={allDishes.length}
+        restaurantCount={restaurants.length}
+        loading={loading}
+        topInset={insets.top}
+      />
+      {hasData ? (
+        <>
+          <CategoryRestaurantRail title={title} restaurants={restaurants} onOpen={openRestaurant} />
+          <CategoryFilterBar active={filters} onToggle={toggle} />
+        </>
+      ) : null}
+    </>
+  );
+
+  const empty = !scope ? (
+    <SearchMessage kind="empty" title="Set your delivery location"
+      body="We show dishes from restaurants that deliver to your address." />
+  ) : loading ? (
+    <ResultSkeleton rows={5} />
+  ) : query.isError ? (
+    <SearchMessage kind="error" title="Couldn't load dishes"
+      body={query.error instanceof Error ? query.error.message : 'Please try again.'}
+      onRetry={() => void query.refetch()} />
+  ) : allDishes.length ? (
+    <SearchMessage kind="empty" title="No dishes match these filters"
+      body="Remove a filter to see more options." />
+  ) : (
+    <SearchMessage kind="empty" title={`No ${title} near you yet`}
+      body="Restaurants that deliver to your address don't serve this yet. Try another category." />
+  );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <SmoothPressable onPress={goBack} style={styles.back} pressScale={0.9} accessibilityLabel="Go back">
-          <ArrowLeft color={searchColors.ink} size={22} strokeWidth={2} />
-        </SmoothPressable>
-        <View style={styles.titles}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
-        </View>
-      </View>
-      <View style={styles.hairline} />
-
-      {!scope ? (
-        <SearchMessage kind="empty" title="Set your delivery location"
-          body="We show dishes from restaurants that deliver to your address." />
-      ) : query.isLoading ? (
-        <ResultSkeleton rows={6} />
-      ) : query.isError && !dishes.length ? (
-        <SearchMessage kind="error" title="Couldn't load dishes"
-          body={query.error instanceof Error ? query.error.message : 'Please try again.'}
-          onRetry={() => void query.refetch()} />
-      ) : (
-        <FlatList
-          data={dishes}
-          keyExtractor={(d) => `${d.restaurantId}-${d.id}`}
-          {...PREMIUM_LIST}
-          contentContainerStyle={{ paddingBottom: APP_BOTTOM_NAV_INSET + 96 }}
-          renderItem={({ item }) => <CategoryDishRow dish={item} onPress={openDish} />}
-          ListEmptyComponent={
-            <SearchMessage kind="empty" title={`No ${title} dishes near you`}
-              body="Restaurants that deliver to your address don't serve this yet. Try another category." />
-          }
-        />
-      )}
+    <View style={styles.root}>
+      <Animated.FlatList
+        data={dishes}
+        keyExtractor={(d) => `${d.restaurantId}-${d.id}`}
+        renderItem={({ item }) => <CategoryDishRow dish={item} onPress={openDish} />}
+        ListHeaderComponent={header}
+        ListEmptyComponent={empty}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: APP_BOTTOM_NAV_INSET + 96 }}
+        initialNumToRender={8}
+        windowSize={7}
+      />
+      <CategoryTopBar title={title} scrollY={scrollY} topInset={insets.top} onBack={goBack} />
       <CartFloatingBar />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 6, paddingRight: 16, paddingVertical: 8 },
-  back: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  titles: { flex: 1, gap: 1 },
-  title: { fontFamily: fonts.displayBold, fontSize: 18, color: searchColors.ink, textTransform: 'capitalize' },
-  subtitle: { fontFamily: fonts.ui, fontSize: 12.5, color: searchColors.muted },
-  hairline: { height: StyleSheet.hairlineWidth, backgroundColor: '#E4E4E7' },
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
 });
