@@ -36,10 +36,11 @@ export function LoginFormContent({
   const handleSignUp = () => (onSignUp ? onSignUp() : router.replace('/?auth=sign-up'));
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flexShrink: 1 }}>
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={20}
+        style={{ flexGrow: 0 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}

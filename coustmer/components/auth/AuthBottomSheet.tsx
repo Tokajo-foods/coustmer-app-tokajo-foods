@@ -1,7 +1,7 @@
 import { Pressable } from '@/components/common/Pressable';
 import { ChevronLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, Modal,  StyleSheet, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { Dimensions, Modal, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -58,6 +58,8 @@ export function AuthBottomSheet({
   const backdropOpacity = useSharedValue(0);
   const sheetOpacity = useSharedValue(0);
   const activeSheetHeight = sheetHeightFor(view);
+  /** Sign-in is short (phone tab especially); hug the form instead of leaving blank sheet below it. */
+  const fitsContent = view === 'login';
 
   const finishClose = useCallback(() => {
     setMounted(false);
@@ -221,11 +223,12 @@ export function AuthBottomSheet({
           style={[
             styles.sheet,
             sheetStyle,
-            { height: activeSheetHeight, paddingBottom: Math.max(insets.bottom, 16) },
+            fitsContent ? { maxHeight: activeSheetHeight } : { height: activeSheetHeight },
+            { paddingBottom: Math.max(insets.bottom, 16) },
           ]}
         >
           <View style={styles.handle} />
-          <View style={styles.formWrap}>{renderContent()}</View>
+          <View style={fitsContent ? styles.formWrapFit : styles.formWrap}>{renderContent()}</View>
         </Animated.View>
       </View>
     </Modal>
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdrop: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   topChrome: {
@@ -288,6 +291,10 @@ const styles = StyleSheet.create({
   },
   formWrap: {
     flex: 1,
+    paddingTop: 4,
+  },
+  formWrapFit: {
+    flexShrink: 1,
     paddingTop: 4,
   },
 });
