@@ -1,15 +1,11 @@
-import type { LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
 
 type Props = {
-  Icon: LucideIcon;
-  iconTint?: string;
-  iconBg?: string;
   label: string;
-  subtitle?: string;
+  detail?: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
   disabled?: boolean;
@@ -17,11 +13,8 @@ type Props = {
 };
 
 export function NotificationPrefRow({
-  Icon,
-  iconTint = authTheme.brand,
-  iconBg = authTheme.brandSoft,
   label,
-  subtitle,
+  detail,
   value,
   onValueChange,
   disabled,
@@ -35,16 +28,13 @@ export function NotificationPrefRow({
         disabled && styles.rowDisabled,
       ]}
     >
-      <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-        <Icon color={iconTint} size={20} strokeWidth={2.2} />
-      </View>
       <View style={styles.copy}>
-        <Text style={styles.label} numberOfLines={1}>
+        <Text style={[styles.label, disabled && styles.labelDisabled]} numberOfLines={1}>
           {label}
         </Text>
-        {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={2}>
-            {subtitle}
+        {detail ? (
+          <Text style={styles.detail} numberOfLines={2}>
+            {detail}
           </Text>
         ) : null}
       </View>
@@ -52,9 +42,9 @@ export function NotificationPrefRow({
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
-        trackColor={{ false: '#E5E7EB', true: authTheme.brandMuted }}
+        trackColor={{ false: '#D1D5DB', true: authTheme.brand }}
         thumbColor="#FFFFFF"
-        ios_backgroundColor="#E5E7EB"
+        ios_backgroundColor="#D1D5DB"
       />
     </View>
   );
@@ -64,40 +54,38 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    justifyContent: 'space-between',
+    gap: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    minHeight: 52,
   },
   rowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: authTheme.cardBorder,
+    borderBottomColor: '#EBEBEB',
   },
   rowDisabled: {
-    opacity: 0.5,
-  },
-  iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
+    opacity: 0.55,
   },
   copy: {
     flex: 1,
     minWidth: 0,
-    paddingRight: 4,
+    paddingRight: 8,
   },
   label: {
-    fontFamily: fonts.uiBold,
-    fontSize: 15,
-    color: authTheme.text,
-    letterSpacing: -0.15,
+    fontFamily: fonts.uiMedium,
+    fontSize: 16,
+    color: '#1A1A1A',
+    letterSpacing: -0.2,
   },
-  subtitle: {
-    marginTop: 3,
+  labelDisabled: {
+    color: '#6B7280',
+  },
+  detail: {
+    marginTop: 4,
     fontFamily: fonts.ui,
-    fontSize: 12,
-    lineHeight: 16,
-    color: authTheme.textDim,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#6B7280',
   },
 });

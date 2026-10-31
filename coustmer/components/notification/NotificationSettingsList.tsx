@@ -1,21 +1,16 @@
-import {
-  BellRing,
-  ChevronRight,
-  Mail,
-  MessageCircle,
-  MessageSquare,
-  Smartphone,
-  ShoppingBag,
-  Tag,
-} from 'lucide-react-native';
-import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Pressable } from '@/components/common/Pressable';
+import { SmoothPressable } from '@/components/common/SmoothPressable';
+import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { NotificationPrefRow } from '@/components/notification/NotificationPrefRow';
 import { notificationSettingsStyles as styles } from '@/components/notification/notification-settings-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { getApiErrorMessage } from '@/lib/errors';
+import { navigateBack } from '@/lib/motion/navigate-back';
 import { enablePushOnThisPhone } from '@/lib/notification/enable-push';
 import {
   useNotificationPreferences,
@@ -25,102 +20,45 @@ import type { NotificationPreferences } from '@/lib/notification/types';
 
 type Key = keyof NotificationPreferences;
 
-const PUSH_CHILDREN: Array<{
-  key: Key;
-  label: string;
-  subtitle: string;
-  Icon: typeof ShoppingBag;
-  iconTint: string;
-  iconBg: string;
-}> = [
-  {
-    key: 'orders',
-    label: 'Order updates',
-    subtitle: 'Accepted, preparing, out for delivery, delivered',
-    Icon: ShoppingBag,
-    iconTint: '#EA580C',
-    iconBg: '#FFEDD5',
-  },
-  {
-    key: 'offers',
-    label: 'Offers & deals',
-    subtitle: 'Coupons, cashback and limited-time promos',
-    Icon: Tag,
-    iconTint: '#9333EA',
-    iconBg: '#F3E8FF',
-  },
+const PUSH_TYPES: Array<{ key: Key; label: string; detail: string }> = [
+  { key: 'orders', label: 'Order updates', detail: 'Accepted, preparing, delivery status' },
+  { key: 'offers', label: 'Offers & promotions', detail: 'Deals and coupons for your area' },
 ];
 
-const CHANNEL_ROWS: Array<{
-  key: Key;
-  label: string;
-  subtitle: string;
-  Icon: typeof Mail;
-  iconTint: string;
-  iconBg: string;
-}> = [
-  {
-    key: 'sms',
-    label: 'SMS',
-    subtitle: 'Text alerts for important order moments',
-    Icon: MessageSquare,
-    iconTint: '#0284C7',
-    iconBg: '#E0F2FE',
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    subtitle: 'Receipts, refunds and account updates',
-    Icon: Mail,
-    iconTint: '#4F46E5',
-    iconBg: '#EEF2FF',
-  },
-  {
-    key: 'whatsapp',
-    label: 'WhatsApp',
-    subtitle: 'Messages when WhatsApp delivery is enabled',
-    Icon: MessageCircle,
-    iconTint: '#16A34A',
-    iconBg: '#DCFCE7',
-  },
+const CHANNELS: Array<{ key: Key; label: string; detail?: string }> = [
+  { key: 'sms', label: 'SMS' },
+  { key: 'email', label: 'Email' },
+  { key: 'whatsapp', label: 'WhatsApp' },
 ];
 
 type Props = {
   enabled?: boolean;
   embedded?: boolean;
-  showDeviceLink?: boolean;
-  showStatusBanner?: boolean;
 };
 
-/** Account notification preferences — instant save per toggle. */
-export function NotificationSettingsList({
-  enabled = true,
-  embedded = false,
-  showDeviceLink = !embedded,
-  showStatusBanner = !embedded,
-}: Props) {
+export function NotificationSettingsList({ enabled = true, embedded = false }: Props) {
   const router = useRouter();
   const prefs = useNotificationPreferences(enabled);
   const update = useUpdateNotificationPreferences();
 
   if (prefs.isLoading) {
-    const loading = (
+    const block = (
       <View style={styles.state}>
-        <ActivityIndicator color={authTheme.brand} size="large" />
+        <ActivityIndicator color={authTheme.brand} />
       </View>
     );
-    return embedded ? loading : <View style={styles.card}>{loading}</View>;
+    return embedded ? block : <View style={styles.card}>{block}</View>;
   }
 
   if (!prefs.data) {
-    const errorBlock = (
+    const block = (
       <TouchableOpacity style={styles.state} onPress={() => void prefs.refetch()}>
         <Text style={styles.error}>
-          Could not load settings. {getApiErrorMessage(prefs.error)} Tap to retry.
+          Unable to load preferences. {getApiErrorMessage(prefs.error)} Tap to retry.
         </Text>
       </TouchableOpacity>
     );
-    return embedded ? errorBlock : <View style={styles.card}>{errorBlock}</View>;
+    return embedded ? block : <View style={styles.card}>{block}</View>;
   }
 
   const data = prefs.data;
@@ -136,92 +74,98 @@ export function NotificationSettingsList({
     );
   };
 
-  const content = (
+  return (
     <View style={embedded ? undefined : styles.wrap}>
-      {showStatusBanner ? (
-        <View style={[styles.statusBanner, !data.push && styles.statusBannerOff]}>
-          <View style={[styles.statusDot, !data.push && styles.statusDotOff]} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.statusText}>
-              {data.push ? 'Push alerts are on' : 'Push alerts are off'}
-            </Text>
-            <Text style={styles.statusHint}>
-              {data.push
-                ? 'You can fine-tune categories below.'
-                : 'Turn on push to get live order updates on your phone.'}
-            </Text>
-          </View>
-        </View>
-      ) : null}
-
       <View style={styles.section}>
-        {!embedded ? <Text style={styles.sectionTitle}>On your phone</Text> : null}
+        {!embedded ? <Text style={styles.sectionLabel}>Push</Text> : null}
         <View style={styles.card}>
           <NotificationPrefRow
-            Icon={BellRing}
-            label="Push notifications"
-            subtitle={data.push ? 'Enabled for your account' : 'Disabled for your account'}
+            label="Allow push notifications"
+            detail="Required for live order alerts on your phone"
             value={data.push}
             onValueChange={(v) => set('push', v)}
             isLast={false}
           />
-          {PUSH_CHILDREN.map((row, index) => (
+          {PUSH_TYPES.map((row, index) => (
             <NotificationPrefRow
               key={row.key}
-              Icon={row.Icon}
-              iconTint={row.iconTint}
-              iconBg={row.iconBg}
               label={row.label}
-              subtitle={row.subtitle}
+              detail={row.detail}
               value={data.push && data[row.key]}
               disabled={!data.push}
               onValueChange={(v) => set(row.key, v)}
-              isLast={index === PUSH_CHILDREN.length - 1}
+              isLast={index === PUSH_TYPES.length - 1}
             />
           ))}
         </View>
       </View>
 
       <View style={styles.section}>
-        {!embedded ? <Text style={styles.sectionTitle}>Other channels</Text> : null}
+        {!embedded ? <Text style={styles.sectionLabel}>Contact</Text> : null}
         <View style={styles.card}>
-          {CHANNEL_ROWS.map((row, index) => (
+          {CHANNELS.map((row, index) => (
             <NotificationPrefRow
               key={row.key}
-              Icon={row.Icon}
-              iconTint={row.iconTint}
-              iconBg={row.iconBg}
               label={row.label}
-              subtitle={row.subtitle}
               value={data[row.key]}
               onValueChange={(v) => set(row.key, v)}
-              isLast={index === CHANNEL_ROWS.length - 1}
+              isLast={index === CHANNELS.length - 1}
             />
           ))}
         </View>
       </View>
 
-      {showDeviceLink ? (
-        <Pressable
-          style={styles.deviceLink}
-          onPress={() => router.push('/profile/devices')}
-        >
-          <View style={styles.deviceLinkIcon}>
-            <Smartphone color={authTheme.brand} size={20} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.deviceLinkTitle}>This phone</Text>
-            <Text style={styles.deviceLinkSub}>Register or remove devices for push</Text>
-          </View>
-          <ChevronRight color={authTheme.textDim} size={20} />
-        </Pressable>
-      ) : null}
-
       {!embedded ? (
-        <Text style={styles.footnote}>Changes save automatically when you toggle a switch.</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Device</Text>
+          <View style={styles.card}>
+            <Pressable
+              style={styles.linkRow}
+              onPress={() => router.push('/profile/devices')}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.linkLabel}>Manage this phone</Text>
+                <Text style={styles.linkHint}>Register or remove push on this device</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+        </View>
       ) : null}
     </View>
   );
+}
 
-  return content;
+/** Full-screen notification preferences (profile / notifications hub). */
+export function NotificationPreferencesScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <SmoothPressable
+          onPress={() => navigateBack(router, '/notifications')}
+          style={styles.backBtn}
+          pressScale={0.92}
+          hitSlop={8}
+          accessibilityLabel="Go back"
+        >
+          <ChevronLeft color="#1A1A1A" size={24} strokeWidth={2.5} />
+        </SmoothPressable>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={styles.headerGhost} />
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + APP_BOTTOM_NAV_INSET + 32 },
+        ]}
+      >
+        <NotificationSettingsList />
+      </ScrollView>
+    </View>
+  );
 }

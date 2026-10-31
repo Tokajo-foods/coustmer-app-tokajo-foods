@@ -10,8 +10,6 @@ export function NotificationPrefsCard({ enabled }: { enabled: boolean }) {
       <NotificationSettingsList
         enabled={enabled}
         embedded
-        showDeviceLink={false}
-        showStatusBanner={false}
       />
     </View>
   );
