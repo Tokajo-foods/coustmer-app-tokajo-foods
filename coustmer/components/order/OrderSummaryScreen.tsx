@@ -164,8 +164,8 @@ export function OrderSummaryScreen() {
         method: mappedMethod as PaymentMethodType,
       });
     } catch (err) {
-      Alert.alert('Could not place order', err instanceof Error ? err.message : 'Please try again.');
       setOrderPlacementPhase('none');
+      Alert.alert('Could not place order', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setPaying(false);
     }
@@ -174,7 +174,6 @@ export function OrderSummaryScreen() {
   const chooseMethod = async (method: PayChoice) => {
     try {
       await syncCheckoutWallet(method);
-      void bill.refetch();
     } catch (err) {
       Alert.alert('Wallet', err instanceof Error ? err.message : 'Could not apply wallet');
       return;
@@ -256,8 +255,7 @@ export function OrderSummaryScreen() {
         visible={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
         selectedMethod={paymentMethod}
-        onSelectMethod={chooseMethod}
-        onPay={chooseMethod}
+        onSelectMethod={(m) => void chooseMethod(m)}
         itemCount={itemCount}
         total={totalBeforeWallet}
         walletShortfall={billBreakdown.walletShortfall}

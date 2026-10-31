@@ -26,7 +26,6 @@ type Props = {
   deliveryTime?: string;
   addressLabel: string;
   addressText: string;
-  onPay?: (method: string) => void;
   wallet?: WalletSummary;
   walletShortfall?: number | null;
 };

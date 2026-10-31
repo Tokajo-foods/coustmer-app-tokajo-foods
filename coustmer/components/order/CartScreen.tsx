@@ -964,7 +964,6 @@ export function CartScreen() {
           onClose={() => setPaymentModalOpen(false)}
           selectedMethod={paymentMethod}
           onSelectMethod={(m) => void selectPaymentMethod(m)}
-          onPay={(m) => void selectPaymentMethod(m)}
           itemCount={itemCount}
           total={totalBeforeWallet}
           walletShortfall={billBreakdown.walletShortfall}
