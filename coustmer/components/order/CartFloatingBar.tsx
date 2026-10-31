@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { StyleSheet, Text, View, Animated, Image } from 'react-native';
@@ -31,44 +31,30 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
     : Math.max(insets.bottom, 16) + bottomOffset;
   const items = useCartStore((s) => s.items);
   const restaurant = useCartStore((s) => s.restaurant);
-  const totalItems = useCartStore((s) => s.totalItems());
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const hasCart = totalItems > 0;
 
-  const initialHasItems = items.length > 0 && !!restaurant;
-
-  const slideAnim = useRef(new Animated.Value(initialHasItems ? 0 : 300)).current; 
-  const [isVisible, setIsVisible] = useState(initialHasItems);
-  const isVisibleRef = useRef(initialHasItems);
+  const slideAnim = useRef(new Animated.Value(hasCart ? 0 : 300)).current;
+  const wasVisible = useRef(hasCart);
 
   useEffect(() => {
-    const hasItems = items.length > 0 && !!restaurant;
-    
-    if (hasItems && !isVisibleRef.current) {
-      isVisibleRef.current = true;
-      setIsVisible(true);
-      
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 50,
-      }).start();
-      
-    } else if (!hasItems && isVisibleRef.current) {
-      isVisibleRef.current = false;
-      
-      Animated.timing(slideAnim, {
-        toValue: 300,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setIsVisible(false);
-      });
+    const showing = wasVisible.current;
+    wasVisible.current = hasCart;
+    if (!hasCart) {
+      slideAnim.stopAnimation();
+      return;
     }
-  }, [items.length, restaurant]);
+    if (showing) return;
+    slideAnim.setValue(300);
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 50,
+    }).start();
+  }, [hasCart, slideAnim]);
 
-  if (!isVisible && (!items.length || !restaurant)) {
-    return null;
-  }
+  if (!hasCart) return null;
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]} pointerEvents="box-none">
