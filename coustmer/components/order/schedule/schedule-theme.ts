@@ -1,21 +1,21 @@
-import { swiggyOrderUi as U } from '@/constants/swiggy-order-ui';
+import { authTheme as T } from '@/constants/auth-theme';
 
-/** Schedule UI tokens, taken from the cart / checkout theme. */
+/** Schedule UI tokens — same orange as the rest of the customer app. */
 export const SCHEDULE_COLORS = {
-  orange: U.orange,
-  orangeDark: '#8A0C38',
-  orangeSoft: 'rgba(172, 15, 69, 0.08)',
-  orangeBorder: 'rgba(172, 15, 69, 0.28)',
-  text: U.text,
-  textSec: U.textSecondary,
-  textMuted: U.textMuted,
-  border: U.border,
-  disabledBg: '#F6F6F8',
-  error: '#E23744',
+  orange: T.brand,
+  orangeDark: T.brandDark,
+  orangeSoft: T.brandSoft,
+  orangeBorder: T.brandMuted,
+  text: T.text,
+  textSec: T.textDim,
+  textMuted: '#94A3B8',
+  border: T.cardBorder,
+  disabledBg: T.surface,
+  error: '#DC2626',
   errorSoft: '#FEF2F2',
   errorBorder: '#FECACA',
-  ok: U.green,
-  okSoft: U.greenSoft,
-  okBorder: 'rgba(72, 196, 121, 0.35)',
-  white: U.card,
+  ok: '#15803D',
+  okSoft: '#F0FDF4',
+  okBorder: '#BBF7D0',
+  white: T.card,
 } as const;

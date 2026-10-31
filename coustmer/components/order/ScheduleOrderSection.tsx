@@ -56,15 +56,13 @@ export function ScheduleOrderSection({
           activeOpacity={0.88}
         >
           <View style={[styles.icon, !isLater && styles.iconOn]}>
-            <Zap color={!isLater ? C.white : C.orange} size={16} strokeWidth={2.4} />
+            <Zap color={!isLater ? C.white : C.orange} size={14} strokeWidth={2.4} />
           </View>
           <View style={styles.copy}>
-            <View style={styles.titleLine}>
-              <Text style={styles.optionTitle}>Order now</Text>
-              {!isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
-            </View>
-            <Text style={styles.optionHint}>As soon as it is ready</Text>
+            <Text style={styles.optionTitle} numberOfLines={1}>Order now</Text>
+            <Text style={styles.optionHint} numberOfLines={1}>As soon as ready</Text>
           </View>
+          {!isLater ? <Check color={C.orange} size={14} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -78,17 +76,15 @@ export function ScheduleOrderSection({
           activeOpacity={0.88}
         >
           <View style={[styles.icon, isLater && styles.iconOn]}>
-            <CalendarClock color={isLater ? C.white : C.orange} size={16} strokeWidth={2.3} />
+            <CalendarClock color={isLater ? C.white : C.orange} size={14} strokeWidth={2.3} />
           </View>
           <View style={styles.copy}>
-            <View style={styles.titleLine}>
-              <Text style={styles.optionTitle}>Schedule</Text>
-              {isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
-            </View>
-            <Text style={styles.optionHint} numberOfLines={2}>
+            <Text style={styles.optionTitle} numberOfLines={1}>Schedule</Text>
+            <Text style={styles.optionHint} numberOfLines={1}>
               {isLater && scheduledLabel ? scheduledLabel : 'Pick a time'}
             </Text>
           </View>
+          {isLater ? <Check color={C.orange} size={14} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
       </View>
 
@@ -132,39 +128,40 @@ export function ScheduleOrderSection({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: C.white,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: C.border,
-    padding: 14,
-    gap: 12,
+    padding: 12,
+    gap: 8,
   },
-  title: { fontFamily: fonts.uiSemi, fontSize: 16, color: C.text },
+  title: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
   row: { flexDirection: 'row', gap: 8 },
   option: {
     flex: 1,
-    gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     backgroundColor: C.white,
-    minHeight: 118,
   },
   optionOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
   optionOff: { opacity: 0.5 },
   icon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.orangeSoft,
   },
   iconOn: { backgroundColor: C.orange },
-  copy: { gap: 2 },
-  titleLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
-  optionHint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec },
+  copy: { flex: 1, gap: 1 },
+  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.text },
+  optionHint: { fontFamily: fonts.ui, fontSize: 11, color: C.textSec },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec, lineHeight: 18 },
   hintError: { fontFamily: fonts.ui, fontSize: 12, color: C.error, lineHeight: 18 },
