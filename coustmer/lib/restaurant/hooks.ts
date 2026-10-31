@@ -1,11 +1,6 @@
 import { restaurantApi } from '@/lib/restaurant/api';
 import { queryClient } from '@/lib/query-client';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
-import {
-  menuCategoryMatchesCuisine,
-  menuItemMatchesCategory,
-  restaurantMatchesCategory,
-} from '@/lib/restaurant/categories';
 import { enrichMenuItems } from '@/lib/restaurant/mappers';
 import { buildHomeCategories } from '@/lib/restaurant/home-categories';
 import type {
@@ -61,7 +56,7 @@ export const restaurantKeys = {
 };
 
 export function useRestaurants(params: RestaurantListParams = {}) {
-  const fetchAll = params.fetchAll !== false;
+  const fetchAll = params.fetchAll === true;
 
   return useQuery({
     queryKey: restaurantKeys.list({ ...params, fetchAll }),
@@ -126,8 +121,8 @@ export function useNearbyRestaurants(params: NearbyParams | null) {
 }
 
 /**
- * Restaurants that offer a cuisine/category.
- * Uses list API (?cuisine=&city=) then confirms via GET .../categories when available.
+ * Restaurants that offer a cuisine. One list call — the server filters by cuisine.
+ * Do not load every kitchen's categories; that burst trips the gateway limit.
  */
 export function useRestaurantsOfferingCategory(input: {
   cuisine: string;
@@ -145,82 +140,17 @@ export function useRestaurantsOfferingCategory(input: {
       city ?? '',
     ],
     queryFn: async (): Promise<{ restaurants: Restaurant[]; total: number }> => {
-      const { restaurants: listed, meta } = await restaurantApi.getRestaurants({
+      const { restaurants, meta } = await restaurantApi.getRestaurants({
         cuisine,
         city,
         sort: 'newest',
-        limit: 50,
+        limit: 40,
         page: 1,
       });
-
-      // Cuisine-filtered list from API; broaden with city matches when sparse.
-      const listedIds = new Set(listed.map((r) => r.id));
-      let candidates = [...listed];
-      if (candidates.length < 8 && city) {
-        const broader = await restaurantApi.getRestaurants({
-          city,
-          sort: 'newest',
-          limit: 50,
-          page: 1,
-        });
-        const merged = new Map<string, Restaurant>();
-        for (const r of listed) merged.set(r.id, r);
-        for (const r of broader.restaurants) {
-          if (listedIds.has(r.id) || restaurantMatchesCategory(r, cuisine)) {
-            merged.set(r.id, r);
-          }
-        }
-        candidates = [...merged.values()];
-      }
-
-      if (candidates.length === 0) {
-        return { restaurants: [], total: 0 };
-      }
-
-      const matched: Restaurant[] = [];
-      const chunkSize = 8;
-
-      for (let i = 0; i < candidates.length; i += chunkSize) {
-        const chunk = candidates.slice(i, i + chunkSize);
-        const rows = await Promise.all(
-          chunk.map(async (restaurant) => {
-            try {
-              const cats = await restaurantApi.getCategories(restaurant.id);
-              if (cats.length === 0) {
-                return restaurantMatchesCategory(restaurant, cuisine)
-                  ? restaurant
-                  : null;
-              }
-              const hasMenuCategory = cats.some((c) =>
-                menuCategoryMatchesCuisine(c, cuisine)
-              );
-              if (hasMenuCategory) return restaurant;
-              // Menu categories exist but don't match — keep cuisine-tagged partners
-              return restaurantMatchesCategory(restaurant, cuisine)
-                ? restaurant
-                : null;
-            } catch {
-              return restaurantMatchesCategory(restaurant, cuisine)
-                ? restaurant
-                : null;
-            }
-          })
-        );
-        for (const row of rows) {
-          if (row) matched.push(row);
-        }
-      }
-
-      return {
-        restaurants: matched,
-        total: meta?.total && matched.length >= listed.length
-          ? Math.max(meta.total, matched.length)
-          : matched.length,
-      };
+      return { restaurants, total: meta?.total ?? restaurants.length };
     },
     enabled: input.enabled !== false && Boolean(cuisine) && cuisine !== 'all',
     staleTime: 60_000,
-    retry: 1,
   });
 }
 

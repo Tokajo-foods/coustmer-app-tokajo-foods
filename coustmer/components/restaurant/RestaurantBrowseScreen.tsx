@@ -147,6 +147,8 @@ export function RestaurantBrowseScreen() {
     sort: 'newest',
     lat: coords?.lat,
     lng: coords?.lng,
+    limit: 40,
+    fetchAll: false,
   });
 
   const restaurants = useMemo((): Restaurant[] => {
