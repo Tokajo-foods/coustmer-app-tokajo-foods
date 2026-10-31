@@ -300,7 +300,7 @@ export function ProfileHubScreen() {
             <Row
               icon={KeyRound}
               title="Change password"
-              onPress={() => router.push('/change-password' as import('expo-router').Href)}
+              onPress={() => router.push('/profile/change-password')}
             />
             <Row
               icon={Wallet}

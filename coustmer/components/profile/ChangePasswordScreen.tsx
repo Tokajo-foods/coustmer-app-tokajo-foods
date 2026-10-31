@@ -4,11 +4,11 @@ import { memo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
-import { changePasswordStyles as styles } from '@/components/auth/change-password-styles';
 import { forgotPasswordStyles as otpStyles } from '@/components/auth/forgot-password-styles';
 import { PasswordChangeVerifyStep } from '@/components/auth/PasswordChangeVerifyStep';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { usePasswordChangeFlow } from '@/components/auth/use-password-change-flow';
+import { changePasswordStyles as styles } from '@/components/profile/change-password-styles';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
 import { validateConfirmPassword, validatePassword } from '@/utils/validation';
@@ -17,7 +17,7 @@ const HEADER_SUBTITLE = 'Verify your identity with OTP, then choose a new passwo
 
 const VerifyStep = memo(PasswordChangeVerifyStep);
 
-/** Profile → change password: email + phone OTP, then set a new password. */
+/** Profile → Account → change password. */
 export function ChangePasswordScreen() {
   const router = useRouter();
   const flow = usePasswordChangeFlow();

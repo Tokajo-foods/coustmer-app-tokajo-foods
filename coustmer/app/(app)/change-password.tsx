@@ -1,5 +1,6 @@
-import { ChangePasswordScreen } from '@/components/auth/ChangePasswordScreen';
+import { Redirect } from 'expo-router';
 
-export default function ChangePasswordPage() {
-  return <ChangePasswordScreen />;
+/** Legacy path — change password lives under Profile. */
+export default function ChangePasswordRedirect() {
+  return <Redirect href="/profile/change-password" />;
 }
