@@ -15,6 +15,7 @@ type Props = {
   saving?: boolean;
   saveDisabled?: boolean;
   backFallback?: string;
+  scrollable?: boolean;
 };
 
 export function ProfileFormLayout({
@@ -27,35 +28,46 @@ export function ProfileFormLayout({
   saving,
   saveDisabled,
   backFallback,
+  scrollable = true,
 }: Props) {
+  const main = (
+    <>
+      {banner ? <AuthMessageBanner message={banner.message} type={banner.type} /> : null}
+      {children}
+      {onSave ? (
+        <Pressable
+          style={[styles.saveButton, (saving || saveDisabled) && styles.saveDisabled]}
+          onPress={onSave}
+          disabled={saving || saveDisabled}
+        >
+          {saving ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.saveText}>{saveLabel}</Text>
+          )}
+        </Pressable>
+      ) : null}
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.container}>
         <ScreenHeader title={title} subtitle={subtitle} backFallback={backFallback} />
-        <ScrollView
-          style={styles.flex}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-          contentContainerStyle={styles.scroll}
-        >
-          {banner ? <AuthMessageBanner message={banner.message} type={banner.type} /> : null}
-          {children}
-          {onSave ? (
-            <Pressable
-              style={[styles.saveButton, (saving || saveDisabled) && styles.saveDisabled]}
-              onPress={onSave}
-              disabled={saving || saveDisabled}
-            >
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.saveText}>{saveLabel}</Text>
-              )}
-            </Pressable>
-          ) : null}
-        </ScrollView>
+        {scrollable ? (
+          <ScrollView
+            style={styles.flex}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+            contentContainerStyle={styles.scroll}
+          >
+            {main}
+          </ScrollView>
+        ) : (
+          <View style={[styles.flex, styles.scroll]}>{main}</View>
+        )}
       </View>
     </SafeAreaView>
   );

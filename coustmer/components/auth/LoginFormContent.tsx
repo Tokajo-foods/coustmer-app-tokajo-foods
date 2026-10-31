@@ -32,7 +32,7 @@ export function LoginFormContent({
   const isPhone = pref === 'phone';
 
   const handleForgotPassword = () =>
-    onForgotPassword ? onForgotPassword() : router.replace('/?auth=forgot-password');
+    onForgotPassword ? onForgotPassword() : router.push('/(auth)/forgot-password');
   const handleSignUp = () => (onSignUp ? onSignUp() : router.replace('/?auth=sign-up'));
 
   return (

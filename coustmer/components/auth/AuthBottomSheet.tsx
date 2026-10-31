@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/common/Pressable';
 import { ChevronLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,7 +13,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ForgotPasswordFormContent } from '@/components/auth/ForgotPasswordFormContent';
 import { LoginFormContent } from '@/components/auth/LoginFormContent';
 import { RegisterFormContent } from '@/components/auth/RegisterFormContent';
 import { authTheme } from '@/constants/auth-theme';
@@ -49,6 +49,7 @@ export function AuthBottomSheet({
   onClose,
   onViewChange,
 }: Props) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(false);
   const prevViewRef = useRef<AuthSheetView | null>(null);
@@ -136,6 +137,11 @@ export function AuthBottomSheet({
     translateY.value = withSpring(0, OPEN_SPRING);
   }, [view, visible, mounted, sheetOpacity, translateY, activeSheetHeight]);
 
+  useEffect(() => {
+    if (!visible || view !== 'forgot-password') return;
+    animateClose(() => router.push('/(auth)/forgot-password'));
+  }, [visible, view, animateClose, router]);
+
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
   }));
@@ -180,11 +186,13 @@ export function AuthBottomSheet({
           />
         );
       case 'forgot-password':
-        return <ForgotPasswordFormContent onBackToLogin={() => changeViewWithSlide('login')} />;
+        return null;
       default:
         return (
           <LoginFormContent
-            onForgotPassword={() => changeViewWithSlide('forgot-password')}
+            onForgotPassword={() => {
+              animateClose(() => router.push('/(auth)/forgot-password'));
+            }}
             onSignUp={() => changeViewWithSlide('register')}
             onCreateAccount={(phone) => changeViewWithSlide('register', { registerPhone: phone })}
             onLoginSuccess={onClose}

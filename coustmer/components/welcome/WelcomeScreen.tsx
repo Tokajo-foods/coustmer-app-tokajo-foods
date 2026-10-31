@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
@@ -29,6 +29,7 @@ function resolveAuthParam(auth?: string | string[]): AuthSheetView | null {
  */
 export function WelcomeScreen({ openAuthOnMount }: Props) {
   const { auth } = useLocalSearchParams<{ auth?: string }>();
+  const router = useRouter();
   const { height: screenH, width: screenW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const visible = useAuthSheetStore((s) => s.visible);
@@ -44,8 +45,12 @@ export function WelcomeScreen({ openAuthOnMount }: Props) {
 
   useEffect(() => {
     const resolved = resolveAuthParam(auth);
+    if (resolved === 'forgot-password') {
+      router.push('/(auth)/forgot-password');
+      return;
+    }
     if (resolved) open(resolved);
-  }, [auth, open]);
+  }, [auth, open, router]);
 
   const handleGetStarted = () => {
     void completeOnboarding().finally(() => {

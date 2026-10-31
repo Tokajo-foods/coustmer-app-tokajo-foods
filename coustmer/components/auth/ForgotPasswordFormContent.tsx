@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { ForgotPhoneReset } from '@/components/auth/ForgotPhoneReset';
@@ -15,7 +14,6 @@ import {
 import { forgotPasswordStyles as styles } from '@/components/auth/forgot-password-styles';
 import { authApi } from '@/lib/auth/api';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/store/auth-store';
 import {
   validateConfirmPassword,
   validateEmail,
@@ -25,6 +23,8 @@ import {
 
 type Props = {
   onBackToLogin?: () => void;
+  /** `screen` = inside ProfileFormLayout (no sheet, no KeyboardAwareScrollView). */
+  layout?: 'sheet' | 'screen';
 };
 
 function maskEmail(email: string) {
@@ -37,28 +37,13 @@ function maskEmail(email: string) {
   return `${visible}${'•'.repeat(Math.max(name.length - visible.length, 2))}${domain}`;
 }
 
-export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
-  const requestOtp = useAuthStore((s) => s.sendOtp);
-  const resetPassword = useAuthStore((s) => s.resetPassword);
-  const storeLoading = useAuthStore((s) => s.isLoading);
+export function ForgotPasswordFormContent({ onBackToLogin, layout = 'sheet' }: Props) {
+  const [sending, setSending] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const isLoading = storeLoading || confirming;
+  const [saving, setSaving] = useState(false);
+  const isLoading = sending || confirming || saving;
 
-  const sendForgotPasswordOtp = (value: string) =>
-    requestOtp({ emailOrPhone: value, purpose: 'forgot_password' });
-
-  const confirmForgotPasswordOtp = async (value: string, code: string) => {
-    setConfirming(true);
-    try {
-      await authApi.confirmForgotPasswordOtp(value, code);
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, 'Invalid code'));
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  const [channel, setChannel] = useState<'phone' | 'email'>('phone');
+  const [channel, setChannel] = useState<'phone' | 'email'>('email');
   const [step, setStep] = useState<ForgotStep>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -81,8 +66,9 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     setFieldError(err);
     setBanner(null);
     if (err) return;
+    setSending(true);
     try {
-      await sendForgotPasswordOtp(email.trim());
+      await authApi.sendOtp({ emailOrPhone: email.trim(), purpose: 'forgot_password' });
       setOtp('');
       setStep('otp');
       setBanner({
@@ -91,9 +77,11 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
       });
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Failed to send code',
+        message: getApiErrorMessage(e, 'Failed to send code'),
         type: 'error',
       });
+    } finally {
+      setSending(false);
     }
   };
 
@@ -102,15 +90,18 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     setFieldError(err);
     setBanner(null);
     if (err) return;
+    setConfirming(true);
     try {
-      await confirmForgotPasswordOtp(email.trim(), otp.trim());
+      await authApi.confirmForgotPasswordOtp(email.trim(), otp.trim());
       setStep('password');
       setBanner(null);
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Invalid code',
+        message: getApiErrorMessage(e, 'Invalid code'),
         type: 'error',
       });
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -120,8 +111,9 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
     setFieldError(pwdErr || confErr);
     setBanner(null);
     if (pwdErr || confErr) return;
+    setSaving(true);
     try {
-      await resetPassword({
+      await authApi.resetPassword({
         identifier: email.trim(),
         password,
         confirmPassword: confirm,
@@ -130,137 +122,155 @@ export function ForgotPasswordFormContent({ onBackToLogin }: Props) {
       setBanner(null);
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Could not save password',
+        message: getApiErrorMessage(e, 'Could not save password'),
         type: 'error',
       });
+    } finally {
+      setSaving(false);
     }
   };
 
   const resend = async () => {
     setBanner(null);
+    setSending(true);
     try {
-      await sendForgotPasswordOtp(email.trim());
+      await authApi.sendOtp({ emailOrPhone: email.trim(), purpose: 'forgot_password' });
       setBanner({ message: 'A new code was sent to your email.', type: 'success' });
     } catch (e) {
       setBanner({
-        message: e instanceof Error ? e.message : 'Could not resend code',
+        message: getApiErrorMessage(e, 'Could not resend code'),
         type: 'error',
       });
+    } finally {
+      setSending(false);
     }
   };
 
-  const title =
-    channel === 'phone'
-      ? step === 'done'
-        ? 'All set'
-        : 'Reset with phone OTP'
-      : step === 'email'
-        ? 'Forgot password?'
-        : step === 'otp'
-          ? 'Check your email'
-          : step === 'password'
-            ? 'Create new password'
-            : 'All set';
+  const isScreen = layout === 'screen';
 
-  const subtitle =
-    step === 'email' ? (
-      'Enter your account email and we’ll send a verification code.'
-    ) : step === 'otp' ? (
-      <>
-        Enter the 6-digit code sent to{' '}
-        <Text style={styles.emailHighlight}>{maskEmail(email)}</Text>.
-      </>
-    ) : step === 'password' ? (
-      'Choose a strong password, then confirm it below.'
-    ) : (
-      'Your password was changed successfully.'
-    );
+  const body = (
+    <>
+      {step !== 'done' && !isScreen ? (
+        <View style={styles.header}>
+          <Text style={styles.title}>Forgot password?</Text>
+          <Text style={styles.subtitle}>
+            Enter your account email and we’ll send a verification code.
+          </Text>
+        </View>
+      ) : null}
 
-  return (
-    <View style={{ flex: 1 }}>
-      <KeyboardAwareScrollView
-        enableOnAndroid
-        extraScrollHeight={24}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {step !== 'done' ? (
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            {channel === 'email' ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-            {channel === 'email' ? <ForgotStepIndicator step={step} /> : null}
-            <View style={styles.rowBetween}>
-              <Pressable onPress={() => { setChannel('phone'); setStep('email'); setBanner(null); }}>
-                <Text style={channel === 'phone' ? styles.signupLink : styles.signupText}>Phone OTP</Text>
-              </Pressable>
-              <Pressable onPress={() => { setChannel('email'); setBanner(null); }}>
-                <Text style={channel === 'email' ? styles.signupLink : styles.signupText}>Email code</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        {channel === 'phone' && step !== 'done' ? (
-          <ForgotPhoneReset onDone={() => setStep('done')} />
-        ) : null}
-
-        {banner ? (
-          <View style={{ marginBottom: 12 }}>
-            <AuthMessageBanner message={banner.message} type={banner.type} />
-          </View>
-        ) : null}
-
-        {channel === 'email' && step === 'email' ? (
-          <ForgotEmailStep
-            {...chrome}
-            email={email}
-            setEmail={setEmail}
-            clearError={clearError}
-            onSubmit={() => void sendOtp()}
-            isLoading={isLoading}
-          />
-        ) : null}
-
-        {channel === 'email' && step === 'otp' ? (
-          <ForgotOtpStep
-            {...chrome}
-            otp={otp}
-            setOtp={setOtp}
-            clearError={clearError}
-            onSubmit={() => void verifyOtp()}
-            onResend={() => void resend()}
-            isLoading={isLoading}
-          />
-        ) : null}
-
-        {channel === 'email' && step === 'password' ? (
-          <ForgotPasswordFields
-            {...chrome}
-            password={password}
-            confirm={confirm}
-            setPassword={setPassword}
-            setConfirm={setConfirm}
-            clearError={clearError}
-            onSubmit={() => void savePassword()}
-            isLoading={isLoading}
-          />
-        ) : null}
-
-        {step === 'done' ? <ForgotSuccessStep onSignIn={onBackToLogin} /> : null}
-
-        {step !== 'done' && onBackToLogin ? (
-          <View style={styles.bottomLinks}>
-            <Text style={styles.signupText}>
-              Remember your password?{' '}
-              <Text style={styles.signupLink} onPress={onBackToLogin}>
-                Sign in
+      {step !== 'done' ? (
+        <>
+          {channel === 'email' ? <ForgotStepIndicator step={step} /> : null}
+          <View style={styles.rowBetween}>
+            <Pressable
+              onPress={() => {
+                setChannel('phone');
+                setStep('email');
+                setBanner(null);
+              }}
+            >
+              <Text style={channel === 'phone' ? styles.signupLink : styles.signupText}>
+                Phone OTP
               </Text>
-            </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setChannel('email');
+                setBanner(null);
+              }}
+            >
+              <Text style={channel === 'email' ? styles.signupLink : styles.signupText}>
+                Email code
+              </Text>
+            </Pressable>
           </View>
-        ) : null}
-      </KeyboardAwareScrollView>
-    </View>
+        </>
+      ) : null}
+
+      {channel === 'phone' && step !== 'done' ? (
+        <ForgotPhoneReset onDone={() => setStep('done')} />
+      ) : null}
+
+      {banner ? (
+        <View style={{ marginBottom: 12 }}>
+          <AuthMessageBanner message={banner.message} type={banner.type} />
+        </View>
+      ) : null}
+
+      {channel === 'email' && step === 'otp' && !isScreen ? (
+        <Text style={[styles.subtitle, { marginBottom: 12 }]}>
+          Enter the 6-digit code sent to{' '}
+          <Text style={styles.emailHighlight}>{maskEmail(email)}</Text>.
+        </Text>
+      ) : null}
+
+      {channel === 'email' && step === 'email' ? (
+        <ForgotEmailStep
+          {...chrome}
+          email={email}
+          setEmail={setEmail}
+          clearError={clearError}
+          onSubmit={() => void sendOtp()}
+          isLoading={isLoading}
+        />
+      ) : null}
+
+      {channel === 'email' && step === 'otp' ? (
+        <ForgotOtpStep
+          {...chrome}
+          otp={otp}
+          setOtp={setOtp}
+          clearError={clearError}
+          onSubmit={() => void verifyOtp()}
+          onResend={() => void resend()}
+          isLoading={isLoading}
+        />
+      ) : null}
+
+      {channel === 'email' && step === 'password' ? (
+        <ForgotPasswordFields
+          {...chrome}
+          password={password}
+          confirm={confirm}
+          setPassword={setPassword}
+          setConfirm={setConfirm}
+          clearError={clearError}
+          onSubmit={() => void savePassword()}
+          isLoading={isLoading}
+        />
+      ) : null}
+
+      {step === 'done' ? <ForgotSuccessStep onSignIn={onBackToLogin} /> : null}
+
+      {step !== 'done' && onBackToLogin ? (
+        <View style={styles.bottomLinks}>
+          <Text style={styles.signupText}>
+            Remember your password?{' '}
+            <Text style={styles.signupLink} onPress={onBackToLogin}>
+              Sign in
+            </Text>
+          </Text>
+        </View>
+      ) : null}
+    </>
   );
+
+  if (isScreen) {
+    return (
+      <ScrollView
+        style={{ flex: 1 }}
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {body}
+      </ScrollView>
+    );
+  }
+
+  return <View style={{ flex: 1 }}>{body}</View>;
 }
