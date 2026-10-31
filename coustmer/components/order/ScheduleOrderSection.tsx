@@ -1,4 +1,4 @@
-import { CalendarClock, Clock3 } from 'lucide-react-native';
+import { CalendarClock, Check, Zap } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -19,7 +19,6 @@ type Props = {
   busy?: boolean;
   onRetry?: () => void;
   onSelectNow: () => void;
-  /** Saves the slot on the cart; rejects with the server message. */
   onSelectSlot: (startIso: string) => Promise<void>;
 };
 
@@ -37,7 +36,7 @@ export function ScheduleOrderSection({
   const days = scheduleData?.days ?? [];
   const policy = scheduleData?.policy ?? DEFAULT_SCHEDULE_POLICY;
   const unsupported = scheduleData?.scheduleSupported === false;
-  const bookable = days.some((d) => d.slots.some((s) => s.available));
+  const bookable = days.some((day) => day.slots.some((slot) => slot.available));
   const scheduledLabel = formatScheduledForDisplay(scheduledFor);
   const isLater = Boolean(scheduledFor);
 
@@ -48,32 +47,44 @@ export function ScheduleOrderSection({
 
   return (
     <View style={styles.card}>
-      <View style={styles.titleRow}>
-        <Clock3 color={C.orange} size={16} strokeWidth={2.2} />
-        <Text style={styles.title}>When should we place it?</Text>
-      </View>
-
-      <View style={styles.modeRow}>
+      <Text style={styles.title}>When do you want it?</Text>
+      <View style={styles.row}>
         <TouchableOpacity
-          style={[styles.modeChip, !isLater && styles.modeChipOn]}
+          style={[styles.option, !isLater && styles.optionOn]}
           onPress={onSelectNow}
           disabled={busy || !isLater}
-          activeOpacity={0.85}
+          activeOpacity={0.88}
         >
-          <Text style={[styles.modeText, !isLater && styles.modeTextOn]}>Order now</Text>
+          <View style={[styles.icon, !isLater && styles.iconOn]}>
+            <Zap color={!isLater ? C.white : C.orange} size={16} strokeWidth={2.4} />
+          </View>
+          <View style={styles.copy}>
+            <Text style={styles.optionTitle}>Order now</Text>
+            <Text style={styles.optionHint}>As soon as it is ready</Text>
+          </View>
+          {!isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[
-            styles.modeChip,
-            isLater && styles.modeChipOn,
-            (unsupported || (!isLoading && !bookable)) && styles.modeChipOff,
+            styles.option,
+            isLater && styles.optionOn,
+            (unsupported || (!isLoading && !bookable)) && styles.optionOff,
           ]}
           onPress={openSheet}
           disabled={busy || unsupported}
-          activeOpacity={0.85}
+          activeOpacity={0.88}
         >
-          <CalendarClock size={14} color={isLater ? C.orangeDark : C.textSec} />
-          <Text style={[styles.modeText, isLater && styles.modeTextOn]}>Schedule</Text>
+          <View style={[styles.icon, isLater && styles.iconOn]}>
+            <CalendarClock color={isLater ? C.white : C.orange} size={16} strokeWidth={2.3} />
+          </View>
+          <View style={styles.copy}>
+            <Text style={styles.optionTitle}>Schedule</Text>
+            <Text style={styles.optionHint} numberOfLines={1}>
+              {isLater && scheduledLabel ? scheduledLabel : 'Pick a time slot'}
+            </Text>
+          </View>
+          {isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
       </View>
 
@@ -92,26 +103,13 @@ export function ScheduleOrderSection({
         <Text style={styles.hint}>This restaurant does not accept scheduled orders.</Text>
       ) : !bookable ? (
         <Text style={styles.hint}>
-          No times available in the next {policy.maxAdvanceDays} days. Choose Order now.
+          No times in the next {policy.maxAdvanceDays} days. Order now is available.
         </Text>
-      ) : isLater && scheduledLabel ? (
-        <View style={styles.selectedBox}>
-          <View style={styles.flex}>
-            <Text style={styles.selectedLabel}>Scheduled for</Text>
-            <Text style={styles.selectedValue}>{scheduledLabel}</Text>
-          </View>
-          <TouchableOpacity onPress={openSheet} disabled={busy}>
-            <Text style={styles.change}>Change</Text>
-          </TouchableOpacity>
-        </View>
       ) : (
         <Text style={styles.hint}>
-          Prepared and dispatched right away. Or schedule up to {policy.maxAdvanceDays} days ahead
-          within restaurant hours.
+          Schedule up to {policy.maxAdvanceDays} days ahead, inside restaurant hours.
         </Text>
       )}
-
-      {busy ? <Text style={styles.hint}>Saving…</Text> : null}
 
       {sheetOpen ? (
         <ScheduleOrderSheet
@@ -133,50 +131,36 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: C.border,
-    padding: 16,
-    marginBottom: 4,
+    padding: 14,
     gap: 12,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontFamily: fonts.uiSemi, fontSize: 16, color: C.text },
-  modeRow: { flexDirection: 'row', gap: 8 },
-  modeChip: {
-    flex: 1,
+  row: { gap: 8 },
+  option: {
     flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 999,
+    gap: 12,
     borderWidth: 1,
     borderColor: C.border,
-    paddingVertical: 10,
+    borderRadius: 14,
+    padding: 12,
     backgroundColor: C.white,
   },
-  modeChipOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
-  modeChipOff: { opacity: 0.5 },
-  modeText: { fontFamily: fonts.uiMedium, fontSize: 13, color: C.textSec },
-  modeTextOn: { color: C.orangeDark },
+  optionOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
+  optionOff: { opacity: 0.5 },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.orangeSoft,
+  },
+  iconOn: { backgroundColor: C.orange },
+  copy: { flex: 1, gap: 2 },
+  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
+  optionHint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec, lineHeight: 18 },
   hintError: { fontFamily: fonts.ui, fontSize: 12, color: C.error, lineHeight: 18 },
-  selectedBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: C.orangeSoft,
-    borderWidth: 1,
-    borderColor: C.orangeBorder,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  flex: { flex: 1, gap: 2 },
-  selectedLabel: {
-    fontFamily: fonts.ui,
-    fontSize: 11,
-    color: C.textSec,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  selectedValue: { fontFamily: fonts.uiSemi, fontSize: 14, color: C.orangeDark },
-  change: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.orange },
 });
