@@ -6,7 +6,6 @@ import { Pressable } from '@/components/common/Pressable';
 import { KitchenAlertsBlock } from '@/components/notification/KitchenAlertsBlock';
 import { PushPermissionBanner } from '@/components/notification/PushPermissionBanner';
 import { hubStyles as styles } from '@/components/notification/notifications-hub-styles';
-import { authTheme } from '@/constants/auth-theme';
 import type { KitchenAlert } from '@/lib/restaurant/types';
 
 type Filter = 'all' | 'unread';
@@ -16,6 +15,7 @@ type Props = {
   unreadCount: number;
   onFilterChange: (next: Filter) => void;
   kitchenAlerts: KitchenAlert[];
+  showInboxLabel?: boolean;
 };
 
 export function NotificationsHubListHeader({
@@ -23,6 +23,7 @@ export function NotificationsHubListHeader({
   unreadCount,
   onFilterChange,
   kitchenAlerts,
+  showInboxLabel,
 }: Props) {
   const router = useRouter();
 
@@ -59,13 +60,13 @@ export function NotificationsHubListHeader({
           onPress={() => router.push('/profile/preferences')}
         >
           <View style={styles.shortcutIcon}>
-            <Settings2 color={authTheme.brand} size={18} />
+            <Settings2 color="#374151" size={18} />
           </View>
           <View style={styles.shortcutCopy}>
             <Text style={styles.shortcutTitle}>Notification preferences</Text>
             <Text style={styles.shortcutSub}>Push, offers, SMS, email</Text>
           </View>
-          <ChevronRight color={authTheme.textDim} size={20} />
+          <ChevronRight color="#9CA3AF" size={20} />
         </Pressable>
         <View style={styles.shortcutDivider} />
         <Pressable
@@ -73,17 +74,19 @@ export function NotificationsHubListHeader({
           onPress={() => router.push('/profile/devices')}
         >
           <View style={styles.shortcutIcon}>
-            <Smartphone color={authTheme.brand} size={18} />
+            <Smartphone color="#374151" size={18} />
           </View>
           <View style={styles.shortcutCopy}>
             <Text style={styles.shortcutTitle}>This phone</Text>
             <Text style={styles.shortcutSub}>Manage devices that receive alerts</Text>
           </View>
-          <ChevronRight color={authTheme.textDim} size={20} />
+          <ChevronRight color="#9CA3AF" size={20} />
         </Pressable>
       </View>
 
       <KitchenAlertsBlock alerts={kitchenAlerts} />
+
+      {showInboxLabel ? <Text style={styles.inboxLabel}>Inbox</Text> : null}
     </View>
   );
 }

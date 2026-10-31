@@ -1,10 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
-import {
-  Bell,
-  CheckCheck,
-  Trash2,
-} from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,9 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { NotificationsHubEmpty } from '@/components/notification/NotificationsHubEmpty';
 import { NotificationsHubListHeader } from '@/components/notification/NotificationsHubListHeader';
+import { NotificationsHubTopBar } from '@/components/notification/NotificationsHubTopBar';
 import { NotificationRow } from '@/components/notification/NotificationRow';
 import { SignedOutInbox } from '@/components/notification/SignedOutInbox';
 import { hubStyles as styles } from '@/components/notification/notifications-hub-styles';
@@ -86,8 +81,8 @@ export function NotificationsHubScreen() {
 
   const subtitle = useMemo(() => {
     if (count > 0) return `${count} unread`;
-    if (notifications.length > 0) return 'You are all caught up';
-    return 'Order updates & offers';
+    if (notifications.length > 0) return 'All caught up';
+    return 'Order updates and offers';
   }, [count, notifications.length]);
 
   const onOpen = (item: AppNotification) => {
@@ -130,6 +125,7 @@ export function NotificationsHubScreen() {
     );
   };
 
+  const hasInboxItems = notifications.length > 0;
   const listHeader = useMemo(
     () => (
       <NotificationsHubListHeader
@@ -137,16 +133,19 @@ export function NotificationsHubScreen() {
         unreadCount={count}
         onFilterChange={changeFilter}
         kitchenAlerts={activeAlerts}
+        showInboxLabel={hasInboxItems && !listQuery.isLoading}
       />
     ),
-    [filter, count, activeAlerts]
+    [filter, count, activeAlerts, hasInboxItems, listQuery.isLoading]
   );
 
   if (!authed) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
-          <ScreenHeader title="Notifications" />
+          <View style={styles.signedOutHeader}>
+            <Text style={styles.signedOutTitle}>Notifications</Text>
+          </View>
           <SignedOutInbox />
         </View>
       </SafeAreaView>
@@ -161,51 +160,14 @@ export function NotificationsHubScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.container}>
-        <ScreenHeader
-          title="Notifications"
+        <NotificationsHubTopBar
           subtitle={subtitle}
-          right={
-            <View style={styles.headerRightSlot}>
-              <View style={styles.headerActions}>
-                <Pressable
-                  style={styles.headerBtn}
-                  onPress={onMarkAll}
-                  disabled={count <= 0 || markAllRead.isPending}
-                  hitSlop={6}
-                  accessibilityLabel="Mark all as read"
-                >
-                  {markAllRead.isPending ? (
-                    <ActivityIndicator color={authTheme.brand} size="small" />
-                  ) : (
-                    <CheckCheck
-                      color={count > 0 ? authTheme.brand : authTheme.textDim}
-                      size={18}
-                    />
-                  )}
-                </Pressable>
-                <Pressable
-                  style={styles.headerBtn}
-                  onPress={onClearAll}
-                  disabled={notifications.length === 0 || clearAll.isPending}
-                  hitSlop={6}
-                  accessibilityLabel="Clear all notifications"
-                >
-                  {clearAll.isPending ? (
-                    <ActivityIndicator color={authTheme.brand} size="small" />
-                  ) : (
-                    <Trash2
-                      color={
-                        notifications.length > 0
-                          ? authTheme.brand
-                          : authTheme.textDim
-                      }
-                      size={18}
-                    />
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          }
+          unreadCount={count}
+          inboxCount={notifications.length}
+          onMarkAll={onMarkAll}
+          onClearAll={onClearAll}
+          markAllPending={markAllRead.isPending}
+          clearAllPending={clearAll.isPending}
         />
 
         <FlatList
@@ -246,7 +208,7 @@ export function NotificationsHubScreen() {
               listQuery.isFetchingMore ? (
                 <ActivityIndicator color={authTheme.brand} style={{ marginVertical: 12 }} />
               ) : (
-                <Text style={styles.hint}>Long-press a notification to delete</Text>
+                <Text style={styles.hint}>Long-press to delete</Text>
               )
             ) : null
           }
