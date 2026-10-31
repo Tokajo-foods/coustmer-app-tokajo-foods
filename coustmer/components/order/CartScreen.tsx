@@ -58,10 +58,8 @@ import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
 import { GroupOrderSheet } from '@/components/order/GroupOrderSheet';
 import { CouponPickerSheet } from '@/components/order/CouponPickerSheet';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
-import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
-import type { DeliveryLocationResult } from '@/components/location/DeliveryLocationPicker';
-import { extractCityFromAddress, normalizeCityName } from '@/lib/location/format';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
+import { isDeliveryFeeReady } from '@/lib/cart/delivery-fee-ready';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr, formatLineTotal } from '@/lib/format/money';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
@@ -202,7 +200,6 @@ export function CartScreen() {
   const setTip = useCartStore((s) => s.setTip);
   const setDeliveryTypeLocal = useCartStore((s) => s.setDeliveryType);
   const location = useDeliveryLocationStore((s) => s.location);
-  const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
   const wallet = usePaymentWallet(isLoggedIn);
 
   const remoteCart = useCart();
@@ -226,23 +223,18 @@ export function CartScreen() {
 
   const serverHasPin =
     apiCart?.deliveryAddress?.lat != null && apiCart?.deliveryAddress?.lng != null;
-  const pricedOnServer =
-    normalizedDeliveryType === 'takeaway' ||
-    (apiCart?.deliveryFee ?? 0) > 0 ||
-    apiCart?.superFreeDelivery === true ||
-    apiCart?.autoFreeDelivery === true ||
-    typeof apiCart?.deliveryFeeBase === 'number';
-  const savedLat = apiCart?.deliveryAddress?.lat;
-  const savedLng = apiCart?.deliveryAddress?.lng;
-  const pinMoved =
-    billPin != null &&
-    savedLat != null &&
-    savedLng != null &&
-    (Math.abs(billPin.lat - savedLat) > 0.0005 || Math.abs(billPin.lng - savedLng) > 0.0005);
-  const needsQuote =
-    items.length > 0 &&
-    normalizedDeliveryType === 'delivery' &&
-    (!pricedOnServer || pinMoved);
+  const feeInput = {
+    deliveryType: normalizedDeliveryType,
+    deliveryFee: apiCart?.deliveryFee,
+    deliveryFeeBase: apiCart?.deliveryFeeBase,
+    superFreeDelivery: apiCart?.superFreeDelivery,
+    autoFreeDelivery: apiCart?.autoFreeDelivery,
+    pinLat: billPin?.lat,
+    pinLng: billPin?.lng,
+    savedLat: apiCart?.deliveryAddress?.lat,
+    savedLng: apiCart?.deliveryAddress?.lng,
+  };
+  const needsQuote = items.length > 0 && !isDeliveryFeeReady(feeInput);
   const liveBill = useCartBill(
     billPin?.lat,
     billPin?.lng,
@@ -253,7 +245,9 @@ export function CartScreen() {
   const showFreshBill =
     needsQuote &&
     liveBill.data != null &&
+    !liveBill.isPlaceholderData &&
     liveBill.dataUpdatedAt >= remoteCart.dataUpdatedAt;
+  const feeReady = isDeliveryFeeReady({ ...feeInput, freshBill: showFreshBill });
   const slots = useCartSlots({ enabled: isLoggedIn && items.length > 0 });
   const setSchedule = useSetCartSchedule();
   const clearRemote = useClearRemoteCart();
@@ -272,7 +266,6 @@ export function CartScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherBusy, setVoucherBusy] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [groupOrderOpen, setGroupOrderOpen] = useState(false);
   const [couponPickerOpen, setCouponPickerOpen] = useState(false);
 
@@ -666,10 +659,7 @@ export function CartScreen() {
           }
         >
           {/* Address */}
-          <Pressable
-            style={styles.addressCard}
-            onPress={() => setLocationOpen(true)}
-          >
+          <View style={styles.addressCard}>
             <View style={styles.addressIcon}>
               <MapPin color={ORANGE} size={16} strokeWidth={2.4} />
             </View>
@@ -679,8 +669,7 @@ export function CartScreen() {
                 {addressLine}
               </Text>
             </View>
-            <Text style={styles.addressChange}>Change</Text>
-          </Pressable>
+          </View>
 
           {/* Items */}
           <View style={styles.section}>
@@ -886,8 +875,9 @@ export function CartScreen() {
             couponCode={couponCode}
             fallbackTotal={displayTotal}
             hasDeliveryPin={Boolean(billPin) || normalizedDeliveryType === 'takeaway'}
-            billLoading={needsQuote && liveBill.isLoading && !pricedOnServer && !billBreakdown.billReady}
+            billLoading={needsQuote && !feeReady && !liveBill.isError}
             billError={liveBill.isError}
+            totalReady={feeReady}
           />
         </ScrollView>
 
@@ -899,6 +889,7 @@ export function CartScreen() {
               router.push('/cart/summary' as import('expo-router').Href);
             }}
             disabled={
+              !feeReady ||
               voucherBusy ||
               Boolean(busyId) ||
               applyCoupon.isPending ||
@@ -907,7 +898,9 @@ export function CartScreen() {
             activeOpacity={0.9}
           >
             <View>
-              <Text style={styles.checkoutPrice}>{formatInr(displayTotal)}</Text>
+              <Text style={styles.checkoutPrice} numberOfLines={1}>
+                {feeReady ? formatInr(displayTotal) : 'Calculating…'}
+              </Text>
               <Text style={styles.checkoutSub}>TOTAL</Text>
             </View>
             <View style={styles.checkoutLabelWrap}>
@@ -966,6 +959,7 @@ export function CartScreen() {
           onSelectMethod={(m) => void selectPaymentMethod(m)}
           itemCount={itemCount}
           total={totalBeforeWallet}
+          amountReady={feeReady}
           walletShortfall={billBreakdown.walletShortfall}
           savings={billBreakdown.discount}
           restaurantName={restaurant?.name || ''}
@@ -973,27 +967,6 @@ export function CartScreen() {
           addressLabel={addressLabel}
           addressText={addressLine}
           wallet={wallet.data}
-        />
-
-        <DeliveryLocationPicker
-          visible={locationOpen}
-          onClose={() => setLocationOpen(false)}
-          onConfirm={(result: DeliveryLocationResult) => {
-            setDeliveryLocation({
-              label: result.label,
-              formattedAddress: result.formattedAddress,
-              city: normalizeCityName(
-                extractCityFromAddress(result.formattedAddress)
-              ),
-              lat: result.lat,
-              lng: result.lng,
-              source: result.source,
-              savedAddressId: result.savedAddressId,
-              updatedAt: Date.now(),
-            });
-            setLocationOpen(false);
-          }}
-          initial={location ? { lat: location.lat, lng: location.lng } : null}
         />
 
         {/* Group Order Sheet */}
@@ -1145,11 +1118,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,
-  },
-  addressChange: {
-    fontFamily: fonts.uiBold,
-    fontSize: 12,
-    color: ORANGE,
   },
 
   card: {
