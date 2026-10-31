@@ -156,7 +156,6 @@ export function useDeals() {
       }),
     enabled: hasCoords,
     staleTime: 60_000,
-    retry: 1,
   });
 }
 
@@ -174,6 +173,11 @@ export function useOffersFeed() {
       }),
     enabled: hasCoords,
     staleTime: 60_000,
+    retry: (failureCount, error) => {
+      const message = error instanceof Error ? error.message : '';
+      if (message.includes('Too many requests') || message.includes('slow down')) return false;
+      return failureCount < 1;
+    },
   });
 }
 

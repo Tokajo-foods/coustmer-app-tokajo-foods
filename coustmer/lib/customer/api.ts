@@ -353,60 +353,10 @@ export const customerApi = {
         params.set('radius', String(coords.radius));
       }
     }
+    if (coords?.lat == null || coords?.lng == null) return [];
     const qs = params.toString() ? `?${params.toString()}` : '';
-
-    try {
-      const res = await request<unknown>(`${CUSTOMER_BASE}/deals${qs}`);
-      const list = unwrapList(res.data ?? res);
-      if (list.length) return list.map(mapDeal);
-    } catch {
-      // fall through
-    }
-
-    try {
-      const res = await request<unknown>(`/api/v1/customer-service/deals${qs}`);
-      const list = unwrapList(res.data ?? res);
-      if (list.length) return list.map(mapDeal);
-    } catch {
-      // fall through
-    }
-
-    if (!coords?.lat || !coords?.lng) {
-      return [];
-    }
-
-    // Fallback when geo deals endpoint unavailable
-    try {
-      const { restaurantApi } = await import('@/lib/restaurant/api');
-      const { restaurantOffersApi } = await import('@/lib/restaurant/offers-api');
-
-      const { restaurants } = await restaurantApi.getAllRestaurants({ limit: 100 });
-      const offersPromises = restaurants.map((r) =>
-        restaurantOffersApi.getOffers(r.id).catch(() => ({ offers: [] }))
-      );
-      const results = await Promise.all(offersPromises);
-
-      const allDeals = results.flatMap((res, i) => {
-        return res.offers.map((offer) => {
-          return {
-            id: offer.id,
-            title: offer.title,
-            description: offer.description,
-            code: offer.code,
-            imageUrl: offer.imageUrl,
-            type: offer.type,
-            value: offer.value,
-            restaurantId: offer.restaurantId || restaurants[i].id,
-          } as Deal;
-        });
-      });
-
-      if (allDeals.length > 0) return allDeals;
-    } catch (e) {
-      console.warn('Failed to fetch aggregate deals from restaurants:', e);
-    }
-
-    return [];
+    const res = await request<unknown>(`${CUSTOMER_BASE}/deals${qs}`);
+    return unwrapList(res.data ?? res).map(mapDeal);
   },
 
   /** GET /customers/banners — CMS promo banners */

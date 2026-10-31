@@ -10,8 +10,12 @@ export const queryClient = new QueryClient({
       // Keep unused query data in memory for 10 minutes after the last subscriber
       // unmounts (e.g. navigating away from home). Coming back feels instant.
       gcTime: 1000 * 60 * 10,
-      // Retry failed requests twice with default exponential backoff.
-      retry: 2,
+      // Retry twice, but a 429 is already "slow down" — more attempts make the lockout longer.
+      retry: (failureCount, error) => {
+        const message = error instanceof Error ? error.message : '';
+        if (message.includes('Too many requests') || message.includes('slow down')) return false;
+        return failureCount < 2;
+      },
       // Don't refetch just because the user switches apps and comes back.
       refetchOnWindowFocus: false,
     },
