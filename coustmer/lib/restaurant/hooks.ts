@@ -159,6 +159,7 @@ export type CategoryDish = {
   name: string;
   description?: string;
   price: number;
+  discountedPrice?: number | null;
   imageUrl?: string;
   isVeg?: boolean;
   isAvailable?: boolean;
@@ -217,6 +218,7 @@ export function useCategoryDishes(input: {
           id: d.itemId,
           name: d.name,
           price: d.price,
+          discountedPrice: d.discountedPrice,
           imageUrl: d.image ?? undefined,
           isVeg: d.isVeg,
           isAvailable: true,

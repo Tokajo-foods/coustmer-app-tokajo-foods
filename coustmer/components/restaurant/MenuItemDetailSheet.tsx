@@ -31,7 +31,9 @@ import {
 } from '@/lib/order/add-to-cart';
 import { useItemQuote } from '@/lib/cart/hooks';
 import { sameModifiers } from '@/lib/cart/modifiers';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import { formatInr } from '@/lib/format/money';
+import { offerPriceOf, payPriceOf } from '@/lib/restaurant/item-price';
 import type { CartModifier } from '@/lib/cart/types';
 import {
   useItemCustomizations,
@@ -219,7 +221,7 @@ export function MenuItemDetailSheet({
     }
     playHapticFeedback();
 
-    const basePrice = displayItem.price ?? 0;
+    const basePrice = payPriceOf(displayItem);
     if (quantity === 0) {
       addMenuItemToCart(
         displayItem,
@@ -260,7 +262,7 @@ export function MenuItemDetailSheet({
 
   if (!displayItem) return null;
 
-  const unitPriceLabel = quote.data ? formatInr(quote.data.unitPrice) : '…';
+  const quotedPay = quote.data?.unitPrice;
   const description =
     displayItem.description?.trim() ||
     (displayItem.allergens?.length
@@ -341,7 +343,19 @@ export function MenuItemDetailSheet({
                 <Text style={styles.metaChip}>Bestseller</Text>
               ) : null}
 
-              <Text style={styles.priceText}>{unitPriceLabel}</Text>
+              {quotedPay != null ? (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceText}>{formatInr(quotedPay)}</Text>
+                  {offerPriceOf(displayItem) != null ? (
+                    <Text style={styles.priceStrike}>{formatInr(displayItem.price)}</Text>
+                  ) : null}
+                </View>
+              ) : (
+                <DishPrice
+                  price={displayItem.price}
+                  discountedPrice={displayItem.discountedPrice}
+                />
+              )}
             </View>
 
             {customizations.isError ? (
@@ -622,10 +636,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     overflow: 'hidden',
   },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   priceText: {
     fontSize: 22,
     fontWeight: '800',
     color: '#202020',
+  },
+  priceStrike: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
   },
   optionsCard: {
     backgroundColor: '#E5E5E5',

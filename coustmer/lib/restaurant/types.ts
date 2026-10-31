@@ -102,6 +102,8 @@ export type MenuItem = {
   name: string;
   description?: string;
   price: number;
+  /** Offer price; when set and below `price`, customers pay this amount. */
+  discountedPrice?: number | null;
   imageUrl?: string;
   categoryId?: string;
   categoryName?: string;
@@ -267,6 +269,7 @@ export type TrendingDish = {
   id: string;
   name: string;
   price: number;
+  discountedPrice?: number | null;
   imageUrl?: string;
   isVeg?: boolean;
   rating?: number;

@@ -7,7 +7,7 @@ import { Pressable, Text, View } from 'react-native';
 import { SmoothPressable } from '@/components/common/SmoothPressable';
 import { styles } from '@/components/home/tokajo/TokajoDishCard.styles';
 import type { HomeTrendingDish } from '@/lib/home/types';
-import { formatInr } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 
 const ORANGE = '#F97316';
 const GREEN = '#12833B';
@@ -190,9 +190,13 @@ export const TokajoDishCard = memo(function TokajoDishCard({
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.price} numberOfLines={1}>
-            {formatInr(dish.price)}
-          </Text>
+          <View style={{ flexShrink: 1 }}>
+            <DishPrice
+              price={dish.price}
+              discountedPrice={dish.discountedPrice}
+              size="sm"
+            />
+          </View>
           <SmoothPressable
             style={[styles.addBtn, (isTrending || isReorder) && styles.addBtnRail]}
             pressScale={0.9}

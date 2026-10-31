@@ -24,6 +24,7 @@ export type HomeTrendingDish = {
   id: string;
   name: string;
   price: number;
+  discountedPrice?: number | null;
   imageUrl?: string | null;
   isVeg?: boolean;
   rating?: number;

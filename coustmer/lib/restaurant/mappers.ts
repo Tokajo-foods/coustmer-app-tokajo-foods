@@ -683,6 +683,11 @@ export function mapMenuItem(
     name: itemName,
     description: (data.description as string) || undefined,
     price: Number(data.price ?? data.basePrice ?? 0),
+    discountedPrice: (() => {
+      const raw = data.discountedPrice ?? data.discountPrice;
+      const n = typeof raw === 'number' ? raw : Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : undefined;
+    })(),
     imageUrl: apiImage,
     categoryId: categoryIdRaw ? String(categoryIdRaw) : undefined,
     categoryName,

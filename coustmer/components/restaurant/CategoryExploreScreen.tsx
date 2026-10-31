@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyView, ErrorView } from '@/components/common/StateViews';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
@@ -35,7 +36,6 @@ import {
 import {
   useDeliveryLocationStore,
 } from '@/store/delivery-location-store';
-import { formatInr } from '@/lib/format/money';
 
 function titleFromSlug(slug: string) {
   return slug
@@ -167,7 +167,11 @@ export function CategoryExploreScreen() {
                   <VegBadge isVeg={item.isVeg} />
                 </View>
 
-                <Text style={styles.price}>{formatInr(item.price)}</Text>
+                <DishPrice
+                  price={item.price}
+                  discountedPrice={item.discountedPrice}
+                  size="sm"
+                />
 
                 {item.description ? (
                   <Text style={styles.desc} numberOfLines={2}>

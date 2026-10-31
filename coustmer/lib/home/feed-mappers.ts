@@ -95,10 +95,14 @@ export function mapFeedDishCard(raw: unknown): HomeTrendingDish | null {
   const restaurantId = str(r.restaurantId);
   if (!id || !restaurantId) return null;
 
+  const listPrice = num(r.price) ?? 0;
+  const offer = num(r.discountedPrice);
   return {
     id,
     name: str(r.name) ?? 'Dish',
-    price: num(r.price) ?? 0,
+    price: listPrice,
+    discountedPrice:
+      offer != null && offer > 0 && offer < listPrice ? offer : undefined,
     imageUrl: str(r.image ?? r.imageUrl) ?? null,
     isVeg: typeof r.isVeg === 'boolean' ? r.isVeg : undefined,
     rating: num(r.rating),

@@ -1,6 +1,7 @@
 import { cartApi } from '@/lib/cart/api';
 import { cartLineLocalId } from '@/lib/cart/modifiers';
 import type { CartModifier } from '@/lib/cart/types';
+import { payPriceOf } from '@/lib/restaurant/item-price';
 import type { MenuItem } from '@/lib/restaurant/types';
 import type { CartItem } from '@/store/cart-store';
 import { useCartStore } from '@/store/cart-store';
@@ -125,7 +126,7 @@ export function addMenuItemToCart(
   const modifiers = options?.modifiers?.length ? options.modifiers : undefined;
   const menuItemId = item.id;
   const basePrice =
-    typeof options?.basePrice === 'number' ? options.basePrice : item.price;
+    typeof options?.basePrice === 'number' ? options.basePrice : payPriceOf(item);
   const lineId = cartLineLocalId(menuItemId, modifiers);
   const existing = findLine(menuItemId, modifiers ?? []);
 

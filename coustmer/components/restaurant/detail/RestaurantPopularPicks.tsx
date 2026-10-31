@@ -8,7 +8,7 @@ import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import type { MenuItem } from '@/lib/restaurant/types';
-import { formatInr } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 
 const ORANGE = '#F97316';
 const INK = '#0B1220';
@@ -68,7 +68,7 @@ function PopularDishCard({
             <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
           </View>
           <View style={styles.footer}>
-            <Text style={styles.price}>{formatInr(item.price)}</Text>
+            <DishPrice price={item.price} discountedPrice={item.discountedPrice} size="sm" />
             <Pressable
               style={styles.addBtn}
               onPress={(e) => {

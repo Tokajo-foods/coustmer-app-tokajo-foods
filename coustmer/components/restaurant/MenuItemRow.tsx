@@ -12,7 +12,7 @@ import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import type { MenuItem } from '@/lib/restaurant/types';
 import { playHapticFeedback } from '@/lib/utils/haptics';
 import { useCartStore } from '@/store/cart-store';
-import { formatInr } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 
 type Props = {
   item: MenuItem;
@@ -113,7 +113,7 @@ export function MenuItemRow({
             {item.description}
           </Text>
         ) : null}
-        <Text style={styles.price}>{formatInr(item.price)}</Text>
+        <DishPrice price={item.price} discountedPrice={item.discountedPrice} />
         {!available ? (
           <Text style={styles.soldOut}>Currently unavailable</Text>
         ) : null}
@@ -261,12 +261,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: 17,
     marginBottom: 6,
-  },
-  price: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 2,
   },
   soldOut: {
     marginTop: 4,

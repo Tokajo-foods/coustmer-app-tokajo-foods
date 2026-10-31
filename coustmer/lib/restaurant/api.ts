@@ -317,6 +317,7 @@ export const restaurantApi = {
       itemId: string;
       name: string;
       price: number;
+      discountedPrice?: number | null;
       image: string | null;
       isVeg: boolean;
       restaurantId: string;
@@ -349,6 +350,13 @@ export const restaurantApi = {
             itemId: String(d.itemId ?? d.id ?? ''),
             name: String(d.name ?? ''),
             price: typeof d.price === 'number' ? d.price : Number(d.price) || 0,
+            discountedPrice: (() => {
+              const n =
+                typeof d.discountedPrice === 'number'
+                  ? d.discountedPrice
+                  : Number(d.discountedPrice);
+              return Number.isFinite(n) && n > 0 ? n : undefined;
+            })(),
             image: d.image
               ? String(d.image)
               : d.imageUrl
@@ -775,6 +783,7 @@ export const restaurantApi = {
               id: item.id,
               name: item.name,
               price: item.price,
+              discountedPrice: item.discountedPrice,
               imageUrl: apiImage || item.imageUrl,
               isVeg: item.isVeg,
               rating: getMenuItemRating(item) ?? item.rating,
@@ -822,6 +831,7 @@ export const restaurantApi = {
       id: dish.id,
       name: dish.name,
       price: dish.price,
+      discountedPrice: dish.discountedPrice,
       imageUrl: dish.imageUrl,
       isVeg: dish.isVeg,
       rating: dish.rating,
