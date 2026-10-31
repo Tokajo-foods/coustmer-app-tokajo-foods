@@ -30,7 +30,7 @@ import type {
   CreateTicketPayload,
   RateTicketPayload,
 } from '@/lib/support/types';
-import { mapRestaurant } from '@/lib/restaurant/mappers';
+import { mapKitchenAlert, mapRestaurant } from '@/lib/restaurant/mappers';
 import { mapFeedDishCard, mapHomeFeedPayload } from '@/lib/home/feed-mappers';
 import type { HomeTrendingDish } from '@/lib/home/types';
 import type { KitchenAlert } from '@/lib/restaurant/types';

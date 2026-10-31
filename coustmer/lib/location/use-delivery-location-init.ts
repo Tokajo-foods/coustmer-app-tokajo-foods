@@ -69,7 +69,7 @@ export function useDeliveryLocationInit() {
     void (async () => {
       setDetecting(true);
       try {
-        const addresses = await addressApi.list();
+        const addresses = await addressApi.listAddresses();
         if (cancelled) return;
 
         const preferred =
@@ -82,9 +82,9 @@ export function useDeliveryLocationInit() {
 
         setLocation({
           label: formatAddressLabel(preferred.label) || 'Home',
-          formattedAddress: preferred.formattedAddress,
+          formattedAddress: preferred.formattedAddress ?? '',
           city: normalizeCityName(
-            extractCityFromAddress(preferred.formattedAddress) ||
+            extractCityFromAddress(preferred.formattedAddress ?? '') ||
               preferred.city
           ),
           lat: preferred.lat,

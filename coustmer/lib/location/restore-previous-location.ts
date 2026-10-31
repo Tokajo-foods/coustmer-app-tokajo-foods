@@ -14,7 +14,7 @@ export async function restorePreviousDeliveryLocation(userId: string | null) {
 
   if (!userId) return;
 
-  const addresses = await addressApi.list();
+  const addresses = await addressApi.listAddresses();
   const preferred = addresses.find((a) => a.isDefault) ?? addresses[0];
   if (!preferred) return;
 
