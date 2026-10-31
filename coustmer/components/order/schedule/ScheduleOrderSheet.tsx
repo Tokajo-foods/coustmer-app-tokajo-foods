@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Clock3, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -108,24 +108,16 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
       <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View style={styles.handle} />
         <View style={styles.titleRow}>
-          <View style={styles.titleCopy}>
-            <Text style={styles.title}>Schedule delivery</Text>
-            <Text style={styles.subtitle}>Pick a day and time the restaurant is open</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} style={styles.close} accessibilityLabel="Close">
+          <Text style={styles.title}>Schedule</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Close">
             <X size={18} color={C.textSec} />
           </TouchableOpacity>
         </View>
-
         {activeDay?.windows.length ? (
-          <View style={styles.hoursPill}>
-            <Clock3 size={14} color={C.orangeDark} />
-            <Text style={styles.hoursText}>Open {formatWindows(activeDay.windows)}</Text>
-          </View>
+          <Text style={styles.hours}>Open {formatWindows(activeDay.windows)}</Text>
         ) : null}
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
-          <Text style={styles.sectionLabel}>Day</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
             {days.map((day) => {
               const open = firstAvailableMinutes(day) != null;
@@ -156,7 +148,6 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
           <Text style={styles.sectionLabel}>Time</Text>
           <ScheduleTimeDropdowns
             minutes={minutes}
-            stepMinutes={policy.stepMinutes}
             onChange={(next) => {
               setServerError(null);
               setMinutes(next);
@@ -165,12 +156,9 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
         </ScrollView>
 
         <View style={styles.footer}>
-          <View style={[styles.status, check.ok ? styles.statusOk : styles.statusBad]}>
-            {check.ok ? <CheckCircle2 size={16} color={C.ok} /> : <AlertCircle size={16} color={C.error} />}
-            <Text style={[styles.statusText, check.ok ? styles.statusTextOk : styles.statusTextBad]}>
-              {check.ok ? 'Within restaurant hours' : error}
-            </Text>
-          </View>
+          <Text style={[styles.status, check.ok ? styles.statusOk : styles.statusBad]} numberOfLines={2}>
+            {check.ok ? 'Within restaurant hours' : error}
+          </Text>
           <TouchableOpacity
             style={[styles.cta, (!check.ok || saving) && styles.ctaOff]}
             disabled={!check.ok || saving}
@@ -180,7 +168,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
             {saving ? (
               <ActivityIndicator color={C.white} />
             ) : (
-              <Text style={styles.ctaText}>{label ? `Schedule · ${label}` : 'Choose an open time'}</Text>
+              <Text style={styles.ctaText}>{label ? 'Confirm' : 'Choose an open time'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -192,96 +180,64 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)' },
   sheet: {
-    backgroundColor: '#F6F7F9',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 16,
+    backgroundColor: C.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
     paddingTop: 8,
     maxHeight: '88%',
   },
   handle: {
     alignSelf: 'center',
-    width: 40,
+    width: 36,
     height: 4,
     borderRadius: 2,
     backgroundColor: C.border,
-    marginBottom: 12,
-  },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  titleCopy: { flex: 1, gap: 2 },
-  title: { fontFamily: fonts.displayBold, fontSize: 20, color: C.text },
-  subtitle: { fontFamily: fonts.ui, fontSize: 13, color: C.textSec },
-  close: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.disabledBg,
-  },
-  hoursPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: C.orangeSoft,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
     marginBottom: 14,
   },
-  hoursText: { fontFamily: fonts.uiSemi, fontSize: 12, color: C.orangeDark },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  title: { fontFamily: fonts.displayBold, fontSize: 18, color: C.text },
+  hours: { fontFamily: fonts.ui, fontSize: 13, color: C.textSec, marginBottom: 16 },
   sectionLabel: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 13,
-    color: C.text,
+    fontFamily: fonts.ui,
+    fontSize: 12,
+    color: C.textSec,
     marginBottom: 8,
   },
-  days: { gap: 8, paddingBottom: 16 },
+  days: { gap: 8, paddingBottom: 18 },
   day: {
-    width: 76,
+    minWidth: 64,
     alignItems: 'center',
-    gap: 2,
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.white,
   },
-  dayOn: { backgroundColor: C.orange, borderColor: C.orange },
+  dayOn: { backgroundColor: C.text, borderColor: C.text },
   dayOff: { backgroundColor: C.disabledBg },
   dayName: { fontFamily: fonts.ui, fontSize: 11, color: C.textSec },
-  dayNameOn: { color: '#FFEDD5' },
-  dayNum: { fontFamily: fonts.displayBold, fontSize: 18, color: C.text },
+  dayNameOn: { color: '#E2E8F0' },
+  dayNum: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
   dayNumOn: { color: C.white },
   dayOffText: { color: C.textMuted },
-  body: { paddingBottom: 8 },
-  footer: {
-    gap: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E8EAED',
-  },
-  status: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-start',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-  },
-  statusOk: { backgroundColor: C.okSoft, borderColor: C.okBorder },
-  statusBad: { backgroundColor: C.errorSoft, borderColor: C.errorBorder },
-  statusText: { flex: 1, fontFamily: fonts.uiMedium, fontSize: 13, lineHeight: 18 },
-  statusTextOk: { color: C.ok },
-  statusTextBad: { color: C.error },
+  body: { paddingBottom: 4 },
+  footer: { gap: 10, paddingTop: 12 },
+  status: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  statusOk: { color: C.ok },
+  statusBad: { color: C.error },
   cta: {
-    backgroundColor: C.orange,
-    borderRadius: 16,
-    paddingVertical: 16,
+    backgroundColor: C.text,
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
   },
   ctaOff: { backgroundColor: C.textMuted },
-  ctaText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.white, textAlign: 'center' },
+  ctaText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.white },
 });

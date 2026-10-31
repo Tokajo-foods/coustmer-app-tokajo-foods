@@ -88,12 +88,8 @@ export function validateScheduleChoice(
   const blocked = dateBlockReason(choice.date, days, policy, now);
   if (blocked) return { ok: false, code: 'SCHEDULE_DATE_BLOCKED', message: blocked };
 
-  if (choice.minutes % policy.stepMinutes !== 0) {
-    return {
-      ok: false,
-      code: 'SCHEDULE_INVALID_TIME',
-      message: `Pick a time in ${policy.stepMinutes}-minute steps.`,
-    };
+  if (!Number.isInteger(choice.minutes) || choice.minutes < 0 || choice.minutes >= 24 * 60) {
+    return { ok: false, code: 'SCHEDULE_INVALID_TIME', message: 'Choose a minute from 00 to 59.' };
   }
 
   const iso = istChoiceToIso(choice);
