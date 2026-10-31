@@ -61,6 +61,7 @@ import {
   normalizeLng,
   shortAddressLabel,
 } from '@/lib/location/format';
+import { captureGpsPlace } from '@/lib/location/capture-gps-place';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 import Animated, {
   FadeIn,
@@ -346,11 +347,9 @@ export function DeliveryLocationPicker({
         return null;
       }
 
-      let pos: Location.LocationObject;
+      let place;
       try {
-        pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        place = await captureGpsPlace();
       } catch {
         setError('Could not read GPS. Make sure Location is on, then try again.');
         locationEnabledRef.current = false;
@@ -359,8 +358,12 @@ export function DeliveryLocationPicker({
         return null;
       }
 
-      const { latitude, longitude } = pos.coords;
-      const applied = await applyCoords(latitude, longitude, 'gps');
+      const applied = await applyCoords(
+        place.lat,
+        place.lng,
+        'gps',
+        place.formattedAddress,
+      );
       setGpsReady(true);
       locationEnabledRef.current = true;
       setLocationEnabled(true);

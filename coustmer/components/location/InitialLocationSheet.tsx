@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fonts } from '@/constants/typography';
 import { useSavedAddresses } from '@/lib/address/hooks';
-import { reverseGeocodeAddress } from '@/lib/address/search';
 import { formatAddressLabel } from '@/lib/address/types';
 import type { SavedAddress } from '@/lib/address/types';
 import {
@@ -28,10 +27,9 @@ import type { City } from '@/lib/delivery/types';
 import {
   extractCityFromAddress,
   normalizeCityName,
-  normalizeLat,
-  normalizeLng,
   shortAddressLabel,
 } from '@/lib/location/format';
+import { captureGpsPlace } from '@/lib/location/capture-gps-place';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 
 export type InitialLocationSheetProps = {
@@ -206,39 +204,15 @@ export function InitialLocationSheet({
         return;
       }
 
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const lat = normalizeLat(pos.coords.latitude);
-      const lng = normalizeLng(pos.coords.longitude);
-
-      let address = (await reverseGeocodeAddress({ lat, lng })) ?? undefined;
-      if (!address) {
-        try {
-          const [place] = await Location.reverseGeocodeAsync({
-            latitude: lat,
-            longitude: lng,
-          });
-          if (place) {
-            const parts = [place.name, place.street, place.city, place.region]
-              .filter(Boolean)
-              .filter((v, i, arr) => arr.indexOf(v) === i);
-            address = parts.join(', ');
-          }
-        } catch {
-          // ignore
-        }
-      }
-
+      const place = await captureGpsPlace();
       setLocation({
-        lat,
-        lng,
-        formattedAddress: address || 'Current Location',
-        label: shortAddressLabel(address || 'Current Location', 'gps'),
-        city: normalizeCityName(
-          address ? extractCityFromAddress(address) : undefined
-        ),
+        lat: place.lat,
+        lng: place.lng,
+        formattedAddress: place.formattedAddress,
+        label: place.label || shortAddressLabel(place.formattedAddress, 'gps'),
+        city: place.city,
         source: 'gps',
+        pinTrusted: true,
         updatedAt: Date.now(),
       });
       onClose();

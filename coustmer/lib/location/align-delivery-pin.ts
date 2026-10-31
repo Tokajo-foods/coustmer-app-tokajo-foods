@@ -46,7 +46,11 @@ export async function alignDeliveryPin<T extends AlignablePin>(loc: T): Promise<
   if (!text) return loc;
 
   try {
-    const geo = await geocodeAddress({ address: text });
+    const geo = await Promise.race([
+      geocodeAddress({ address: text }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    ]);
+    if (!geo) return loc;
     const lat = normalizeLat(geo.lat);
     const lng = normalizeLng(geo.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {

@@ -215,7 +215,9 @@ export function useDeliveryLocationInit() {
         setLocationGate('idle');
         setDetecting(true);
         const precise = await captureGpsPlace((quick) => {
-          if (!cancelled) setLocation(quick);
+          if (cancelled) return;
+          setLocation(quick);
+          setDetecting(false);
         });
         if (!cancelled) setLocation(precise);
       } catch {
