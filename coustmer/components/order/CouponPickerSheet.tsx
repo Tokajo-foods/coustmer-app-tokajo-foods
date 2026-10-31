@@ -168,7 +168,7 @@ function CouponCard({
           </View>
         ) : (
           <View style={styles.scopeBadge}>
-            <Text style={styles.scopeText}>Platform</Text>
+            <Text style={styles.scopeText}>Global</Text>
           </View>
         )}
         {discountLabel ? (
@@ -271,14 +271,9 @@ export function CouponPickerSheet({
     setApplying(trimmed);
     try {
       const cart = await applyCoupon.mutateAsync({ code: trimmed });
-      const discount = cart.discount ?? 0;
-      Alert.alert(
-        'Promo applied!',
-        discount > 0 ? `${formatInr(discount)} saved with ${trimmed}` : `${trimmed} applied to your cart`,
-        [{ text: 'Great', onPress: onClose }]
-      );
-      onApplied?.(trimmed, discount);
+      onApplied?.(trimmed, cart.discount ?? 0);
       setManualCode('');
+      onClose();
     } catch (e) {
       Alert.alert('Could not apply', e instanceof Error ? e.message : 'Invalid or expired code');
     } finally {
@@ -345,7 +340,7 @@ export function CouponPickerSheet({
                   : []),
                 ...restaurantOffers.map((c) => ({ kind: 'coupon' as const, id: `r-${c.code}`, coupon: c })),
                 ...(platformOffers.length
-                  ? [{ kind: 'header' as const, id: 'platform-header', label: 'Platform offers' }]
+                  ? [{ kind: 'header' as const, id: 'platform-header', label: 'Global offers' }]
                   : []),
                 ...platformOffers.map((c) => ({ kind: 'coupon' as const, id: `p-${c.code}`, coupon: c })),
               ]}

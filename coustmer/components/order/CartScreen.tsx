@@ -548,12 +548,6 @@ export function CartScreen() {
       const saved =
         cart.coupon?.code?.trim() || code.toUpperCase();
       setVoucherCode(saved);
-      Alert.alert(
-        'Promo applied',
-        cart.discount > 0
-          ? `${saved} applied · ${formatInr(cart.discount)} off`
-          : `${saved} applied to your cart`
-      );
     } catch (e) {
       Alert.alert(
         'Could not apply promo',
@@ -573,7 +567,6 @@ export function CartScreen() {
     try {
       await removeCoupon.mutateAsync();
       setVoucherCode('');
-      Alert.alert('Promo removed', 'Coupon removed from your cart');
     } catch (e) {
       Alert.alert(
         'Could not remove promo',

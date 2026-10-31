@@ -720,59 +720,26 @@ export const cartApi = {
     const code = payload.code.trim();
     if (!code) throw new Error('Enter a promo code');
 
-    const bodies = [
-      { code },
-      { couponCode: code },
-      { promoCode: code },
-      { coupon: code },
-      { code, couponCode: code },
-    ];
-
-    let lastError: Error | null = null;
-    for (const body of bodies) {
-      try {
-        const res = await request<unknown>(`${CART_BASE}/coupon`, {
-          method: 'POST',
-          body,
-        });
-        const cart = mapCart(res.data ?? res);
-        const applied = cart.coupon?.code?.trim().toLowerCase();
-        if (applied && applied === code.toLowerCase()) {
-          return cart;
-        }
-        // Discount applied but coupon object missing — still accept if discount moved
-        if (!cart.coupon?.code && (cart.discount ?? 0) > 0) {
-          return {
-            ...cart,
-            coupon: { code, discount: cart.discount },
-          };
-        }
-        if (!cart.coupon?.code) {
-          throw new Error('Invalid promo code');
-        }
-        return cart;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Invalid promo code';
-        if (isAuthErrorMessage(message)) {
-          throw new Error('Please sign in to apply a promo code');
-        }
-        const lower = message.toLowerCase();
-        if (
-          lower.includes('invalid') ||
-          lower.includes('not found') ||
-          lower.includes('expired') ||
-          lower.includes('already') ||
-          lower.includes('minimum') ||
-          lower.includes('not applicable') ||
-          lower.includes('not eligible')
-        ) {
-          throw new Error(message || 'Invalid promo code');
-        }
-        lastError = error instanceof Error ? error : new Error(message);
+    try {
+      const res = await request<unknown>(`${CART_BASE}/coupon`, {
+        method: 'POST',
+        body: { code },
+      });
+      const cart = mapCart(res.data ?? res);
+      const applied = cart.coupon?.code?.trim().toLowerCase();
+      if (applied && applied === code.toLowerCase()) return cart;
+      if (!cart.coupon?.code && (cart.discount ?? 0) > 0) {
+        return { ...cart, coupon: { code, discount: cart.discount } };
       }
+      if (!cart.coupon?.code) throw new Error('Invalid promo code');
+      return cart;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid promo code';
+      if (isAuthErrorMessage(message)) {
+        throw new Error('Please sign in to apply a promo code');
+      }
+      throw error instanceof Error ? error : new Error(message);
     }
-    throw lastError ?? new Error('Invalid promo code');
   },
 
   /** DELETE /cart/coupon — Auth */
