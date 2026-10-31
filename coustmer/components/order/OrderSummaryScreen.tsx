@@ -17,6 +17,7 @@ import { SlideToConfirm } from '@/components/order/SlideToConfirm';
 import { ORANGE, TEXT, styles } from '@/components/order/order-summary-styles';
 import { RazorpayCheckoutModal } from '@/components/payment/RazorpayCheckoutModal';
 import { paymentMethodLabel, type PayChoice } from '@/lib/checkout/payment-display';
+import { usePrepaidSchedule } from '@/lib/checkout/use-prepaid-schedule';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
 import { isDeliveryFeeReady } from '@/lib/cart/delivery-fee-ready';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
@@ -46,6 +47,7 @@ export function OrderSummaryScreen() {
   const couponCode = useCartStore((s) => s.couponCode);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const scheduledFor = useCartStore((s) => s.scheduledFor);
+  usePrepaidSchedule();
   const specialInstructions = useCartStore((s) => s.specialInstructions);
   const paymentMethod = useCartStore((s) => s.paymentMethod);
   const setPaymentMethod = useCartStore((s) => s.setPaymentMethod);
@@ -141,6 +143,7 @@ export function OrderSummaryScreen() {
       const { method: mappedMethod } = resolveCheckoutMethod(paymentMethod);
       const blocked = await preflightCheckoutMethod(mappedMethod, {
         amount: payable, restaurantId: restaurant.id, isTakeaway, lat: billPin?.lat, lng: billPin?.lng,
+        scheduled: Boolean(scheduledFor),
       });
       if (mappedMethod === 'wallet') void bill.refetch();
       if (blocked) {
@@ -288,6 +291,7 @@ export function OrderSummaryScreen() {
         addressLabel={location?.label || 'Delivery'}
         addressText={location?.formattedAddress || ''}
         wallet={wallet.data}
+        allowCod={!scheduledFor}
       />
 
       <OrderPlacementModal

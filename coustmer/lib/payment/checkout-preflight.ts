@@ -8,6 +8,8 @@ type Context = {
   isTakeaway: boolean;
   lat?: number;
   lng?: number;
+  /** Scheduled orders cannot be cash on delivery. */
+  scheduled?: boolean;
 };
 
 /** Same rules order-service enforces on place (`409 COD_NOT_AVAILABLE`); shown before an order exists. */
@@ -63,7 +65,10 @@ export async function preflightCheckoutMethod(method: string, ctx: Context): Pro
     await ensureWalletCoversCheckout();
     return null;
   }
-  if (method === 'cod') return codBlockMessage(ctx);
+  if (method === 'cod') {
+    if (ctx.scheduled) return 'Scheduled orders are paid online or with wallet.';
+    return codBlockMessage(ctx);
+  }
   if (needsOnlinePayment(method)) return gatewayBlockMessage();
   return null;
 }

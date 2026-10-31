@@ -72,6 +72,7 @@ import {
   paymentMethodLabel,
   type PayChoice,
 } from '@/lib/checkout/payment-display';
+import { usePrepaidSchedule } from '@/lib/checkout/use-prepaid-schedule';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
 const BG = '#F4F5F7';
@@ -195,6 +196,7 @@ export function CartScreen() {
   const couponCode = useCartStore((s) => s.couponCode);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const scheduledFor = useCartStore((s) => s.scheduledFor);
+  usePrepaidSchedule();
   const clearLocal = useCartStore((s) => s.clearCart);
   const tip = useCartStore((s) => s.tip);
   const setTip = useCartStore((s) => s.setTip);
@@ -969,6 +971,7 @@ export function CartScreen() {
           addressLabel={addressLabel}
           addressText={addressLine}
           wallet={wallet.data}
+          allowCod={!scheduledFor}
         />
 
         {/* Group Order Sheet */}

@@ -28,6 +28,10 @@ type Props = {
   addressText: string;
   wallet?: WalletSummary;
   walletShortfall?: number | null;
+  /** False while the delivery fee (and therefore the bill) is still being calculated. */
+  amountReady?: boolean;
+  /** Scheduled orders are prepaid: cash on delivery is not offered. */
+  allowCod?: boolean;
 };
 
 const OPTIONS: Array<{
@@ -66,11 +70,17 @@ export function PaymentOptionsModal({
   savings,
   wallet,
   walletShortfall,
+  amountReady = true,
+  allowCod = true,
 }: Props) {
   const router = useRouter();
   const selected = canonicalPayChoice(selectedMethod);
 
   const choose = (id: PayChoice) => {
+    if (!amountReady) {
+      Alert.alert('Calculating your bill', 'The delivery fee is still being calculated. Try again in a moment.');
+      return;
+    }
     if (id === 'wallet' && walletShortfall != null && walletShortfall > 0) {
       Alert.alert(
         'Wallet balance is short',
@@ -99,7 +109,8 @@ export function PaymentOptionsModal({
             <View style={styles.headerText}>
               <Text style={styles.title}>Pay using</Text>
               <Text style={styles.subtitle}>
-                {itemCount} item{itemCount === 1 ? '' : 's'} · {formatInr(total)}
+                {itemCount} item{itemCount === 1 ? '' : 's'}
+                {amountReady ? ` · ${formatInr(total)}` : ''}
                 {savings > 0 ? ` · saved ${formatInr(savings)}` : ''}
               </Text>
             </View>
@@ -109,12 +120,13 @@ export function PaymentOptionsModal({
           </View>
 
           <Text style={styles.amountLabel}>Amount to pay</Text>
-          <Text style={styles.amount}>{formatInr(total)}</Text>
+          <Text style={styles.amount}>{amountReady ? formatInr(total) : 'Calculating…'}</Text>
 
-          {OPTIONS.map((option) => {
+          {(allowCod ? OPTIONS : OPTIONS.filter((option) => option.id !== 'cod')).map((option) => {
             const on = selected === option.id;
-            const hint =
-              option.id === 'online'
+            const hint = !amountReady
+              ? 'Waiting for the delivery fee'
+              : option.id === 'online'
                 ? `${formatInr(total)} opens in Razorpay with every payment option`
                 : option.id === 'wallet' && wallet
                   ? `Balance ${formatInr(wallet.balance)} · bill ${formatInr(total)}`
