@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react-native';
+import { ChevronDown } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -9,7 +9,6 @@ import { SCHEDULE_COLORS as C } from './schedule-theme';
 type Props = {
   minutes: number;
   stepMinutes: number;
-  valid: boolean;
   onChange: (minutes: number) => void;
 };
 
@@ -17,7 +16,7 @@ type Field = 'hour' | 'minute' | 'period';
 
 const HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
-export function ScheduleTimeDropdowns({ minutes, stepMinutes, valid, onChange }: Props) {
+export function ScheduleTimeDropdowns({ minutes, stepMinutes, onChange }: Props) {
   const [open, setOpen] = useState<Field | null>(null);
   const hour24 = Math.floor(minutes / 60) % 24;
   const minute = minutes % 60;
@@ -56,30 +55,25 @@ export function ScheduleTimeDropdowns({ minutes, stepMinutes, valid, onChange }:
 
   return (
     <View style={styles.wrap}>
-      <View style={[styles.display, valid ? styles.displayOk : styles.displayBad]}>
-        <Text style={[styles.digit, !valid && styles.digitBad]}>{hour12}</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={[styles.digit, !valid && styles.digitBad]}>{String(minute).padStart(2, '0')}</Text>
-        <Text style={[styles.period, !valid && styles.digitBad]}>{pm ? 'PM' : 'AM'}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <FieldButton
+      <View style={styles.card}>
+        <Part
           label="Hour"
           value={String(hour12)}
           active={open === 'hour'}
           onPress={() => setOpen(open === 'hour' ? null : 'hour')}
         />
-        <FieldButton
-          label="Minute"
+        <Text style={styles.colon}>:</Text>
+        <Part
+          label="Min"
           value={String(minute).padStart(2, '0')}
           active={open === 'minute'}
           onPress={() => setOpen(open === 'minute' ? null : 'minute')}
         />
-        <FieldButton
-          label="AM / PM"
+        <Part
+          label=" "
           value={pm ? 'PM' : 'AM'}
           active={open === 'period'}
+          compact
           onPress={() => setOpen(open === 'period' ? null : 'period')}
         />
       </View>
@@ -89,110 +83,91 @@ export function ScheduleTimeDropdowns({ minutes, stepMinutes, valid, onChange }:
           {options.map((option) => (
             <TouchableOpacity
               key={option.key}
-              style={[styles.chip, option.on && styles.chipOn, open === 'period' && styles.chipWide]}
+              style={[styles.chip, option.on && styles.chipOn]}
               onPress={() => {
                 option.pick();
                 setOpen(open === 'hour' ? 'minute' : open === 'minute' ? 'period' : null);
               }}
             >
               <Text style={[styles.chipText, option.on && styles.chipTextOn]}>{option.label}</Text>
-              {option.on ? <Check color={C.white} size={14} strokeWidth={2.8} /> : null}
             </TouchableOpacity>
           ))}
         </View>
-      ) : null}
+      ) : (
+        <Text style={styles.hint}>Tap hour, minute, or AM/PM to change it</Text>
+      )}
     </View>
   );
 }
 
-function FieldButton({
+function Part({
   label,
   value,
   active,
+  compact,
   onPress,
 }: {
   label: string;
   value: string;
   active: boolean;
+  compact?: boolean;
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.field, active && styles.fieldOn]} onPress={onPress} activeOpacity={0.88}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.fieldValueRow}>
-        <Text style={styles.fieldValue}>{value}</Text>
-        <ChevronDown color={active ? C.orangeDark : C.textMuted} size={16} />
+    <TouchableOpacity style={[styles.part, active && styles.partOn, compact && styles.partCompact]} onPress={onPress}>
+      <Text style={[styles.value, active && styles.valueOn]}>{value}</Text>
+      <View style={styles.partMeta}>
+        {label.trim() ? <Text style={styles.partLabel}>{label}</Text> : null}
+        <ChevronDown color={active ? C.orangeDark : C.textMuted} size={14} />
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 14 },
-  display: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 4,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingVertical: 16,
-  },
-  displayOk: { backgroundColor: C.okSoft, borderColor: C.okBorder },
-  displayBad: { backgroundColor: C.errorSoft, borderColor: C.errorBorder },
-  digit: { fontFamily: fonts.displayBold, fontSize: 40, color: C.text, lineHeight: 44 },
-  digitBad: { color: C.error },
-  colon: { fontFamily: fonts.displayBold, fontSize: 36, color: C.textMuted, marginBottom: 2 },
-  period: { fontFamily: fonts.uiSemi, fontSize: 16, color: C.textSec, marginLeft: 6, marginBottom: 6 },
-  row: { flexDirection: 'row', gap: 8 },
-  field: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 14,
-    backgroundColor: C.white,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  fieldOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
-  fieldLabel: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 10,
-    color: C.textMuted,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  fieldValueRow: {
-    marginTop: 4,
+  wrap: { gap: 10 },
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.white,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
   },
-  fieldValue: { fontFamily: fonts.uiSemi, fontSize: 18, color: C.text },
+  colon: { fontFamily: fonts.displayBold, fontSize: 32, color: C.textMuted, marginBottom: 14 },
+  part: { alignItems: 'center', minWidth: 72, borderRadius: 14, paddingVertical: 6 },
+  partCompact: { minWidth: 64, marginLeft: 8 },
+  partOn: { backgroundColor: C.orangeSoft },
+  value: { fontFamily: fonts.displayBold, fontSize: 36, color: C.text, lineHeight: 40 },
+  valueOn: { color: C.orangeDark },
+  partMeta: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  partLabel: {
+    fontFamily: fonts.uiSemi,
+    fontSize: 11,
+    color: C.textMuted,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  hint: { fontFamily: fonts.ui, fontSize: 12, color: C.textMuted, textAlign: 'center' },
   menu: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    padding: 10,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: C.border,
+    justifyContent: 'center',
   },
   chip: {
-    minWidth: 64,
-    flexGrow: 1,
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
+    width: 68,
+    paddingVertical: 11,
     borderRadius: 12,
+    alignItems: 'center',
     backgroundColor: C.white,
     borderWidth: 1,
     borderColor: C.border,
   },
-  chipWide: { minWidth: '46%' },
   chipOn: { backgroundColor: C.orange, borderColor: C.orange },
   chipText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
   chipTextOn: { color: C.white },

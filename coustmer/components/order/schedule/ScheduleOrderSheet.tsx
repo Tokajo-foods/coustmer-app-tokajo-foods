@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, X } from 'lucide-react-native';
+import { AlertCircle, CheckCircle2, Clock3, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -40,6 +40,12 @@ type Props = {
 
 function firstOpenDay(days: ScheduleDay[]): ScheduleDay | undefined {
   return days.find((day) => firstAvailableMinutes(day) != null);
+}
+
+function dayTitle(ymd: string): string {
+  const label = formatScheduleDayLabel(ymd);
+  if (label === 'Today' || label === 'Tomorrow') return label;
+  return label.split(',')[0] ?? label;
 }
 
 export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClose, onConfirm }: Props) {
@@ -99,78 +105,85 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View style={styles.handle} />
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
-            <Text style={styles.title}>Schedule order</Text>
-            <Text style={styles.subtitle}>
-              {activeDay?.windows.length
-                ? `Restaurant hours ${formatWindows(activeDay.windows)}`
-                : 'Choose a time from the dropdowns'}
-            </Text>
+            <Text style={styles.title}>Schedule delivery</Text>
+            <Text style={styles.subtitle}>Pick a day and time the restaurant is open</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.close} accessibilityLabel="Close">
             <X size={18} color={C.textSec} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel}>Date</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
-          {days.map((day) => {
-            const open = firstAvailableMinutes(day) != null;
-            const on = day.date === date;
-            return (
-              <TouchableOpacity
-                key={day.date}
-                style={[styles.day, on && styles.dayOn, !open && styles.dayOff]}
-                disabled={!open}
-                onPress={() => pickDate(day.date)}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.dayText, on && styles.dayTextOn, !open && styles.dayTextOff]}>
-                  {formatScheduleDayLabel(day.date)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {activeDay?.windows.length ? (
+          <View style={styles.hoursPill}>
+            <Clock3 size={14} color={C.orangeDark} />
+            <Text style={styles.hoursText}>Open {formatWindows(activeDay.windows)}</Text>
+          </View>
+        ) : null}
 
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+          <Text style={styles.sectionLabel}>Day</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
+            {days.map((day) => {
+              const open = firstAvailableMinutes(day) != null;
+              const on = day.date === date;
+              const name = dayTitle(day.date);
+              return (
+                <TouchableOpacity
+                  key={day.date}
+                  style={[styles.day, on && styles.dayOn, !open && styles.dayOff]}
+                  disabled={!open}
+                  onPress={() => pickDate(day.date)}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.dayName, on && styles.dayNameOn, !open && styles.dayOffText]}
+                  >
+                    {name}
+                  </Text>
+                  <Text style={[styles.dayNum, on && styles.dayNumOn, !open && styles.dayOffText]}>
+                    {Number(day.date.slice(8))}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           <Text style={styles.sectionLabel}>Time</Text>
           <ScheduleTimeDropdowns
             minutes={minutes}
             stepMinutes={policy.stepMinutes}
-            valid={check.ok}
             onChange={(next) => {
               setServerError(null);
               setMinutes(next);
             }}
           />
-          <View style={[styles.status, check.ok ? styles.statusOk : styles.statusBad]}>
-            {check.ok ? (
-              <CheckCircle2 size={16} color={C.ok} />
-            ) : (
-              <AlertCircle size={16} color={C.error} />
-            )}
-            <Text style={[styles.statusText, check.ok ? styles.statusTextOk : styles.statusTextBad]}>
-              {check.ok ? 'This time is within restaurant hours' : error}
-            </Text>
-          </View>
         </ScrollView>
 
-        <TouchableOpacity
-          style={[styles.cta, (!check.ok || saving) && styles.ctaOff]}
-          disabled={!check.ok || saving}
-          onPress={() => void confirm()}
-          activeOpacity={0.9}
-        >
-          {saving ? (
-            <ActivityIndicator color={C.white} />
-          ) : (
-            <Text style={styles.ctaText}>{label ? `Confirm · ${label}` : 'Pick a time inside restaurant hours'}</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <View style={[styles.status, check.ok ? styles.statusOk : styles.statusBad]}>
+            {check.ok ? <CheckCircle2 size={16} color={C.ok} /> : <AlertCircle size={16} color={C.error} />}
+            <Text style={[styles.statusText, check.ok ? styles.statusTextOk : styles.statusTextBad]}>
+              {check.ok ? 'Within restaurant hours' : error}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.cta, (!check.ok || saving) && styles.ctaOff]}
+            disabled={!check.ok || saving}
+            onPress={() => void confirm()}
+            activeOpacity={0.9}
+          >
+            {saving ? (
+              <ActivityIndicator color={C.white} />
+            ) : (
+              <Text style={styles.ctaText}>{label ? `Schedule · ${label}` : 'Choose an open time'}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );
@@ -179,12 +192,12 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)' },
   sheet: {
-    backgroundColor: C.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#F6F7F9',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 16,
     paddingTop: 8,
-    maxHeight: '92%',
+    maxHeight: '88%',
   },
   handle: {
     alignSelf: 'center',
@@ -206,29 +219,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.disabledBg,
   },
+  hoursPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.orangeSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 14,
+  },
+  hoursText: { fontFamily: fonts.uiSemi, fontSize: 12, color: C.orangeDark },
   sectionLabel: {
     fontFamily: fonts.uiSemi,
-    fontSize: 12,
-    color: C.textSec,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    fontSize: 13,
+    color: C.text,
     marginBottom: 8,
   },
-  days: { gap: 8, paddingBottom: 12 },
+  days: { gap: 8, paddingBottom: 16 },
   day: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
+    width: 76,
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.white,
   },
   dayOn: { backgroundColor: C.orange, borderColor: C.orange },
   dayOff: { backgroundColor: C.disabledBg },
-  dayText: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.text },
-  dayTextOn: { color: C.white },
-  dayTextOff: { color: C.textMuted },
-  body: { gap: 12, paddingBottom: 8 },
+  dayName: { fontFamily: fonts.ui, fontSize: 11, color: C.textSec },
+  dayNameOn: { color: '#FFEDD5' },
+  dayNum: { fontFamily: fonts.displayBold, fontSize: 18, color: C.text },
+  dayNumOn: { color: C.white },
+  dayOffText: { color: C.textMuted },
+  body: { paddingBottom: 8 },
+  footer: {
+    gap: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E8EAED',
+  },
   status: {
     flexDirection: 'row',
     gap: 8,
