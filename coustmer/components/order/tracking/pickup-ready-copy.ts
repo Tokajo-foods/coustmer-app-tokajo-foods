@@ -40,15 +40,14 @@ export function pickupReadyCopy(input: {
   const at = input.promisedReadyAt ? Date.parse(input.promisedReadyAt) : NaN;
   if (Number.isFinite(at)) {
     const minutes = Math.ceil((at - now) / 60_000);
-    if (minutes <= 0) {
-      return { label: 'READY IN', value: 'Soon', unit: null, sub: bits.join(' · ') || 'Almost ready' };
+    if (minutes > 0) {
+      return {
+        label: 'READY IN',
+        value: String(minutes),
+        unit: 'min',
+        sub: bits.join(' · ') || 'Kitchen timing',
+      };
     }
-    return {
-      label: 'READY IN',
-      value: String(minutes),
-      unit: 'min',
-      sub: bits.join(' · ') || 'Kitchen timing',
-    };
   }
 
   if (prep) {
