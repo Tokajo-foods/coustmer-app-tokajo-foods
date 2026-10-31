@@ -11,6 +11,7 @@ import { formatInr } from '@/lib/format/money';
 import { catalogPayOf } from '@/lib/restaurant/item-price';
 import { useRepeatOrder } from '@/lib/cart/hooks';
 import { useReorder } from '@/lib/order/hooks';
+import { blockIfOngoingOrder } from '@/lib/order/ongoing-order-alert';
 import { ORDER_STATUS_LABELS, type Order } from '@/lib/order/types';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 
@@ -90,6 +91,7 @@ export function OrderCard({ order }: Props) {
   };
 
   const handleReorder = () => {
+    if (blockIfOngoingOrder(router)) return;
     Alert.alert('Order again?', 'Add the same items to your cart.', [
       { text: 'Cancel', style: 'cancel' },
       {

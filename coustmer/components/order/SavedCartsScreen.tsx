@@ -18,7 +18,7 @@ import {
   useRestoreSavedCart,
   useSavedCarts,
 } from '@/lib/cart/hooks';
-import type { SavedCart } from '@/lib/cart/types';
+import { blockIfOngoingOrder } from '@/lib/order/ongoing-order-alert';
 import { formatInr } from '@/lib/format/money';
 
 const BG = '#F4F5F7';
@@ -37,6 +37,7 @@ export function SavedCartsScreen() {
   const deleteMut = useDeleteSavedCart();
 
   const handleRestore = (id: string) => {
+    if (blockIfOngoingOrder(router)) return;
     Alert.alert('Restore cart?', 'This will replace your current cart.', [
       { text: 'Cancel', style: 'cancel' },
       {

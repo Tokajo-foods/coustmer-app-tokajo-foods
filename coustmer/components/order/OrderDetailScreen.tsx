@@ -53,6 +53,7 @@ import {
   usePartialCancelItems,
   useReorder,
 } from '@/lib/order/hooks';
+import { blockIfOngoingOrder } from '@/lib/order/ongoing-order-alert';
 import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
 import {
@@ -301,6 +302,7 @@ export function OrderDetailScreen() {
   };
 
   const handleReorder = () => {
+    if (blockIfOngoingOrder(router)) return;
     Alert.alert('Order again?', 'Add the same items to your cart.', [
       { text: 'Cancel', style: 'cancel' },
       {

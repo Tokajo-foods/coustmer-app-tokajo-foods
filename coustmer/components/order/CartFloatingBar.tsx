@@ -36,10 +36,10 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const hasCart = totalItems > 0;
   const { order: activeOrder } = usePrimaryActiveOrder();
 
-  const mode: 'cart' | 'track' | null = hasCart
-    ? 'cart'
-    : activeOrder
-      ? 'track'
+  const mode: 'cart' | 'track' | null = activeOrder
+    ? 'track'
+    : hasCart
+      ? 'cart'
       : null;
   const visible = mode !== null;
 

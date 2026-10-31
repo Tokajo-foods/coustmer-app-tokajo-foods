@@ -196,8 +196,14 @@ export function OrderSummaryScreen() {
     } catch (err) {
       setOrderPlacementPhase('none');
       const code = (err as { code?: string }).code;
-      if (code === 'ACTIVE_ORDER_EXISTS' && activeOrder) {
-        alertOngoingOrderBlocks(activeOrder, router);
+      if (code === 'ACTIVE_ORDER_EXISTS') {
+        if (activeOrder) alertOngoingOrderBlocks(activeOrder, router);
+        else {
+          Alert.alert(
+            'Order in progress',
+            err instanceof Error ? err.message : 'Finish your current order before placing another.',
+          );
+        }
         return;
       }
       Alert.alert('Could not place order', err instanceof Error ? err.message : 'Please try again.');
