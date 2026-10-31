@@ -53,6 +53,8 @@ export const searchStyles = StyleSheet.create({
   inputArea: { flex: 1, justifyContent: 'center' },
   input: { fontFamily: fonts.ui, fontSize: 15, color: ink, padding: 0 },
   placeholderLayer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center' },
+  voiceHint: { fontFamily: fonts.ui, fontSize: 15, color: orange },
+  voiceHintError: { color: '#DC2626', fontSize: 13 },
   clearIcon: {
     width: 18,
     height: 18,

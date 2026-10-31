@@ -1,6 +1,6 @@
 import { ArrowLeft, Search, X } from 'lucide-react-native';
 import { forwardRef } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { SmoothPressable } from '@/components/common/SmoothPressable';
@@ -8,6 +8,14 @@ import type { SearchMorph } from '@/lib/motion/use-search-morph';
 
 import { RotatingPlaceholder } from './RotatingPlaceholder';
 import { SEARCH_PLACEHOLDER, searchColors, searchStyles as s } from './search-styles';
+import { VoiceMicButton } from './VoiceMicButton';
+
+export type VoiceControl = {
+  available: boolean;
+  listening: boolean;
+  error: string | null;
+  toggle: () => void;
+};
 
 type Props = {
   morph: SearchMorph;
@@ -16,13 +24,15 @@ type Props = {
   onSubmit: () => void;
   onClear: () => void;
   onBack: () => void;
+  voice: VoiceControl;
 };
 
 /** Back arrow + search field. The field is the landing spot of the morph. */
 export const SearchHeader = forwardRef<TextInput, Props>(function SearchHeader(
-  { morph, query, onChange, onSubmit, onClear, onBack },
+  { morph, query, onChange, onSubmit, onClear, onBack, voice },
   inputRef,
 ) {
+  const voiceHint = voice.listening ? 'Listening… say a dish or restaurant' : voice.error;
   return (
     <>
       <View style={s.bar}>
@@ -41,7 +51,17 @@ export const SearchHeader = forwardRef<TextInput, Props>(function SearchHeader(
           <View style={s.inputArea}>
             {query.length === 0 ? (
               <View style={s.placeholderLayer}>
-                <RotatingPlaceholder />
+                {voiceHint ? (
+                  <Text
+                    numberOfLines={1}
+                    style={[s.voiceHint, voice.error && !voice.listening && s.voiceHintError]}
+                    accessibilityLiveRegion="polite"
+                  >
+                    {voiceHint}
+                  </Text>
+                ) : (
+                  <RotatingPlaceholder />
+                )}
               </View>
             ) : null}
             <TextInput
@@ -62,6 +82,7 @@ export const SearchHeader = forwardRef<TextInput, Props>(function SearchHeader(
               <X color="#FFFFFF" size={11} strokeWidth={3} />
             </Pressable>
           ) : null}
+          {voice.available ? <VoiceMicButton listening={voice.listening} onPress={voice.toggle} /> : null}
         </Animated.View>
       </View>
       <Animated.View style={[s.hairline, morph.bodyStyle]} />

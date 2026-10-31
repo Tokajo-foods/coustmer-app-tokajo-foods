@@ -64,6 +64,13 @@ const config = {
     '@config-plugins/react-native-webrtc',
     'expo-audio',
     [
+      'expo-speech-recognition',
+      {
+        speechRecognitionPermission:
+          'Allow TOKAJO FOODS to turn your voice into text so you can search dishes and restaurants by speaking.',
+      },
+    ],
+    [
       'expo-notifications',
       {
         icon: './assets/notification-icon.png',
@@ -97,7 +104,7 @@ const config = {
       NSLocationWhenInUseUsageDescription:
         'Allow TOKAJO FOODS to access your location to set your delivery address and find restaurants near you.',
       NSMicrophoneUsageDescription:
-        'Allow TOKAJO FOODS to use the microphone for in-app calls on an order. Your mobile number stays hidden.',
+        'Allow TOKAJO FOODS to use the microphone for voice search and in-app calls on an order. Your mobile number stays hidden.',
       UIBackgroundModes: ['audio', 'voip', 'remote-notification', 'fetch'],
       // Razorpay UPI intent — lets checkout detect and open installed UPI apps.
       LSApplicationQueriesSchemes: ['tez', 'phonepe', 'paytmmp', 'credpay', 'bhim', 'upi'],

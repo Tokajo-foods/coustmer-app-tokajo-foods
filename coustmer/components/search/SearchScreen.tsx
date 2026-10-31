@@ -16,6 +16,7 @@ import {
   removeLocalRecentSearch,
 } from '@/lib/search/recent';
 import type { SearchCategorySource, SearchSuggestion } from '@/lib/search/types';
+import { useVoiceSearch } from '@/lib/search/use-voice-search';
 
 import { SearchHeader } from './SearchHeader';
 import { SearchMorphGhost } from './SearchMorphGhost';
@@ -65,6 +66,18 @@ export function SearchScreen() {
     remember(cleaned);
   }, [remember]);
 
+  const voice = useVoiceSearch({
+    onPartial: (text) => {
+      setQuery(text);
+      setSubmitted(false);
+    },
+    onFinal: performSearch,
+  });
+  const toggleVoice = useCallback(() => {
+    if (!voice.listening) Keyboard.dismiss();
+    voice.toggle();
+  }, [voice]);
+
   const openRestaurant = useCallback((id: string) => openRestaurantMenu(router, id), [router]);
 
   const openCategory = useCallback((c: { slug: string; name: string; source?: SearchCategorySource }) => {
@@ -109,15 +122,21 @@ export function SearchScreen() {
           morph={morph}
           query={query}
           onChange={(t) => {
+            if (voice.listening) voice.cancel();
             setQuery(t);
             setSubmitted(false);
           }}
           onSubmit={() => performSearch(query)}
           onClear={() => {
+            if (voice.listening) voice.cancel();
             setQuery('');
             setSubmitted(false);
           }}
-          onBack={goBack}
+          onBack={() => {
+            voice.cancel();
+            goBack();
+          }}
+          voice={{ ...voice, toggle: toggleVoice }}
         />
         <Animated.View style={[s.body, morph.bodyStyle]}>
           {showingDiscover ? (
