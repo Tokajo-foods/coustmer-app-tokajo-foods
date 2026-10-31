@@ -108,9 +108,9 @@ const styles = StyleSheet.create({
   },
   titleDense: {
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    fontSize: 16.5,
     color: '#1C1C1C',
-    letterSpacing: -0.25,
+    letterSpacing: -0.28,
   },
   count: {
     fontFamily: fonts.uiSemi,
@@ -120,9 +120,9 @@ const styles = StyleSheet.create({
   },
   countDense: {
     fontFamily: fonts.uiSemi,
-    fontSize: 14,
+    fontSize: 15,
     color: '#78716C',
-    letterSpacing: -0.15,
+    letterSpacing: -0.18,
   },
   iconBadgeDense: {
     width: 28,
