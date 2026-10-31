@@ -26,7 +26,7 @@ import {
   validateScheduleChoice,
 } from '@/lib/cart/schedule-validation';
 
-import { ScheduleClock } from './ScheduleClock';
+import { ScheduleTimeDropdowns } from './ScheduleTimeDropdowns';
 import { SCHEDULE_COLORS as C } from './schedule-theme';
 
 type Props = {
@@ -107,7 +107,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
             <Text style={styles.subtitle}>
               {activeDay?.windows.length
                 ? `Restaurant hours ${formatWindows(activeDay.windows)}`
-                : 'Choose a time on the clock'}
+                : 'Choose a time from the dropdowns'}
             </Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.close} accessibilityLabel="Close">
@@ -136,7 +136,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
         </ScrollView>
 
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <ScheduleClock
+          <ScheduleTimeDropdowns
             minutes={minutes}
             stepMinutes={policy.stepMinutes}
             valid={check.ok}
