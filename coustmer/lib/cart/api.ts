@@ -573,9 +573,9 @@ export const cartApi = {
       {
         menuItemId: payload.menuItemId,
         restaurantId: payload.restaurantId,
-        restaurantName: payload.restaurantName,
+        restaurantName: payload.restaurantName?.trim() || 'Restaurant',
         name: payload.name,
-        price: payload.price,
+        price: Number(payload.price) || 0,
         quantity: payload.quantity ?? 1,
         isVeg: payload.isVeg,
         image: payload.imageUrl,
