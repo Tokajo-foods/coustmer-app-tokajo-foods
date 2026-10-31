@@ -124,11 +124,18 @@ export type FaqItem = {
   sortOrder?: number;
 };
 
+/** POST /customers/support/callback — reason and window are required by the API. */
 export type CallbackRequestPayload = {
+  reason:
+    | 'order_issue'
+    | 'payment_issue'
+    | 'delivery_issue'
+    | 'account_issue'
+    | 'restaurant_issue'
+    | 'other';
+  window: '10_12' | '12_14' | '14_18' | '18_21';
   phone?: string;
   orderId?: string;
-  reason?: string;
-  window?: '10_12' | '12_14' | '14_18' | '18_21';
 };
 
 export type TicketListResult = {
