@@ -157,7 +157,15 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
 
       {topRestaurants.length > 0 || listLoading ? (
         <View style={styles.restaurantsHeader}>
-          <TokajoSectionHeader Icon={MapPin} title="Restaurants Near You" />
+          <TokajoSectionHeader
+            Icon={MapPin}
+            title="Restaurants Near You"
+            count={listLoading ? undefined : restaurants.length}
+            dense
+            seeAllLabel="See all"
+            seeAllAccessibilityLabel="See all restaurants"
+            onSeeAll={() => router.push('/restaurants')}
+          />
         </View>
       ) : null}
     </View>

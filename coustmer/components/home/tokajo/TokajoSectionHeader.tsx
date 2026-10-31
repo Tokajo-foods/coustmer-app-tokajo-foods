@@ -10,23 +10,60 @@ const ORANGE = '#F97316';
 type Props = {
   Icon: LucideIcon;
   title: string;
+  /** Shown as “Title (12)” when set. */
+  count?: number;
   onSeeAll?: () => void;
+  seeAllLabel?: string;
+  /** Tighter type so title + count + action stay on one row. */
+  dense?: boolean;
+  seeAllAccessibilityLabel?: string;
 };
 
-/** "🔥 Trending Near You  ...  See All →" row. */
-export function TokajoSectionHeader({ Icon, title, onSeeAll }: Props) {
+/** Section row with optional count and See all action. */
+export function TokajoSectionHeader({
+  Icon,
+  title,
+  count,
+  onSeeAll,
+  seeAllLabel = 'See all',
+  dense = false,
+  seeAllAccessibilityLabel,
+}: Props) {
+  const titleStyle = dense ? styles.titleDense : styles.title;
+  const countStyle = dense ? styles.countDense : styles.count;
+
   return (
     <View style={styles.row}>
-      <View style={styles.left}>
-        <View style={styles.iconBadge}>
-          <Icon color={ORANGE} size={16} strokeWidth={2.7} />
+      <View style={[styles.left, dense && styles.leftDense]}>
+        <View style={[styles.iconBadge, dense && styles.iconBadgeDense]}>
+          <Icon color={ORANGE} size={dense ? 15 : 16} strokeWidth={2.7} />
         </View>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.titleWrap}>
+          <Text
+            style={titleStyle}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+          >
+            {title}
+            {typeof count === 'number' ? (
+              <Text style={countStyle}> ({count})</Text>
+            ) : null}
+          </Text>
+        </View>
       </View>
       {onSeeAll ? (
-        <Pressable style={styles.seeAll} onPress={onSeeAll} hitSlop={8}>
-          <Text style={styles.seeAllText}>See all</Text>
-          <ArrowRight color={ORANGE} size={14} strokeWidth={2.8} />
+        <Pressable
+          style={[styles.seeAll, dense && styles.seeAllDense]}
+          onPress={onSeeAll}
+          hitSlop={8}
+          accessibilityLabel={seeAllAccessibilityLabel ?? seeAllLabel}
+        >
+          <Text style={[styles.seeAllText, dense && styles.seeAllTextDense]} numberOfLines={1}>
+            {seeAllLabel}
+          </Text>
+          <ArrowRight color={ORANGE} size={dense ? 13 : 14} strokeWidth={2.8} />
         </Pressable>
       ) : null}
     </View>
@@ -42,9 +79,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   left: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
+  },
+  leftDense: {
+    gap: 7,
+  },
+  titleWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   iconBadge: {
     width: 30,
@@ -60,6 +106,29 @@ const styles = StyleSheet.create({
     color: '#1C1C1C',
     letterSpacing: -0.3,
   },
+  titleDense: {
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    color: '#1C1C1C',
+    letterSpacing: -0.25,
+  },
+  count: {
+    fontFamily: fonts.uiSemi,
+    fontSize: 16,
+    color: '#78716C',
+    letterSpacing: -0.2,
+  },
+  countDense: {
+    fontFamily: fonts.uiSemi,
+    fontSize: 14,
+    color: '#78716C',
+    letterSpacing: -0.15,
+  },
+  iconBadgeDense: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+  },
   seeAll: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -68,10 +137,21 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: '#FFF1E6',
+    flexShrink: 0,
+    marginLeft: 6,
+  },
+  seeAllDense: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    gap: 2,
+    marginLeft: 4,
   },
   seeAllText: {
     fontFamily: fonts.uiBold,
     fontSize: 12.5,
     color: ORANGE,
+  },
+  seeAllTextDense: {
+    fontSize: 11.5,
   },
 });
