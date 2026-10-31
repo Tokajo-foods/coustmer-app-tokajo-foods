@@ -56,7 +56,9 @@ export function usePasswordChangeFlow() {
   }, [start]);
 
   const retryStart = () => {
-    startOnceRef.current = true;
+    setStage('loading');
+    setBanner(null);
+    setErrorCode(null);
     void start();
   };
 
@@ -164,6 +166,7 @@ export function usePasswordChangeFlow() {
     verify,
     save,
     banner,
+    setBanner,
     errorCode,
     busy,
     retryStart,

@@ -54,6 +54,10 @@ function PasswordChangeVerifyStepInner({ flow }: Props) {
             maskedPhone={info.maskedPhone}
             disabled={flow.busy}
             onIdToken={flow.setPhoneIdToken}
+            onReverifyRequired={(message) => {
+              flow.setPhoneIdToken(null);
+              flow.setBanner(message);
+            }}
           />
         </View>
       ) : null}
@@ -61,11 +65,13 @@ function PasswordChangeVerifyStepInner({ flow }: Props) {
       {flow.verifyHint ? <Text style={local.hint}>{flow.verifyHint}</Text> : null}
 
       <Pressable
-        style={[styles.submitBtn, !flow.canVerify && styles.submitBtnDisabled]}
+        style={[styles.submitBtn, (!flow.canVerify || flow.busy) && styles.submitBtnDisabled]}
         onPress={() => void flow.verify()}
-        disabled={!flow.canVerify}
+        disabled={!flow.canVerify || flow.busy}
       >
-        <Text style={styles.submitBtnText}>{flow.busy ? 'Verifying…' : 'Verify & continue'}</Text>
+        <Text style={styles.submitBtnText}>
+          {flow.busy ? 'Verifying…' : 'Verify & continue'}
+        </Text>
       </Pressable>
     </View>
   );

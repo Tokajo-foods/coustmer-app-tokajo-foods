@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PhoneOtpStep } from '@/components/auth/PhoneOtpStep';
@@ -21,7 +22,33 @@ export function ChangePasswordPhoneSection({
   onIdToken,
   onReverifyRequired,
 }: Props) {
-  const otp = useFirebasePhoneOtp({ initialPhone: phone });
+  const autoSendRef = useRef(false);
+  const otp = useFirebasePhoneOtp({
+    initialPhone: phone,
+    onAutoVerified: ({ idToken }) => onIdToken(idToken),
+  });
+
+  useEffect(() => {
+    if (autoSendRef.current || otp.blockedReason) return;
+    if (otp.step !== 'phone') return;
+    autoSendRef.current = true;
+    void otp.send(phone, { skipPrecheck: true });
+  }, [phone, otp.step, otp.blockedReason, otp.send]);
+
+  useEffect(() => {
+    if (otp.step !== 'verified') return;
+    let cancelled = false;
+    void otp.getIdTokenForSubmit().then((token) => {
+      if (cancelled) return;
+      onIdToken(token);
+      if (!token) {
+        onReverifyRequired?.('Phone verification expired. Send a new OTP.');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [otp.step, otp.getIdTokenForSubmit, onIdToken, onReverifyRequired]);
 
   const verifyPhoneCode = async (code: string) => {
     if (otp.verifying || disabled) return;
@@ -50,6 +77,7 @@ export function ChangePasswordPhoneSection({
         <Pressable
           style={styles.linkBtn}
           onPress={() => {
+            autoSendRef.current = false;
             otp.changeNumber();
             onIdToken(null);
           }}

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { BadgeCheck, Eye, EyeOff, Lock } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
@@ -10,10 +10,9 @@ import { usePasswordChangeFlow } from '@/components/auth/use-password-change-flo
 import { forgotPasswordStyles as otpStyles } from '@/components/auth/forgot-password-styles';
 import { changePasswordStyles as styles } from '@/components/profile/change-password-styles';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
+import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { authTheme } from '@/constants/auth-theme';
 import { validateConfirmPassword, validatePassword } from '@/utils/validation';
-
-const HEADER_SUBTITLE = 'Verify your identity with OTP, then choose a new password.';
 
 /** Profile → Account → change password. */
 export function ChangePasswordScreen() {
@@ -23,6 +22,14 @@ export function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+
+  const subtitle = useMemo(() => {
+    if (flow.stage === 'password') return 'Step 2 of 2 · Choose a new password';
+    if (flow.stage === 'verify') return 'Step 1 of 2 · Confirm email and phone codes';
+    if (flow.stage === 'loading') return 'Preparing verification…';
+    if (flow.stage === 'startFailed') return 'Could not start verification';
+    return 'Verify your identity, then set a new password';
+  }, [flow.stage]);
 
   const banner = flow.banner
     ? ({ message: flow.banner, type: 'error' as const })
@@ -35,7 +42,11 @@ export function ChangePasswordScreen() {
     };
     setErrors(next);
     if (Object.values(next).some(Boolean)) return;
-    await flow.save(newPassword);
+    const ok = await flow.save(newPassword);
+    if (ok) {
+      setNewPassword('');
+      setConfirmPassword('');
+    }
   };
 
   const eye = (
@@ -59,6 +70,7 @@ export function ChangePasswordScreen() {
 
       {flow.stage === 'startFailed' ? (
         <View style={styles.loaderWrap}>
+          {flow.banner ? <Text style={styles.errorText}>{flow.banner}</Text> : null}
           {flow.errorCode === 'CONTACT_MISSING' ? (
             <Pressable style={styles.contactBtn} onPress={() => router.push('/profile/contact')}>
               <Text style={styles.contactBtnText}>Add phone or email</Text>
@@ -69,21 +81,15 @@ export function ChangePasswordScreen() {
             disabled={flow.busy}
             onPress={() => flow.retryStart()}
           >
-            <Text style={otpStyles.submitBtnTextCalm}>Try again</Text>
+            <Text style={otpStyles.submitBtnTextCalm}>{flow.busy ? 'Retrying…' : 'Try again'}</Text>
           </Pressable>
         </View>
       ) : null}
 
-      {flow.stage === 'verify' ? (
-        <>
-          <Text style={styles.stepLabel}>Step 1 of 2 · Verify it's you</Text>
-          <PasswordChangeVerifyStep flow={flow} />
-        </>
-      ) : null}
+      {flow.stage === 'verify' ? <PasswordChangeVerifyStep flow={flow} /> : null}
 
       {flow.stage === 'password' ? (
         <>
-          <Text style={styles.stepLabel}>Step 2 of 2 · New password</Text>
           <AuthInput
             label="New password"
             icon={Lock}
@@ -136,7 +142,7 @@ export function ChangePasswordScreen() {
   return (
     <ProfileFormLayout
       title="Change password"
-      subtitle={HEADER_SUBTITLE}
+      subtitle={subtitle}
       banner={banner}
       backFallback="/profile"
       scrollable={false}
@@ -150,7 +156,7 @@ export function ChangePasswordScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-        contentContainerStyle={styles.scrollPad}
+        contentContainerStyle={[styles.scrollPad, { paddingBottom: 24 + APP_BOTTOM_NAV_INSET }]}
       >
         {body}
       </ScrollView>

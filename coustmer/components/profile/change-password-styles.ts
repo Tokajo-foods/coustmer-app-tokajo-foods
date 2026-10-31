@@ -23,6 +23,14 @@ export const changePasswordStyles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
+  errorText: {
+    color: authTheme.error,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    marginBottom: 4,
+  },
   doneCard: {
     alignItems: 'center',
     paddingVertical: 16,
