@@ -8,25 +8,28 @@ import type { SearchSuggestion, SearchSuggestionType } from '@/lib/search/types'
 import { searchColors } from '../search-styles';
 import { CuisineSuggestionRow } from './CuisineSuggestionRow';
 import { DishSuggestionRow } from './DishSuggestionRow';
+import { QuerySuggestionRow } from './QuerySuggestionRow';
 import { RestaurantSuggestionRow } from './RestaurantSuggestionRow';
 import { suggestRipple, suggestStyles as s } from './suggest-styles';
 
 type Section = { key: SearchSuggestionType; title: string; data: SearchSuggestion[] };
 
 const ORDER: { key: SearchSuggestionType; title: string }[] = [
-  { key: 'dish', title: 'MENU' },
-  { key: 'category', title: 'CUISINES' },
+  { key: 'query', title: '' },
+  { key: 'category', title: 'CATEGORIES' },
+  { key: 'dish', title: 'DISHES' },
   { key: 'restaurant', title: 'RESTAURANTS' },
 ];
 
 const ROW = { dish: DishSuggestionRow, category: CuisineSuggestionRow, restaurant: RestaurantSuggestionRow };
 
-/** Type-ahead grouped as Menu → Cuisines → Restaurants, keeping the server's ranking inside each group. */
-export function SuggestionSections({ query, items, correctedQuery, onPick, onSearchAll }: {
+/** Autocomplete grouped as completions → Categories → Dishes → Restaurants, keeping server ranking. */
+export function SuggestionSections({ query, items, correctedQuery, onPick, onFill, onSearchAll }: {
   query: string;
   items: SearchSuggestion[];
   correctedQuery?: string;
   onPick: (item: SearchSuggestion) => void;
+  onFill: (text: string) => void;
   onSearchAll: () => void;
 }) {
   const sections = useMemo<Section[]>(
@@ -55,14 +58,19 @@ export function SuggestionSections({ query, items, correctedQuery, onPick, onSea
           </Text>
         ) : null
       }
-      renderSectionHeader={({ section }) => (
-        <View style={s.sectionHead}>
-          <Text style={s.sectionTitle}>{section.title}</Text>
-          <Text style={s.sectionCount}>{section.data.length}</Text>
-          <View style={s.sectionRule} />
-        </View>
-      )}
+      renderSectionHeader={({ section }) =>
+        section.title ? (
+          <View style={s.sectionHead}>
+            <Text style={s.sectionTitle}>{section.title}</Text>
+            <Text style={s.sectionCount}>{section.data.length}</Text>
+            <View style={s.sectionRule} />
+          </View>
+        ) : null
+      }
       renderItem={({ item }) => {
+        if (item.type === 'query') {
+          return <QuerySuggestionRow item={item} query={highlight} onPress={onPick} onFill={onFill} />;
+        }
         const Row = ROW[item.type];
         return <Row item={item} query={highlight} onPress={onPick} />;
       }}

@@ -8,6 +8,7 @@ import { navigateBack } from '@/lib/motion/navigate-back';
 import { useMorphBackHandler, useSearchMorph } from '@/lib/motion/use-search-morph';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { useDebouncedValue, useSearchCombined, useSearchScope, useSearchSuggestions } from '@/lib/search/hooks';
+import { openSearchDish } from '@/lib/search/open-search-dish';
 import {
   clearLocalRecentSearches,
   loadLocalRecentSearches,
@@ -64,21 +65,33 @@ export function SearchScreen() {
     remember(cleaned);
   }, [remember]);
 
-  const openRestaurant = useCallback((id: string, itemId?: string) => {
-    openRestaurantMenu(router, id, { params: itemId ? { itemId } : undefined });
-  }, [router]);
+  const openRestaurant = useCallback((id: string) => openRestaurantMenu(router, id), [router]);
 
   const openCategory = useCallback((c: { slug: string; name: string; source?: SearchCategorySource }) => {
     router.push({ pathname: '/search-category', params: { slug: c.slug, name: c.name, source: c.source ?? '' } });
   }, [router]);
 
+  const fillQuery = useCallback((text: string) => {
+    setQuery(text);
+    setSubmitted(false);
+    inputRef.current?.focus();
+  }, []);
+
   const openSuggestion = useCallback((item: SearchSuggestion) => {
+    if (item.type === 'query') return performSearch(item.text);
     remember(item.text);
     if (item.type === 'restaurant' && item.restaurantId) return openRestaurant(item.restaurantId);
-    if (item.type === 'dish' && item.restaurantId) return openRestaurant(item.restaurantId, item.dishId);
+    if (item.type === 'dish' && item.restaurantId && item.dishId) {
+      return openSearchDish(router, {
+        restaurantId: item.restaurantId,
+        id: item.dishId,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+      });
+    }
     if (item.type === 'category' && item.slug) return openCategory({ slug: item.slug, name: item.text, source: item.source });
     performSearch(item.text);
-  }, [openCategory, openRestaurant, performSearch, remember]);
+  }, [openCategory, openRestaurant, performSearch, remember, router]);
 
   const typed = query.trim();
   const showingDiscover = !submitted && typed.length === 0;
@@ -125,13 +138,14 @@ export function SearchScreen() {
                 body={errorText(suggestions.error) ?? ''} onRetry={() => void suggestions.refetch()} />
             ) : !suggestionItems.length && !waitingForTyping && suggestions.isFetched ? (
               <SearchMessage kind="empty" title={`Nothing near you for “${typed}”`}
-                body="Try a dish, a cuisine like “Chinese”, or a restaurant name." />
+                body="Try a dish, a category like “Burgers”, or a restaurant name." />
             ) : (
               <SuggestionSections
                 query={query}
                 items={suggestionItems}
                 correctedQuery={suggestions.data?.correctedQuery}
                 onPick={openSuggestion}
+                onFill={fillQuery}
                 onSearchAll={() => performSearch(query)}
               />
             )
@@ -148,7 +162,7 @@ export function SearchScreen() {
               dishes={combined.data?.dishes ?? []}
               onCategory={openCategory}
               onRestaurant={(r) => openRestaurant(r.id)}
-              onDish={(d) => openRestaurant(d.restaurantId, d.id)}
+              onDish={(d) => openSearchDish(router, d)}
             />
           ) : null}
         </Animated.View>

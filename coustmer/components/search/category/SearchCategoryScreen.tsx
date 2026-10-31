@@ -9,8 +9,8 @@ import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { fonts } from '@/constants/typography';
 import { PREMIUM_LIST } from '@/lib/motion/premium';
-import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { useSearchCategoryDishes } from '@/lib/search/hooks';
+import { openSearchDish } from '@/lib/search/open-search-dish';
 import type { SearchCategorySource, SearchDish } from '@/lib/search/types';
 
 import { searchColors } from '../search-styles';
@@ -30,17 +30,14 @@ export function SearchCategoryScreen() {
   const name = one(params.name);
   const rawSource = one(params.source);
   const source: SearchCategorySource | undefined =
-    rawSource === 'cuisine' || rawSource === 'food_category' ? rawSource : undefined;
+    rawSource === 'cuisine' || rawSource === 'food_category' || rawSource === 'menu_section' ? rawSource : undefined;
 
   const query = useSearchCategoryDishes({ slug, name: name || undefined, source });
   const title = query.data?.category.name || name || slug.replace(/-/g, ' ');
   const dishes = query.data?.dishes ?? [];
   const restaurants = query.data?.restaurantCount ?? 0;
 
-  const openDish = useCallback(
-    (dish: SearchDish) => openRestaurantMenu(router, dish.restaurantId, { params: { itemId: dish.id } }),
-    [router],
-  );
+  const openDish = useCallback((dish: SearchDish) => openSearchDish(router, dish), [router]);
   const goBack = useCallback(() => (router.canGoBack() ? router.back() : router.replace('/home')), [router]);
 
   const subtitle = query.isLoading
@@ -77,7 +74,7 @@ export function SearchCategoryScreen() {
           renderItem={({ item }) => <CategoryDishRow dish={item} onPress={openDish} />}
           ListEmptyComponent={
             <SearchMessage kind="empty" title={`No ${title} dishes near you`}
-              body="Restaurants that deliver to your address don't serve this yet. Try another cuisine." />
+              body="Restaurants that deliver to your address don't serve this yet. Try another category." />
           }
         />
       )}

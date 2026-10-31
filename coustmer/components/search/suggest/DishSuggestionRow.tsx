@@ -14,8 +14,8 @@ export const DishSuggestionRow = memo(function DishSuggestionRow({ item, query, 
   query: string;
   onPress: (item: SearchSuggestion) => void;
 }) {
-  const closed = item.subtitle?.endsWith('Closed now') ?? false;
-  const restaurant = item.restaurantName ?? item.subtitle?.replace(/\s*·\s*Closed now$/, '') ?? '';
+  const closed = item.isOpen === false;
+  const restaurant = item.restaurantName ?? '';
   return (
     <Pressable
       style={s.row}
@@ -41,6 +41,7 @@ export const DishSuggestionRow = memo(function DishSuggestionRow({ item, query, 
         </View>
         <Text style={s.meta} numberOfLines={1}>
           {restaurant ? <>from <Text style={s.metaStrong}>{restaurant}</Text></> : 'Dish'}
+          {item.categoryName ? ` · ${item.categoryName}` : null}
           {closed ? <Text style={s.closed}>{'  ·  Closed now'}</Text> : null}
         </Text>
       </View>

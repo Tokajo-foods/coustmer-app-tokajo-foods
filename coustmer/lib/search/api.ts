@@ -1,4 +1,5 @@
-import { searchLiveMenus, toCategoryDishes, toCombined, toSuggestions } from '@/lib/search/live-menu-search';
+import { searchLiveMenus } from '@/lib/search/live-menu-search';
+import { toCategoryDishes, toCombined, toSuggestions } from '@/lib/search/suggestion-builder';
 import type {
   SearchCategoryDishesParams,
   SearchCategoryDishesResult,
@@ -11,10 +12,10 @@ import type {
 } from '@/lib/search/types';
 
 export const searchApi = {
-  /** Dishes and restaurants from the live menus near the delivery pin. */
+  /** Autocomplete: completions, categories, dishes and restaurants near the delivery pin. */
   getSuggestions: async (p: SearchSuggestionsParams): Promise<SearchSuggestionsResult> => {
     const hit = await searchLiveMenus(p);
-    return toSuggestions(p.q, hit);
+    return toSuggestions(p.q, hit, p.limit);
   },
 
   /** Full results after the customer submits a search. */
@@ -31,10 +32,10 @@ export const searchApi = {
     return { restaurants: hit.restaurants, total: hit.restaurants.length };
   },
 
-  /** Every matching dish in range for a tapped cuisine or category name. */
+  /** Every matching dish in range for a tapped category. */
   getCategoryDishes: async (p: SearchCategoryDishesParams): Promise<SearchCategoryDishesResult> => {
-    const term = (p.name || p.slug).trim();
+    const term = (p.name || p.slug.replace(/[-_]+/g, ' ')).trim();
     const hit = await searchLiveMenus({ ...p, q: term });
-    return toCategoryDishes(term, hit);
+    return toCategoryDishes(term, p.slug, hit);
   },
 };

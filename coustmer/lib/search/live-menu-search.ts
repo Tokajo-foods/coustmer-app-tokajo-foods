@@ -1,13 +1,7 @@
 import { api } from '@/lib/api';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
-import type {
-  SearchCategoryDishesResult,
-  SearchCombinedResult,
-  SearchDish,
-  SearchRestaurant,
-  SearchSuggestion,
-  SearchSuggestionsResult,
-} from '@/lib/search/types';
+import { resolveMediaUrl } from '@/lib/restaurant/media';
+import type { SearchCategory, SearchDish, SearchRestaurant } from '@/lib/search/types';
 
 const RESTAURANT_BASE = '/api/v1/restaurant-service/restaurants';
 
@@ -16,105 +10,98 @@ type Raw = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
 
+/** Backend caps radius at 15 km; hooks pass meters. */
 function radiusKm(radius: number | undefined): number {
   if (radius == null) return CUSTOMER_DISCOVERY_RADIUS_KM;
-  return radius > 100 ? radius / 1000 : radius;
+  const km = radius > 100 ? radius / 1000 : radius;
+  return Math.min(15, Math.max(0.5, km));
 }
 
-type LiveHit = { restaurants: SearchRestaurant[]; dishes: SearchDish[] };
+export type LiveHit = {
+  query: string;
+  restaurants: SearchRestaurant[];
+  dishes: SearchDish[];
+  categories: SearchCategory[];
+};
 
+const EMPTY = (q: string): LiveHit => ({ query: q, restaurants: [], dishes: [], categories: [] });
+
+/** Dishes, restaurants and categories from live menus that deliver to the pin. */
 export async function searchLiveMenus(input: {
   q: string;
   lat?: number;
   lng?: number;
   radius?: number;
 }): Promise<LiveHit> {
-  if (input.lat == null || input.lng == null || !input.q.trim()) {
-    return { restaurants: [], dishes: [] };
-  }
-  const res = await api.get<{ data?: { restaurants?: Raw[]; dishes?: Raw[] } }>(
+  const q = input.q.trim().slice(0, 80);
+  if (input.lat == null || input.lng == null || !q) return EMPTY(q);
+  const res = await api.get<{ data?: { restaurants?: Raw[]; dishes?: Raw[]; categories?: Raw[] } }>(
     `${RESTAURANT_BASE}/nearby/menu-search`,
     {
-      params: {
-        q: input.q.trim(),
-        lat: input.lat,
-        lng: input.lng,
-        radius: radiusKm(input.radius),
-      },
+      params: { q, lat: input.lat, lng: input.lng, radius: radiusKm(input.radius) },
       withCredentials: true,
       timeout: 12_000,
     },
   );
   const data = res.data?.data ?? {};
-  const restaurants = (data.restaurants ?? []).map(mapRestaurant).filter((r) => r.id);
-  const dishes = (data.dishes ?? []).map(mapDish).filter((d) => d.id && d.restaurantId);
-  return { restaurants, dishes };
+  return {
+    query: q,
+    restaurants: (data.restaurants ?? []).map(mapRestaurant).filter((r) => r.id),
+    dishes: (data.dishes ?? []).map(mapDish).filter((d) => d.id && d.restaurantId),
+    categories: (data.categories ?? []).map(mapCategory).filter((c) => c.name && c.slug),
+  };
 }
 
 function mapRestaurant(raw: Raw): SearchRestaurant {
+  const prep = num(raw.avgPrepTime);
   return {
     id: String(raw.id ?? ''),
     name: str(raw.name) ?? 'Restaurant',
-    imageUrl: str(raw.imageUrl),
+    imageUrl: resolveMediaUrl(str(raw.imageUrl)),
     cuisines: Array.isArray(raw.cuisines) ? raw.cuisines.map(String) : undefined,
     rating: num(raw.rating),
     distance: num(raw.distanceKm),
+    deliveryTime: prep ? `${prep} mins` : undefined,
+    isOnline: typeof raw.isOnline === 'boolean' ? raw.isOnline : undefined,
     matchReason: raw.matchReason === 'name' || raw.matchReason === 'cuisine' || raw.matchReason === 'serves_dish'
       ? raw.matchReason
       : undefined,
+    matchedDishCount: num(raw.matchedDishCount),
   };
 }
 
 function mapDish(raw: Raw): SearchDish {
   const offer = num(raw.discountedPrice);
+  const matched = raw.matchedBy;
   return {
     id: String(raw.id ?? ''),
     name: str(raw.name) ?? 'Dish',
+    description: str(raw.description),
     price: num(raw.price) ?? 0,
     discountedPrice: offer !== undefined && offer > 0 ? offer : undefined,
-    imageUrl: str(raw.image),
+    imageUrl: resolveMediaUrl(str(raw.image)),
     isVeg: typeof raw.isVeg === 'boolean' ? raw.isVeg : undefined,
+    isBestSeller: raw.isBestSeller === true,
     restaurantId: String(raw.restaurantId ?? ''),
     restaurantName: str(raw.restaurantName),
+    restaurantImageUrl: resolveMediaUrl(str(raw.restaurantImage)),
+    restaurantIsOpen: typeof raw.restaurantIsOnline === 'boolean' ? raw.restaurantIsOnline : undefined,
+    distanceKm: num(raw.distanceKm),
+    categoryId: str(raw.categoryId),
+    categoryName: str(raw.categoryName),
+    foodCategoryId: str(raw.foodCategoryId),
+    matchedBy: matched === 'name' || matched === 'category' || matched === 'description' ? matched : undefined,
   };
 }
 
-export function toSuggestions(q: string, hit: LiveHit): SearchSuggestionsResult {
-  const dishes: SearchSuggestion[] = hit.dishes.map((d) => ({
-    id: `dish-${d.id}`,
-    type: 'dish',
-    text: d.name,
-    subtitle: d.restaurantName,
-    imageUrl: d.imageUrl,
-    restaurantId: d.restaurantId,
-    restaurantName: d.restaurantName,
-    dishId: d.id,
-    price: d.price,
-    discountedPrice: d.discountedPrice,
-    isVeg: d.isVeg,
-  }));
-  const restaurants: SearchSuggestion[] = hit.restaurants
-    .filter((r) => r.matchReason === 'name' || r.matchReason === 'cuisine')
-    .map((r) => ({
-      id: `restaurant-${r.id}`,
-      type: 'restaurant',
-      text: r.name,
-      subtitle: r.cuisines?.slice(0, 2).join(', ') || 'Restaurant',
-      imageUrl: r.imageUrl,
-      restaurantId: r.id,
-      rating: r.rating,
-    }));
-  return { query: q, suggestions: [...dishes, ...restaurants] };
-}
-
-export function toCombined(q: string, hit: LiveHit): SearchCombinedResult {
-  return { query: q, restaurants: hit.restaurants, dishes: hit.dishes, categories: [] };
-}
-
-export function toCategoryDishes(name: string, hit: LiveHit): SearchCategoryDishesResult {
+function mapCategory(raw: Raw): SearchCategory {
   return {
-    category: { name, slug: name, source: 'food_category' },
-    restaurantCount: new Set(hit.dishes.map((d) => d.restaurantId)).size,
-    dishes: hit.dishes,
+    id: String(raw.id ?? raw.slug ?? ''),
+    name: str(raw.name) ?? '',
+    slug: str(raw.slug) ?? '',
+    imageUrl: resolveMediaUrl(str(raw.imageUrl)),
+    itemCount: num(raw.itemCount),
+    restaurantCount: num(raw.restaurantCount),
+    source: raw.source === 'menu_section' ? 'menu_section' : 'food_category',
   };
 }

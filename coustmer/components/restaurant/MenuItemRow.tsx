@@ -27,6 +27,7 @@ export function MenuItemRow({
   item,
   onPress,
   onAdd,
+  highlighted = false,
   unavailable: forceUnavailable,
   showDivider = true,
 }: Props) {
@@ -73,6 +74,7 @@ export function MenuItemRow({
       style={[
         styles.card,
         showDivider && styles.cardDivider,
+        highlighted && styles.cardHighlighted,
         !available && styles.cardUnavailable,
       ]}
       onPress={onPress}
@@ -188,6 +190,11 @@ const styles = StyleSheet.create({
   },
   cardUnavailable: {
     opacity: 0.72,
+  },
+  cardHighlighted: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+    paddingHorizontal: 8,
   },
   leftCol: {
     flex: 1,

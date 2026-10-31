@@ -13,12 +13,12 @@ function countLabel(c: SearchCategory): string | null {
   return null;
 }
 
-/** Cuisines / food categories matching the query; tapping one lists every dish for it. */
+/** Food categories / menu sections matching the query; tapping one lists every dish for it. */
 export function CategoryChips({ items, onPick }: { items: SearchCategory[]; onPick: (c: SearchCategory) => void }) {
   if (!items.length) return null;
   return (
     <View style={styles.wrap}>
-      <Text style={styles.title}>Cuisines & categories</Text>
+      <Text style={styles.title}>Categories</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}
         keyboardShouldPersistTaps="handled">
         {items.map((c) => {

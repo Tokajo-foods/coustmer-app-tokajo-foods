@@ -71,7 +71,9 @@ export const DishRow = memo(function DishRow({ dish, onPress }: { dish: SearchDi
           {dish.isVeg !== undefined ? <View style={[styles.vegDot, !dish.isVeg && styles.nonVegDot]} /> : null}
           <Text style={styles.resultName} numberOfLines={1}>{dish.name}</Text>
         </View>
-        <Text style={styles.resultMeta} numberOfLines={1}>{dish.restaurantName || 'Restaurant'}</Text>
+        <Text style={styles.resultMeta} numberOfLines={1}>
+          {[dish.restaurantName || 'Restaurant', dish.categoryName].filter(Boolean).join(' · ')}
+        </Text>
         <DishPrice price={dish.price} discountedPrice={dish.discountedPrice} size="sm" />
       </View>
     </Pressable>

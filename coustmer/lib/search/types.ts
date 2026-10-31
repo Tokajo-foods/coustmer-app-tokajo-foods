@@ -1,11 +1,13 @@
 /**
- * Search Service (public). Gateway prefix: /api/v1/search-service
+ * Live menu search: GET /api/v1/restaurant-service/restaurants/nearby/menu-search.
  * Every call is scoped to restaurants that deliver to the pin (same radius as home).
  */
 
 export type SearchMatchReason = 'name' | 'cuisine' | 'serves_dish' | 'serves_category';
-export type SearchSuggestionType = 'restaurant' | 'dish' | 'category';
-export type SearchCategorySource = 'cuisine' | 'food_category';
+/** `query` = autocomplete completion that fills the search box. */
+export type SearchSuggestionType = 'query' | 'restaurant' | 'dish' | 'category';
+export type SearchCategorySource = 'cuisine' | 'food_category' | 'menu_section';
+export type SearchDishMatch = 'name' | 'category' | 'description';
 
 export type SearchRestaurant = {
   id: string;
@@ -37,6 +39,8 @@ export type SearchRestaurant = {
   closedReason?: string;
   /** Why it matched: its name, a cuisine tag, or a dish on its menu. */
   matchReason?: SearchMatchReason;
+  /** Dishes on this menu that matched the query. */
+  matchedDishCount?: number;
 };
 
 export type SearchDish = {
@@ -52,8 +56,12 @@ export type SearchDish = {
   restaurantName?: string;
   restaurantImageUrl?: string;
   restaurantIsOpen?: boolean;
+  distanceKm?: number;
+  /** Kitchen menu section — the restaurant page scrolls here. */
   categoryId?: string;
   categoryName?: string;
+  foodCategoryId?: string;
+  matchedBy?: SearchDishMatch;
 };
 
 export type SearchCategory = {
@@ -77,6 +85,8 @@ export type SearchSuggestion = {
   restaurantId?: string;
   restaurantName?: string;
   dishId?: string;
+  categoryId?: string;
+  categoryName?: string;
   slug?: string;
   source?: SearchCategorySource;
   price?: number;
