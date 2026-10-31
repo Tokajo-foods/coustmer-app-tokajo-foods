@@ -71,6 +71,22 @@ function pickNullableNumber(...values: unknown[]): number | null {
 }
 
 export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
+  const nested = raw.data;
+  if (
+    nested &&
+    typeof nested === 'object' &&
+    !Array.isArray(nested) &&
+    raw.deliveryFee === undefined &&
+    raw.itemsSubtotal === undefined &&
+    raw.subtotal === undefined
+  ) {
+    return mapBillBreakdown(nested as Record<string, unknown>);
+  }
+
+  const quote =
+    raw.deliveryFeeQuote && typeof raw.deliveryFeeQuote === 'object'
+      ? (raw.deliveryFeeQuote as Record<string, unknown>)
+      : undefined;
   const itemsSubtotal = num(
     raw.itemsSubtotal,
     raw.subtotal,
@@ -78,8 +94,8 @@ export function mapBillBreakdown(raw: Record<string, unknown>): BillBreakdown {
     raw.itemsTotal
   );
   const packagingCharge = num(raw.packagingCharge, raw.packingCharge);
-  const deliveryFeeBase = num(raw.deliveryFeeBase, raw.baseDeliveryFee);
-  const deliveryFee = num(raw.deliveryFee, raw.deliveryCharge);
+  const deliveryFeeBase = num(raw.deliveryFeeBase, raw.baseDeliveryFee, quote?.baseFee);
+  const deliveryFee = num(raw.deliveryFee, raw.deliveryCharge, quote?.fee);
   const deliveryDistanceKm = pickNullableNumber(raw.deliveryDistanceKm, raw.distanceKm);
   const deliveryDistanceCharge = num(raw.deliveryDistanceCharge, raw.distanceCharge);
   const deliveryFeePerKm = num(raw.deliveryFeePerKm, raw.perKm);

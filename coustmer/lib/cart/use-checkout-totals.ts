@@ -24,23 +24,41 @@ export function useCheckoutTotals({
 }: Input) {
   const bill = useMemo<BillBreakdown>(() => {
     if (liveBill) return liveBill;
+    const saved = serverCart as
+      | (Cart & {
+          deliveryFeeBase?: number;
+          deliveryDistanceKm?: number;
+          superFreeDelivery?: boolean;
+          autoFreeDelivery?: boolean;
+          autoFreeDeliveryMinOrder?: number;
+          autoFreeDeliveryTitle?: string;
+        })
+      | undefined;
     return mapBillBreakdown({
-      itemsSubtotal: serverCart?.subtotal ?? 0,
-      deliveryFee: serverCart?.deliveryFee ?? 0,
+      itemsSubtotal: saved?.subtotal ?? 0,
+      deliveryFee: saved?.deliveryFee ?? 0,
+      ...(typeof saved?.deliveryFeeBase === 'number' && saved.deliveryFeeBase > 0
+        ? { deliveryFeeBase: saved.deliveryFeeBase }
+        : {}),
+      ...(typeof saved?.deliveryDistanceKm === 'number'
+        ? { deliveryDistanceKm: saved.deliveryDistanceKm }
+        : {}),
       deliveryType,
-      taxAmount: serverCart?.tax ?? 0,
-      packagingCharge: serverCart?.packagingCharge ?? 0,
-      platformFee: serverCart?.platformFee ?? 0,
-      taxesAndCharges: serverCart?.taxesAndCharges ?? 0,
-      rainFee: serverCart?.rainFee ?? 0,
-      tipAmount: serverCart?.tip ?? 0,
-      discount: serverCart?.discount ?? 0,
-      walletApplied: serverCart?.walletApplied ?? 0,
-      roundOff: serverCart?.roundOff ?? 0,
-      totalBeforeWallet: serverCart?.totalBeforeWallet ?? undefined,
-      grandTotal: serverCart?.total ?? 0,
-      superFreeDelivery: (serverCart as { superFreeDelivery?: boolean } | undefined)
-        ?.superFreeDelivery,
+      taxAmount: saved?.tax ?? 0,
+      packagingCharge: saved?.packagingCharge ?? 0,
+      platformFee: saved?.platformFee ?? 0,
+      taxesAndCharges: saved?.taxesAndCharges ?? 0,
+      rainFee: saved?.rainFee ?? 0,
+      tipAmount: saved?.tip ?? 0,
+      discount: saved?.discount ?? 0,
+      walletApplied: saved?.walletApplied ?? 0,
+      roundOff: saved?.roundOff ?? 0,
+      totalBeforeWallet: saved?.totalBeforeWallet ?? undefined,
+      grandTotal: saved?.total ?? 0,
+      superFreeDelivery: saved?.superFreeDelivery,
+      autoFreeDelivery: saved?.autoFreeDelivery,
+      autoFreeDeliveryMinOrder: saved?.autoFreeDeliveryMinOrder,
+      autoFreeDeliveryTitle: saved?.autoFreeDeliveryTitle,
     });
   }, [liveBill, serverCart, deliveryType]);
 

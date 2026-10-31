@@ -377,6 +377,16 @@ export function mapCart(data: unknown): Cart {
     tip: Number.isFinite(tip) ? tip : 0,
     discount: Number.isFinite(discount) ? discount : 0,
     deliveryFee: Number.isFinite(deliveryFee) ? deliveryFee : 0,
+    deliveryFeeBase: pickFiniteNumber(nestedCart.deliveryFeeBase) ?? undefined,
+    deliveryDistanceKm: pickFiniteNumber(nestedCart.deliveryDistanceKm) ?? undefined,
+    superFreeDelivery: nestedCart.superFreeDelivery === true,
+    autoFreeDelivery: nestedCart.autoFreeDelivery === true,
+    autoFreeDeliveryMinOrder: pickFiniteNumber(nestedCart.autoFreeDeliveryMinOrder) ?? undefined,
+    autoFreeDeliveryTitle:
+      typeof nestedCart.autoFreeDeliveryTitle === 'string'
+        ? nestedCart.autoFreeDeliveryTitle
+        : undefined,
+    serviceable: typeof nestedCart.serviceable === 'boolean' ? nestedCart.serviceable : undefined,
     tax: Number.isFinite(tax) ? tax : 0,
     platformFee,
     taxesAndCharges,

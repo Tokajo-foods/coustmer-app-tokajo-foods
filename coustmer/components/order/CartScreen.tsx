@@ -290,6 +290,7 @@ export function CartScreen() {
         void liveBill.refetch();
       })
       .catch(() => {
+        void remoteCart.refetch();
         void liveBill.refetch();
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
