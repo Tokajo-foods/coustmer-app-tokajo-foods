@@ -16,3 +16,18 @@ export function payPriceOf(item: {
 }): number {
   return offerPriceOf(item) ?? item.price;
 }
+
+/**
+ * Whole-number % cheaper vs list price. Only when both prices exist
+ * and the offer is actually lower. Hidden for a single price or < 1%.
+ */
+export function discountPercentOf(item: {
+  price: number;
+  discountedPrice?: number | null;
+}): number | undefined {
+  const offer = offerPriceOf(item);
+  if (offer == null || item.price <= 0) return undefined;
+  const pct = Math.round(((item.price - offer) / item.price) * 100);
+  if (pct < 1) return undefined;
+  return Math.min(pct, 99);
+}

@@ -3,8 +3,8 @@ import { ChevronRight, Store } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import { fonts } from '@/constants/typography';
-import { formatInr } from '@/lib/format/money';
 import type { SearchDish } from '@/lib/search/types';
 
 import { searchColors } from '../search-styles';
@@ -18,7 +18,6 @@ export const CategoryDishRow = memo(function CategoryDishRow({
   onPress: (dish: SearchDish) => void;
 }) {
   const closed = dish.restaurantIsOpen === false;
-  const hasDeal = dish.discountedPrice !== undefined && dish.discountedPrice < dish.price;
   return (
     <Pressable
       style={styles.row}
@@ -34,8 +33,11 @@ export const CategoryDishRow = memo(function CategoryDishRow({
         ) : null}
         <Text style={styles.name} numberOfLines={2}>{dish.name}</Text>
         <View style={styles.priceRow}>
-          <Text style={styles.price}>{formatInr(hasDeal ? dish.discountedPrice : dish.price)}</Text>
-          {hasDeal ? <Text style={styles.strike}>{formatInr(dish.price)}</Text> : null}
+          <DishPrice
+            price={dish.price}
+            discountedPrice={dish.discountedPrice}
+            size="sm"
+          />
           {dish.isBestSeller ? <Text style={styles.badge}>Bestseller</Text> : null}
         </View>
         <View style={styles.storeRow}>
@@ -81,9 +83,7 @@ const styles = StyleSheet.create({
   vegDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A' },
   nonVegDot: { backgroundColor: '#DC2626' },
   name: { fontFamily: fonts.displayBold, fontSize: 15.5, color: searchColors.ink },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  price: { fontFamily: fonts.uiBold, fontSize: 14, color: searchColors.ink },
-  strike: { fontFamily: fonts.ui, fontSize: 12.5, color: '#A1A1AA', textDecorationLine: 'line-through' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   badge: {
     fontFamily: fonts.uiBold,
     fontSize: 10.5,

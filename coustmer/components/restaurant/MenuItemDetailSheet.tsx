@@ -33,7 +33,7 @@ import { useItemQuote } from '@/lib/cart/hooks';
 import { sameModifiers } from '@/lib/cart/modifiers';
 import { DishPrice } from '@/components/restaurant/DishPrice';
 import { formatInr } from '@/lib/format/money';
-import { offerPriceOf, payPriceOf } from '@/lib/restaurant/item-price';
+import { payPriceOf } from '@/lib/restaurant/item-price';
 import type { CartModifier } from '@/lib/cart/types';
 import {
   useItemCustomizations,
@@ -352,19 +352,11 @@ export function MenuItemDetailSheet({
                 <Text style={styles.metaChip}>Bestseller</Text>
               ) : null}
 
-              {quotedPay != null ? (
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceText}>{formatInr(quotedPay)}</Text>
-                  {offerPriceOf(displayItem) != null ? (
-                    <Text style={styles.priceStrike}>{formatInr(displayItem.price)}</Text>
-                  ) : null}
-                </View>
-              ) : (
-                <DishPrice
-                  price={displayItem.price}
-                  discountedPrice={displayItem.discountedPrice}
-                />
-              )}
+              <DishPrice
+                price={displayItem.price}
+                discountedPrice={displayItem.discountedPrice}
+                size="lg"
+              />
             </View>
 
             {customizations.isError ? (
