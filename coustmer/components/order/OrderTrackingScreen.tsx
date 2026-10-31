@@ -131,6 +131,9 @@ export function OrderTrackingScreen() {
             eta={live.eta}
             itemCount={itemCount}
             pickup={pickup}
+            promisedReadyAt={o.promisedReadyAt}
+            estimatedPrepTime={o.estimatedPrepTime}
+            delayMinutes={o.delayMinutes}
           />
 
           {pickup ? null : (

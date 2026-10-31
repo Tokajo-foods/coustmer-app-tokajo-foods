@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Check, Clock3 } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -15,6 +15,7 @@ import Animated, {
 import type { EtaLabel } from '@/components/order/tracking/tracking-eta';
 import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_SOFT, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
+import { pickupReadyCopy } from '@/lib/order/pickup-ready-copy';
 import {
   PICKUP_TRACKING_STEPS,
   stepIndex,
@@ -33,9 +34,21 @@ type Props = {
   eta: EtaLabel | null;
   itemCount: number;
   pickup?: boolean;
+  promisedReadyAt?: string | null;
+  estimatedPrepTime?: number | null;
+  delayMinutes?: number | null;
 };
 
-export function TrackingStatusSection({ phase, kicker, eta, itemCount, pickup }: Props) {
+export function TrackingStatusSection({
+  phase,
+  kicker,
+  eta,
+  itemCount,
+  pickup,
+  promisedReadyAt,
+  estimatedPrepTime,
+  delayMinutes,
+}: Props) {
   const steps = pickup ? PICKUP_TRACKING_STEPS : TRACKING_STEPS;
   const activeIdx = stepIndex(phase.step, steps);
   const progress = useSharedValue(0);
@@ -79,6 +92,23 @@ export function TrackingStatusSection({ phase, kicker, eta, itemCount, pickup }:
     };
   });
 
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!pickup || !phase.active) return;
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, [pickup, phase.active, promisedReadyAt]);
+
+  const pickupTiming = pickup
+    ? pickupReadyCopy({
+        promisedReadyAt,
+        estimatedPrepTime,
+        delayMinutes,
+        ready: phase.key === 'ready' || phase.completed,
+        now,
+      })
+    : null;
+
   const onRailLayout = (e: LayoutChangeEvent) => {
     railWidth.value = e.nativeEvent.layout.width;
   };
@@ -89,11 +119,15 @@ export function TrackingStatusSection({ phase, kicker, eta, itemCount, pickup }:
       <Text style={styles.statusTitle}>{phase.title}</Text>
       <Text style={styles.statusHint}>{phase.hint}</Text>
 
-      {pickup ? (
+      {pickup && pickupTiming ? (
         <View style={styles.etaRow}>
           <View style={styles.etaBlock}>
-            <Text style={styles.etaLabel}>ORDER TYPE</Text>
-            <Text style={styles.pickupType}>Takeaway</Text>
+            <Text style={styles.etaLabel}>{pickupTiming.label}</Text>
+            <View style={styles.etaValueRow}>
+              <Text style={styles.etaValue}>{pickupTiming.value}</Text>
+              {pickupTiming.unit ? <Text style={styles.etaUnit}>{pickupTiming.unit}</Text> : null}
+            </View>
+            <Text style={styles.pickupSub} numberOfLines={2}>{pickupTiming.sub}</Text>
           </View>
           <View style={styles.etaDivider} />
           <View style={styles.etaSide}>
@@ -101,7 +135,7 @@ export function TrackingStatusSection({ phase, kicker, eta, itemCount, pickup }:
             <Text style={styles.etaSideText}>
               {itemCount ? `${itemCount} item${itemCount === 1 ? '' : 's'}` : 'Order'}
             </Text>
-            <Text style={styles.etaSideSub}>Collect at restaurant</Text>
+            <Text style={styles.etaSideSub}>Takeaway</Text>
           </View>
         </View>
       ) : null}
@@ -185,7 +219,7 @@ const styles = StyleSheet.create({
   etaValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   etaValue: { fontFamily: fonts.displayBold, fontSize: 34, color: INK, letterSpacing: -1 },
   etaUnit: { fontFamily: fonts.uiSemi, fontSize: 14, color: INK_SOFT, marginBottom: 4 },
-  pickupType: { fontFamily: fonts.displayBold, fontSize: 22, color: INK, letterSpacing: -0.4, marginTop: 2 },
+  pickupSub: { marginTop: 4, fontFamily: fonts.ui, fontSize: 11, color: MUTED, lineHeight: 15 },
   etaDivider: { width: 1, height: 42, backgroundColor: '#F3D5BE', marginHorizontal: 14 },
   etaSide: { width: 108, gap: 4 },
   etaSideText: { fontFamily: fonts.uiBold, fontSize: 13, color: INK },

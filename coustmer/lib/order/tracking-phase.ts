@@ -101,10 +101,10 @@ function resolvePickupPhase(orderStatus?: string | null): TrackingPhase {
     return phase('ready', 'Ready for pickup', 'Collect your order at the restaurant counter', 'ready', { showEta: false });
   }
   if (o === 'preparing') {
-    return phase('preparing', 'Preparing your food', 'The kitchen is making your order', 'preparing', { showEta: false });
+    return phase('preparing', 'Preparing your food', 'The kitchen is making your order', 'preparing', { showEta: true });
   }
   if (o === 'accepted' || o === 'confirmed' || o === 'partially_fulfilled') {
-    return phase('confirmed', 'Order confirmed', 'The restaurant has accepted your takeaway order', 'placed', { showEta: false });
+    return phase('confirmed', 'Order confirmed', 'The restaurant has accepted your takeaway order', 'placed', { showEta: true });
   }
   return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed', { showEta: false });
 }

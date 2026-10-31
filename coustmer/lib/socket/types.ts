@@ -6,7 +6,14 @@
 /** Server → Client events */
 export type ServerToClientEvents = {
   /** Order status stepper update */
-  'order:status': (data: { orderId: string; status: string; updatedAt?: string }) => void;
+  'order:status': (data: {
+    orderId: string;
+    status: string;
+    updatedAt?: string;
+    promisedReadyAt?: string | null;
+    estimatedPrepTime?: number | null;
+    delayMinutes?: number | null;
+  }) => void;
   /** Order was cancelled */
   'order:cancelled': (data: { orderId: string; reason?: string; refundAmount?: number }) => void;
   /** Rider GPS (primary). Gateway sends latitude/longitude. */

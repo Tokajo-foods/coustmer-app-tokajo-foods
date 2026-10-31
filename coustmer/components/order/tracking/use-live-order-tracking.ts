@@ -6,7 +6,7 @@ import { resolveEtaLabel, type EtaSample } from '@/components/order/tracking/tra
 import { deliveryKeys, useOrderTracking } from '@/lib/delivery/hooks';
 import { errorStatus } from '@/lib/delivery/http';
 import { fresherRiderPoint, isFixStale, routeLeg, trackingMapVisible } from '@/lib/delivery/rider-fix';
-import { useOrder } from '@/lib/order/hooks';
+import { orderKeys, useOrder } from '@/lib/order/hooks';
 import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { resolveTrackingPhase } from '@/lib/order/tracking-phase';
 import { isActiveOrderStatus } from '@/lib/order/types';
@@ -40,6 +40,9 @@ export function useLiveOrderTracking(orderId: string) {
   const order = useOrder(orderId, {
     refetchInterval: (q) => {
       if (!isActiveOrderStatus(q.state.data?.status) || !activeRef.current) return false;
+      if (isPickupOrder(q.state.data)) {
+        return socketLiveRef.current ? 20_000 : 8_000;
+      }
       return socketLiveRef.current ? POLL_ORDER_SOCKET_MS : POLL_ORDER_FALLBACK_MS;
     },
   });
@@ -73,6 +76,17 @@ export function useLiveOrderTracking(orderId: string) {
   useSocketEvent('order:status', (d) => {
     if (d.orderId !== orderId) return;
     setOrderPush({ status: d.status, at: Date.now() });
+    queryClient.setQueryData(orderKeys.detail(orderId), (current: unknown) => {
+      if (!current || typeof current !== 'object') return current;
+      const row = current as Record<string, unknown>;
+      return {
+        ...row,
+        status: d.status || row.status,
+        ...(d.promisedReadyAt ? { promisedReadyAt: d.promisedReadyAt } : {}),
+        ...(typeof d.estimatedPrepTime === 'number' ? { estimatedPrepTime: d.estimatedPrepTime } : {}),
+        ...(typeof d.delayMinutes === 'number' ? { delayMinutes: d.delayMinutes } : {}),
+      };
+    });
     refetchAll();
   }, [orderId]);
   useSocketEvent('order:cancelled', (d) => {

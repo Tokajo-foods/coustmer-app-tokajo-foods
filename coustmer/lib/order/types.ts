@@ -128,6 +128,11 @@ export type Order = {
   scheduledFor?: string;
   isScheduled?: boolean;
   estimatedDeliveryAt?: string;
+  /** Kitchen promised ready clock (ISO). */
+  promisedReadyAt?: string;
+  /** Minutes the restaurant set for prep. */
+  estimatedPrepTime?: number;
+  delayMinutes?: number;
   createdAt?: string;
   updatedAt?: string;
   acceptedAt?: string;

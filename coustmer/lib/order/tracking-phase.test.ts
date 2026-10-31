@@ -46,5 +46,6 @@ describe('resolveTrackingPhase', () => {
     assert.equal(done.completed, true);
     const prep = resolveTrackingPhase('preparing', 'accepted', { pickup: true });
     assert.doesNotMatch(prep.hint, /delivery partner/);
+    assert.equal(prep.showEta, true);
   });
 });
