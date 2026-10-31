@@ -1,6 +1,9 @@
 import { Alert } from 'react-native';
 
 import { cartApi } from '@/lib/cart/api';
+import { cartKeys } from '@/lib/cart/hooks';
+import { queryClient } from '@/lib/query-client';
+import type { Cart } from '@/lib/cart/types';
 import {
   cartLineLocalId,
   sameModifiers,
@@ -43,6 +46,11 @@ function notifyCartError(message: string) {
   Alert.alert('Cart update failed', message);
 }
 
+function rememberCart(cart: Cart) {
+  applyServerCartToStore(cart);
+  queryClient.setQueryData(cartKeys.current(), cart);
+}
+
 /**
  * Optimistic local qty change, then PUT/DELETE on the server.
  * Reverts local qty if the network call fails.
@@ -73,10 +81,10 @@ export async function syncCartItemQuantity(
       try {
         if (target <= 0) {
           const cart = await cartApi.removeItem(id);
-          applyServerCartToStore(cart);
+          rememberCart(cart);
         } else {
           const cart = await cartApi.updateItem(id, { quantity: target });
-          applyServerCartToStore(cart);
+          rememberCart(cart);
         }
         synced = true;
         break;
@@ -87,7 +95,7 @@ export async function syncCartItemQuantity(
 
     if (!synced) {
       const latest = await cartApi.getCart();
-      applyServerCartToStore(latest);
+      rememberCart(latest);
       if (target <= 0) {
         const stillExists = latest.items.some(
           (item) =>
@@ -115,10 +123,10 @@ export async function syncCartItemQuantity(
       if (resolved) {
         if (target <= 0) {
           const cart = await cartApi.removeItem(resolved.id);
-          applyServerCartToStore(cart);
+          rememberCart(cart);
         } else {
           const cart = await cartApi.updateItem(resolved.id, { quantity: target });
-          applyServerCartToStore(cart);
+          rememberCart(cart);
         }
       } else if (lastError) {
         throw lastError;
@@ -198,7 +206,7 @@ async function addRemote(
           : undefined,
       modifiers,
     });
-    applyServerCartToStore(cart);
+    rememberCart(cart);
   } catch (error) {
     notifyCartError(
       error instanceof Error
@@ -264,7 +272,7 @@ export function addMenuItemToCart(
           specialInstructions: cartLine.specialInstructions,
           modifiers,
         });
-        applyServerCartToStore(cart);
+        rememberCart(cart);
       } catch (error) {
         notifyCartError(
           error instanceof Error

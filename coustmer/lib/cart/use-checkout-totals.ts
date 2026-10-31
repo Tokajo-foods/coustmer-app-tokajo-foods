@@ -34,12 +34,19 @@ export function useCheckoutTotals({
           autoFreeDeliveryTitle?: string;
         })
       | undefined;
+    const priced =
+      deliveryType === 'takeaway' ||
+      (saved?.deliveryFee ?? 0) > 0 ||
+      saved?.superFreeDelivery === true ||
+      saved?.autoFreeDelivery === true ||
+      typeof saved?.deliveryFeeBase === 'number';
     return mapBillBreakdown({
       itemsSubtotal: saved?.subtotal ?? 0,
       deliveryFee: saved?.deliveryFee ?? 0,
-      ...(typeof saved?.deliveryFeeBase === 'number' && saved.deliveryFeeBase > 0
+      ...(typeof saved?.deliveryFeeBase === 'number'
         ? { deliveryFeeBase: saved.deliveryFeeBase }
         : {}),
+      ...(priced ? { billReady: true } : {}),
       ...(typeof saved?.deliveryDistanceKm === 'number'
         ? { deliveryDistanceKm: saved.deliveryDistanceKm }
         : {}),

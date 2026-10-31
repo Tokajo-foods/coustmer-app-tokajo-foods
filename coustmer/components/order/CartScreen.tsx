@@ -231,13 +231,34 @@ export function CartScreen() {
 
   const serverHasPin =
     apiCart?.deliveryAddress?.lat != null && apiCart?.deliveryAddress?.lng != null;
+  const pricedOnServer =
+    normalizedDeliveryType === 'takeaway' ||
+    (apiCart?.deliveryFee ?? 0) > 0 ||
+    apiCart?.superFreeDelivery === true ||
+    apiCart?.autoFreeDelivery === true ||
+    typeof apiCart?.deliveryFeeBase === 'number';
+  const savedLat = apiCart?.deliveryAddress?.lat;
+  const savedLng = apiCart?.deliveryAddress?.lng;
+  const pinMoved =
+    billPin != null &&
+    savedLat != null &&
+    savedLng != null &&
+    (Math.abs(billPin.lat - savedLat) > 0.0005 || Math.abs(billPin.lng - savedLng) > 0.0005);
+  const needsQuote =
+    items.length > 0 &&
+    normalizedDeliveryType === 'delivery' &&
+    (!pricedOnServer || pinMoved);
   const liveBill = useCartBill(
     billPin?.lat,
     billPin?.lng,
-    Boolean(items.length),
+    needsQuote,
     normalizedDeliveryType,
-    !billPin && serverHasPin
+    needsQuote && !billPin && serverHasPin
   );
+  const showFreshBill =
+    needsQuote &&
+    liveBill.data != null &&
+    liveBill.dataUpdatedAt >= remoteCart.dataUpdatedAt;
   const slots = useCartSlots({ enabled: isLoggedIn && items.length > 0 });
   const setSchedule = useSetCartSchedule();
   const clearRemote = useClearRemoteCart();
@@ -267,7 +288,7 @@ export function CartScreen() {
     payable: displayTotal,
     totalBeforeWallet,
   } = useCheckoutTotals({
-    liveBill: liveBill.data,
+    liveBill: showFreshBill ? liveBill.data : undefined,
     serverCart: apiCart,
     deliveryType: normalizedDeliveryType,
     paymentMethod,
@@ -283,7 +304,6 @@ export function CartScreen() {
     if (method === 'wallet') {
       try {
         await ensureWalletCoversCheckout();
-        void liveBill.refetch();
       } catch (err) {
         Alert.alert(
           'Wallet',
@@ -341,8 +361,8 @@ export function CartScreen() {
   }, [items.length, isFocused, router]);
 
   const onRefresh = () => {
-    remoteCart.refetch();
-    void liveBill.refetch();
+    void remoteCart.refetch();
+    if (needsQuote) void liveBill.refetch();
   };
 
   const goBack = () => {
@@ -355,9 +375,7 @@ export function CartScreen() {
     try {
       const ok = await syncCartItemQuantity(itemId, quantity);
       if (!ok) {
-        await Promise.all([remoteCart.refetch(), liveBill.refetch()]);
-      } else {
-        void liveBill.refetch();
+        await remoteCart.refetch();
       }
     } finally {
       setBusyId(null);
@@ -875,7 +893,7 @@ export function CartScreen() {
             couponCode={couponCode}
             fallbackTotal={displayTotal}
             hasDeliveryPin={Boolean(billPin) || normalizedDeliveryType === 'takeaway'}
-            billLoading={liveBill.isLoading && !billBreakdown.billReady}
+            billLoading={needsQuote && liveBill.isLoading && !pricedOnServer && !billBreakdown.billReady}
             billError={liveBill.isError}
           />
         </ScrollView>

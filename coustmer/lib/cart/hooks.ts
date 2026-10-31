@@ -131,7 +131,7 @@ export function useApplyCoupon() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: ApplyCouponPayload) => cartApi.applyCoupon(payload),
-    onSuccess: (cart) => syncAndInvalidate(queryClient, cart),
+    onSuccess: (cart) => syncAndInvalidate(queryClient, cart, false),
   });
 }
 
@@ -140,7 +140,7 @@ export function useRemoveCoupon() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => cartApi.removeCoupon(),
-    onSuccess: (cart) => syncAndInvalidate(queryClient, cart),
+    onSuccess: (cart) => syncAndInvalidate(queryClient, cart, false),
   });
 }
 
@@ -152,7 +152,6 @@ export function useUpdateCartTip() {
     onSuccess: (cart) => {
       applyServerCartToStore(cart);
       queryClient.setQueryData(cartKeys.current(), cart);
-      queryClient.invalidateQueries({ queryKey: [...cartKeys.all, 'bill'] });
     },
   });
 }
@@ -173,7 +172,7 @@ export function useUpdateCartDeliveryType() {
   return useMutation({
     mutationFn: (payload: UpdateDeliveryTypePayload) =>
       cartApi.updateDeliveryType(payload),
-    onSuccess: (cart) => syncAndInvalidate(queryClient, cart),
+    onSuccess: (cart) => syncAndInvalidate(queryClient, cart, false),
   });
 }
 
