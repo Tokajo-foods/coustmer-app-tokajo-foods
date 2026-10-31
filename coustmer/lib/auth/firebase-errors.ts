@@ -13,6 +13,7 @@ const FIREBASE_MESSAGES: Record<string, string> = {
   'auth/invalid-verification-id': 'OTP session expired. Request a new OTP.',
   'auth/missing-verification-id': 'OTP session expired. Request a new OTP.',
   'auth/network-request-failed': 'Network error. Check your internet connection and try again.',
+  'auth/timeout': 'Sending the OTP took too long. Check your connection and try again.',
   'auth/captcha-check-failed': 'Security check failed. Try sending the OTP again.',
   'auth/invalid-app-credential': 'Security check failed. Try sending the OTP again.',
   'auth/missing-app-credential': 'Security check failed. Try sending the OTP again.',
