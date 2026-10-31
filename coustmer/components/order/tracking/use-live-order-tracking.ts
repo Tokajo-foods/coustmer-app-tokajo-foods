@@ -3,19 +3,28 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { resolveEtaLabel, type EtaSample } from '@/components/order/tracking/tracking-eta';
-import { deliveryKeys, useOrderTracking } from '@/lib/delivery/hooks';
+import { deliveryKeys, useOrderTracking, useRiderLiveLocation } from '@/lib/delivery/hooks';
 import { errorStatus } from '@/lib/delivery/http';
-import { fresherRiderPoint, isFixStale, routeLeg, trackingMapVisible } from '@/lib/delivery/rider-fix';
+import {
+  fresherRiderPoint,
+  isFixStale,
+  liveLocationToRiderPoint,
+  routeLeg,
+  trackingMapVisible,
+} from '@/lib/delivery/rider-fix';
 import { orderKeys, useOrder } from '@/lib/order/hooks';
 import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { resolveTrackingPhase } from '@/lib/order/tracking-phase';
 import { isActiveOrderStatus } from '@/lib/order/types';
 import { useSocketConnection, useSocketEvent } from '@/lib/socket/hooks';
 import { usePartnerLocationSocket } from '@/lib/socket/partner-location';
+import { getSocket } from '@/lib/socket/socket';
 
-/** Socket up: REST only refreshes ETA/partner. Socket down: REST is the live path. */
-const POLL_TRIP_SOCKET_MS = 30_000;
-const POLL_TRIP_FALLBACK_MS = 8_000;
+/** Socket up: REST backs up GPS + ETA. Socket down: REST is the live path. */
+const POLL_TRIP_SOCKET_MS = 15_000;
+const POLL_TRIP_FALLBACK_MS = 5_000;
+const POLL_LOCATION_SOCKET_MS = 10_000;
+const POLL_LOCATION_FALLBACK_MS = 4_000;
 const POLL_NO_TRIP_MS = 15_000;
 const POLL_ORDER_SOCKET_MS = 45_000;
 const POLL_ORDER_FALLBACK_MS = 12_000;
@@ -66,6 +75,7 @@ export function useLiveOrderTracking(orderId: string) {
 
   const refetchTracking = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: deliveryKeys.tracking(orderId) });
+    void queryClient.invalidateQueries({ queryKey: deliveryKeys.riderLocation(orderId) });
   }, [orderId, queryClient]);
   const refetchOrder = order.refetch;
   const refetchAll = useCallback(() => {
@@ -131,9 +141,28 @@ export function useLiveOrderTracking(orderId: string) {
     if (socketLive && activeRef.current) refetchTracking();
   }, [socketLive, refetchTracking]);
 
-  const riderVisible = !pickup && phase.active && trackingMapVisible(tripStatus);
+  useEffect(() => {
+    if (!orderId || !activeRef.current) return;
+    void getSocket();
+  }, [orderId, phase.active]);
+
+  const riderVisible =
+    !pickup &&
+    phase.active &&
+    (trackingMapVisible(tripStatus) || t?.liveTracking === true);
+  const locationPoll = useRiderLiveLocation(orderId, {
+    enabled: Boolean(orderId) && riderVisible,
+    refetchInterval: () => {
+      if (!riderVisible || !activeRef.current) return false;
+      return socketLiveRef.current ? POLL_LOCATION_SOCKET_MS : POLL_LOCATION_FALLBACK_MS;
+    },
+  });
   const socketLocation = usePartnerLocationSocket(orderId, riderVisible);
-  const polledFix = riderVisible && t?.rider ? t.rider : null;
+  const polledFromLocation = liveLocationToRiderPoint(locationPoll.data);
+  const polledFromTracker = liveLocationToRiderPoint(t?.rider ?? null);
+  const polledFix = riderVisible
+    ? fresherRiderPoint(polledFromLocation, polledFromTracker)
+    : null;
   const riderFix = riderVisible ? fresherRiderPoint(socketLocation.fix, polledFix) : null;
   const forcedStale = socketLocation.stale && riderFix != null && riderFix === socketLocation.fix;
   const riderStale = riderFix ? isFixStale(riderFix.updatedAt, Date.now(), forcedStale) : false;

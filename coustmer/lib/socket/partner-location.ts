@@ -4,7 +4,7 @@ import {
   isFixStale,
   isNewerServerFix,
   readLatLng,
-  riderLocationVisible,
+  trackingMapVisible,
   type RiderPoint,
 } from '@/lib/delivery/rider-fix';
 import { useSocketEvent } from '@/lib/socket/hooks';
@@ -48,7 +48,7 @@ export function usePartnerLocationSocket(orderId: string, enabled = true): Partn
 
   const onLocation = useCallback((data: PartnerLocationEvent) => {
     if (!enabled || data.orderId !== orderId) return;
-    if (data.status && !riderLocationVisible(data.status)) return;
+    if (data.status && !trackingMapVisible(data.status)) return;
     const point = readLatLng(data);
     if (!point) return;
     const next: RiderPoint = {

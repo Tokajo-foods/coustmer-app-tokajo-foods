@@ -14,6 +14,7 @@ import type {
 export const deliveryKeys = {
   all: ['delivery'] as const,
   tracking: (orderId: string) => [...deliveryKeys.all, 'tracking', orderId] as const,
+  riderLocation: (orderId: string) => [...deliveryKeys.tracking(orderId), 'location'] as const,
   dropOtp: (orderId: string) => [...deliveryKeys.all, 'drop-otp', orderId] as const,
   chat: (orderId: string) => [...deliveryKeys.all, 'chat', orderId] as const,
   publicShare: (token: string) => [...deliveryKeys.all, 'public-share', token] as const,
@@ -79,6 +80,24 @@ export function useOrderTracking(
       if (status === 404 || status === 403) return false;
       return count < 1;
     },
+  });
+}
+
+/** GET /tracking/order/:orderId/location — lightweight rider GPS poll (pairs with socket). */
+export function useRiderLiveLocation(
+  orderId: string,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false | ((q: { state: { data?: unknown } }) => number | false);
+  },
+) {
+  return useQuery({
+    queryKey: deliveryKeys.riderLocation(orderId),
+    queryFn: () => deliveryApi.getLiveLocation(orderId),
+    enabled: Boolean(orderId) && (options?.enabled ?? true),
+    staleTime: 0,
+    refetchInterval: options?.refetchInterval ?? false,
+    retry: false,
   });
 }
 

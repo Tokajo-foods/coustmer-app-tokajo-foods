@@ -107,6 +107,29 @@ export function isFixStale(
   return age > RIDER_FIX_STALE_MS;
 }
 
+/** Map REST `/location` or tracker rider DTO to a map pin. */
+export function liveLocationToRiderPoint(
+  loc: {
+    lat: number;
+    lng: number;
+    heading?: number;
+    accuracy?: number;
+    updatedAt?: string;
+    serverAt?: string;
+  } | null | undefined,
+): RiderPoint | null {
+  if (!loc) return null;
+  const point = readLatLng(loc);
+  if (!point) return null;
+  return {
+    ...point,
+    heading: loc.heading,
+    accuracy: loc.accuracy,
+    updatedAt: loc.updatedAt,
+    serverAt: loc.serverAt,
+  };
+}
+
 function asNum(value: unknown): number | null {
   const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
   return Number.isFinite(n) ? n : null;
