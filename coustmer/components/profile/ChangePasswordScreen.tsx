@@ -1,21 +1,19 @@
 import { useRouter } from 'expo-router';
 import { BadgeCheck, Eye, EyeOff, Lock } from 'lucide-react-native';
-import { memo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
-import { forgotPasswordStyles as otpStyles } from '@/components/auth/forgot-password-styles';
 import { PasswordChangeVerifyStep } from '@/components/auth/PasswordChangeVerifyStep';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { usePasswordChangeFlow } from '@/components/auth/use-password-change-flow';
+import { forgotPasswordStyles as otpStyles } from '@/components/auth/forgot-password-styles';
 import { changePasswordStyles as styles } from '@/components/profile/change-password-styles';
 import { ProfileFormLayout } from '@/components/profile/ProfileFormLayout';
 import { authTheme } from '@/constants/auth-theme';
 import { validateConfirmPassword, validatePassword } from '@/utils/validation';
 
 const HEADER_SUBTITLE = 'Verify your identity with OTP, then choose a new password.';
-
-const VerifyStep = memo(PasswordChangeVerifyStep);
 
 /** Profile → Account → change password. */
 export function ChangePasswordScreen() {
@@ -50,68 +48,36 @@ export function ChangePasswordScreen() {
     </Pressable>
   );
 
-  if (flow.stage === 'done') {
-    return (
-      <ProfileFormLayout
-        title="Change password"
-        subtitle="Your account is updated"
-        backFallback="/profile"
-      >
-        <View style={styles.doneCard}>
-          <BadgeCheck color={authTheme.success} size={48} strokeWidth={2} />
-          <Text style={styles.doneTitle}>Password changed</Text>
-          <Text style={styles.doneBody}>
-            Your password was updated successfully. Other devices were signed out for your security.
-          </Text>
-          <Pressable style={otpStyles.submitBtn} onPress={() => router.replace('/profile')}>
-            <Text style={otpStyles.submitBtnTextCalm}>Back to profile</Text>
-          </Pressable>
-        </View>
-      </ProfileFormLayout>
-    );
-  }
-
-  return (
-    <ProfileFormLayout
-      title="Change password"
-      subtitle={HEADER_SUBTITLE}
-      banner={banner}
-      backFallback="/profile"
-      onSave={flow.stage === 'password' ? handleSave : undefined}
-      saveLabel="Save new password"
-      saving={flow.busy && flow.stage === 'password'}
-      saveDisabled={flow.stage !== 'password'}
-    >
+  const body = (
+    <>
       {flow.stage === 'loading' ? (
         <View style={styles.loaderWrap}>
-          {flow.busy ? (
-            <>
-              <ActivityIndicator color={authTheme.brand} size="large" />
-              <Text style={styles.loadingHint}>Sending verification codes…</Text>
-            </>
-          ) : (
-            <>
-              {flow.errorCode === 'CONTACT_MISSING' ? (
-                <Pressable style={styles.contactBtn} onPress={() => router.push('/profile/contact')}>
-                  <Text style={styles.contactBtnText}>Add phone or email</Text>
-                </Pressable>
-              ) : null}
-              <Pressable
-                style={[otpStyles.submitBtn, flow.busy && otpStyles.submitBtnDisabled]}
-                disabled={flow.busy}
-                onPress={() => void flow.retryStart()}
-              >
-                <Text style={otpStyles.submitBtnTextCalm}>Try again</Text>
-              </Pressable>
-            </>
-          )}
+          <ActivityIndicator color={authTheme.brand} size="large" />
+          <Text style={styles.loadingHint}>Sending verification codes…</Text>
+        </View>
+      ) : null}
+
+      {flow.stage === 'startFailed' ? (
+        <View style={styles.loaderWrap}>
+          {flow.errorCode === 'CONTACT_MISSING' ? (
+            <Pressable style={styles.contactBtn} onPress={() => router.push('/profile/contact')}>
+              <Text style={styles.contactBtnText}>Add phone or email</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            style={[otpStyles.submitBtn, flow.busy && otpStyles.submitBtnDisabled]}
+            disabled={flow.busy}
+            onPress={() => flow.retryStart()}
+          >
+            <Text style={otpStyles.submitBtnTextCalm}>Try again</Text>
+          </Pressable>
         </View>
       ) : null}
 
       {flow.stage === 'verify' ? (
         <>
           <Text style={styles.stepLabel}>Step 1 of 2 · Verify it's you</Text>
-          <VerifyStep flow={flow} />
+          <PasswordChangeVerifyStep flow={flow} />
         </>
       ) : null}
 
@@ -142,6 +108,52 @@ export function ChangePasswordScreen() {
           />
         </>
       ) : null}
+    </>
+  );
+
+  if (flow.stage === 'done') {
+    return (
+      <ProfileFormLayout
+        title="Change password"
+        subtitle="Your account is updated"
+        backFallback="/profile"
+        scrollable={false}
+      >
+        <View style={styles.doneCard}>
+          <BadgeCheck color={authTheme.success} size={48} strokeWidth={2} />
+          <Text style={styles.doneTitle}>Password changed</Text>
+          <Text style={styles.doneBody}>
+            Your password was updated successfully. Other devices were signed out for your security.
+          </Text>
+          <Pressable style={otpStyles.submitBtn} onPress={() => router.replace('/profile')}>
+            <Text style={otpStyles.submitBtnTextCalm}>Back to profile</Text>
+          </Pressable>
+        </View>
+      </ProfileFormLayout>
+    );
+  }
+
+  return (
+    <ProfileFormLayout
+      title="Change password"
+      subtitle={HEADER_SUBTITLE}
+      banner={banner}
+      backFallback="/profile"
+      scrollable={false}
+      onSave={flow.stage === 'password' ? handleSave : undefined}
+      saveLabel="Save new password"
+      saving={flow.busy && flow.stage === 'password'}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        contentContainerStyle={styles.scrollPad}
+      >
+        {body}
+      </ScrollView>
     </ProfileFormLayout>
   );
 }

@@ -54,4 +54,7 @@ export const changePasswordStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  scrollPad: {
+    paddingBottom: 24,
+  },
 });

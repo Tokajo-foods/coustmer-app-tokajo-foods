@@ -1,57 +1,64 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
 import { passwordChangeApi } from '@/lib/auth/account-security-api';
 import { signOutFirebase } from '@/lib/auth/firebase-phone';
 import { getAuthErrorCode } from '@/lib/auth/http';
 import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
 import type { PasswordChangeStart } from '@/lib/auth/types';
 
-export type PasswordChangeStage = 'loading' | 'verify' | 'password' | 'done';
+export type PasswordChangeStage = 'loading' | 'verify' | 'password' | 'done' | 'startFailed';
 
 const EMAIL_CODE_ERRORS = new Set(['INVALID_OTP', 'OTP_EXPIRED', 'OTP_ATTEMPTS_EXCEEDED', 'EMAIL_OTP_REQUIRED']);
 
+function buildEmailNotice(next: PasswordChangeStart): string | null {
+  if (!next.emailRequired || !next.maskedEmail) return null;
+  if (next.emailOtpSent) return `Code sent to ${next.maskedEmail}.`;
+  return `A code was sent to ${next.maskedEmail} recently. Use that code or tap resend after ${next.cooldownSeconds}s.`;
+}
+
 /** Settings password change: email OTP + Firebase phone OTP → change token → new password. */
 export function usePasswordChangeFlow() {
-  const phoneOtp = useFirebasePhoneOtp();
-  const { setPhoneInput } = phoneOtp;
   const [stage, setStage] = useState<PasswordChangeStage>('loading');
   const [info, setInfo] = useState<PasswordChangeStart | null>(null);
   const [emailCode, setEmailCodeRaw] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  const [phoneIdToken, setPhoneIdToken] = useState<string | null>(null);
   const [changeToken, setChangeToken] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
+  const startOnceRef = useRef(false);
 
   const start = useCallback(async () => {
     setBusy(true);
     setBanner(null);
     setErrorCode(null);
+    setPhoneIdToken(null);
     try {
       const next = await passwordChangeApi.start();
       setInfo(next);
-      if (next.phone) setPhoneInput(next.phone);
-      setEmailNotice(
-        next.emailRequired
-          ? next.emailOtpSent
-            ? `Code sent to ${next.maskedEmail}.`
-            : `A code was sent to ${next.maskedEmail} moments ago. Use that code or resend in ${next.cooldownSeconds}s.`
-          : null,
-      );
+      setEmailNotice(buildEmailNotice(next));
       setStage('verify');
     } catch (error) {
       setErrorCode(getAuthErrorCode(error) ?? null);
       setBanner(describePhoneAuthError(error, 'Could not start the password change.'));
+      setStage('startFailed');
     } finally {
       setBusy(false);
     }
-  }, [setPhoneInput]);
+  }, []);
 
   useEffect(() => {
+    if (startOnceRef.current) return;
+    startOnceRef.current = true;
     void start();
   }, [start]);
+
+  const retryStart = () => {
+    startOnceRef.current = true;
+    void start();
+  };
 
   const setEmailCode = (value: string) => {
     setEmailCodeRaw(value.replace(/\D/g, '').slice(0, 6));
@@ -59,18 +66,32 @@ export function usePasswordChangeFlow() {
   };
 
   const resendEmail = async () => {
+    if (busy || !info?.emailRequired) return;
     setEmailCodeRaw('');
-    await start();
-  };
-
-  const verifyPhoneCode = async (code: string) => {
-    if (phoneOtp.verifying) return;
+    setEmailError(null);
     setBanner(null);
-    await phoneOtp.verify(code);
+    setBusy(true);
+    try {
+      const next = await passwordChangeApi.start();
+      setInfo(next);
+      setEmailNotice(buildEmailNotice(next));
+      setStage('verify');
+    } catch (error) {
+      setBanner(describePhoneAuthError(error, 'Could not resend the email code.'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const emailReady = !info?.emailRequired || emailCode.length === 6;
-  const phoneReady = !info?.phoneRequired || phoneOtp.step === 'verified';
+  const phoneReady = !info?.phoneRequired || Boolean(phoneIdToken);
+
+  const verifyHint = (() => {
+    if (!info || stage !== 'verify') return null;
+    if (info.emailRequired && emailCode.length < 6) return 'Enter the 6-digit code from your email.';
+    if (info.phoneRequired && !phoneIdToken) return 'Send and verify the SMS code on your phone.';
+    return null;
+  })();
 
   const verify = async () => {
     if (!info || busy || !emailReady || !phoneReady) return;
@@ -78,15 +99,9 @@ export function usePasswordChangeFlow() {
     setBanner(null);
     setErrorCode(null);
     try {
-      let phoneIdToken: string | undefined;
-      if (info.phoneRequired) {
-        const token = await phoneOtp.getIdTokenForSubmit();
-        if (!token) return;
-        phoneIdToken = token;
-      }
       const token = await passwordChangeApi.verify({
         emailOtp: info.emailRequired ? emailCode : undefined,
-        phoneIdToken,
+        phoneIdToken: info.phoneRequired ? phoneIdToken ?? undefined : undefined,
       });
       await signOutFirebase();
       setChangeToken(token);
@@ -95,9 +110,14 @@ export function usePasswordChangeFlow() {
       const code = getAuthErrorCode(error);
       setErrorCode(code ?? null);
       const message = describePhoneAuthError(error, 'Could not verify the codes.');
-      if (code && PHONE_REVERIFY_CODES.has(code)) phoneOtp.requireReverify(message);
-      else if (code && EMAIL_CODE_ERRORS.has(code)) setEmailError(message);
-      else setBanner(message);
+      if (code && PHONE_REVERIFY_CODES.has(code)) {
+        setPhoneIdToken(null);
+        setBanner(message);
+      } else if (code && EMAIL_CODE_ERRORS.has(code)) {
+        setEmailError(message);
+      } else {
+        setBanner(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -119,7 +139,8 @@ export function usePasswordChangeFlow() {
       if (code === 'CHANGE_TOKEN_INVALID') {
         setChangeToken(null);
         setEmailCodeRaw('');
-        phoneOtp.changeNumber();
+        setPhoneIdToken(null);
+        setStage('verify');
         void start();
       }
       return false;
@@ -131,20 +152,21 @@ export function usePasswordChangeFlow() {
   return {
     stage,
     info,
-    phoneOtp,
     emailCode,
     setEmailCode,
     emailError,
     emailNotice,
     resendEmail,
-    verifyPhoneCode,
+    phoneIdToken,
+    setPhoneIdToken,
     canVerify: emailReady && phoneReady && !busy,
+    verifyHint,
     verify,
     save,
     banner,
     errorCode,
     busy,
-    retryStart: start,
+    retryStart,
   };
 }
 
