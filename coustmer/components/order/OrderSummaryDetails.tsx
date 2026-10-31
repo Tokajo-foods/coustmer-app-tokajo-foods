@@ -1,8 +1,8 @@
-import { Bike, ChevronRight, Clock3, CreditCard, MapPin, Store, Wallet } from 'lucide-react-native';
+import { Bike, Clock3, CreditCard, MapPin, Store, Wallet } from 'lucide-react-native';
 import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import { ORANGE, styles } from '@/components/order/order-summary-styles';
-import { paymentMethodHint, paymentMethodLabel } from '@/lib/checkout/payment-display';
+import { paymentMethodLabel } from '@/lib/checkout/payment-display';
 import { formatLineTotal } from '@/lib/format/money';
 
 type SummaryItem = { id: string; name: string; quantity: number; itemTotal?: number | null };
@@ -99,18 +99,12 @@ export function OrderSummaryDetails(p: Props) {
             )}
           </View>
           <View style={styles.paymentBody}>
-            <Text style={styles.paymentEyebrow}>PAY USING</Text>
+            <Text style={styles.paymentEyebrow}>Pay using</Text>
             <Text style={styles.paymentTitle} numberOfLines={1}>
               {paymentMethodLabel(p.paymentMethod)}
             </Text>
-            <Text style={styles.paymentHint} numberOfLines={1}>
-              {paymentMethodHint(p.paymentMethod)}
-            </Text>
           </View>
-          <View style={styles.paymentChange}>
-            <Text style={styles.paymentChangeText}>Change</Text>
-            <ChevronRight color={ORANGE} size={16} strokeWidth={2.4} />
-          </View>
+          <Text style={styles.paymentChangeText}>Change</Text>
         </View>
       </Pressable>
     </>

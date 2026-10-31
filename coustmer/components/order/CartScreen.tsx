@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
   Bike,
-  ChevronRight,
   CreditCard,
   Minus,
   MoreVertical,
@@ -68,7 +67,6 @@ import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 import {
-  paymentMethodHint,
   paymentMethodLabel,
   type PayChoice,
 } from '@/lib/checkout/payment-display';
@@ -857,18 +855,12 @@ export function CartScreen() {
               )}
             </View>
             <View style={styles.paymentBody}>
-              <Text style={styles.paymentEyebrow}>PAY USING</Text>
+              <Text style={styles.paymentEyebrow}>Pay using</Text>
               <Text style={styles.paymentTitle} numberOfLines={1}>
                 {paymentMethodLabel(paymentMethod)}
               </Text>
-              <Text style={styles.paymentHint} numberOfLines={1}>
-                {paymentMethodHint(paymentMethod)}
-              </Text>
             </View>
-            <View style={styles.paymentChange}>
-              <Text style={styles.paymentChangeText}>Change</Text>
-              <ChevronRight color={ORANGE} size={16} strokeWidth={2.4} />
-            </View>
+            <Text style={styles.paymentChangeText}>Change</Text>
           </Pressable>
 
           {/* Bill */}
@@ -1361,48 +1353,34 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: BORDER,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     marginBottom: 12,
   },
   paymentIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFF7ED',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  paymentBody: {
-    flex: 1,
-    gap: 2,
-  },
+  paymentBody: { flex: 1 },
   paymentEyebrow: {
     fontFamily: fonts.uiBold,
-    fontSize: 10,
-    letterSpacing: 1.1,
-    color: TEXT_MUTED,
-  },
-  paymentTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 15,
+    fontSize: 13,
     color: TEXT,
   },
-  paymentHint: {
+  paymentTitle: {
+    marginTop: 2,
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,
   },
-  paymentChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
   paymentChangeText: {
-    fontFamily: fonts.uiBold,
+    fontFamily: fonts.uiSemi,
     fontSize: 13,
     color: ORANGE,
   },

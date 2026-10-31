@@ -138,38 +138,28 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   paymentIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFF7ED',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  paymentBody: { flex: 1, gap: 2 },
+  paymentBody: { flex: 1 },
   paymentEyebrow: {
-    fontFamily: fonts.ui,
-    fontSize: 10,
-    color: TEXT_MUTED,
-    letterSpacing: 0.6,
-  },
-  paymentTitle: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 14,
+    fontFamily: fonts.uiBold,
+    fontSize: 13,
     color: TEXT,
   },
-  paymentHint: {
+  paymentTitle: {
+    marginTop: 2,
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,
   },
-  paymentChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
   paymentChangeText: {
     fontFamily: fonts.uiSemi,
-    fontSize: 12,
+    fontSize: 13,
     color: ORANGE,
   },
   billWrap: {
