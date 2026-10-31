@@ -115,6 +115,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
           </TouchableOpacity>
         </View>
 
+        <Text style={styles.sectionLabel}>Date</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
           {days.map((day) => {
             const open = firstAvailableMinutes(day) != null;
@@ -136,6 +137,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
         </ScrollView>
 
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          <Text style={styles.sectionLabel}>Time</Text>
           <ScheduleTimeDropdowns
             minutes={minutes}
             stepMinutes={policy.stepMinutes}
@@ -204,7 +206,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.disabledBg,
   },
-  days: { gap: 8, paddingBottom: 8 },
+  sectionLabel: {
+    fontFamily: fonts.uiSemi,
+    fontSize: 12,
+    color: C.textSec,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  days: { gap: 8, paddingBottom: 12 },
   day: {
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -234,10 +244,10 @@ const styles = StyleSheet.create({
   statusTextBad: { color: C.error },
   cta: {
     backgroundColor: C.orange,
-    borderRadius: 14,
-    paddingVertical: 15,
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
   ctaOff: { backgroundColor: C.textMuted },
   ctaText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.white, textAlign: 'center' },

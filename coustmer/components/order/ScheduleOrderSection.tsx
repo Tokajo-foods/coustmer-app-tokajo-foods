@@ -59,10 +59,12 @@ export function ScheduleOrderSection({
             <Zap color={!isLater ? C.white : C.orange} size={16} strokeWidth={2.4} />
           </View>
           <View style={styles.copy}>
-            <Text style={styles.optionTitle}>Order now</Text>
+            <View style={styles.titleLine}>
+              <Text style={styles.optionTitle}>Order now</Text>
+              {!isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
+            </View>
             <Text style={styles.optionHint}>As soon as it is ready</Text>
           </View>
-          {!isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -79,12 +81,14 @@ export function ScheduleOrderSection({
             <CalendarClock color={isLater ? C.white : C.orange} size={16} strokeWidth={2.3} />
           </View>
           <View style={styles.copy}>
-            <Text style={styles.optionTitle}>Schedule</Text>
-            <Text style={styles.optionHint} numberOfLines={1}>
-              {isLater && scheduledLabel ? scheduledLabel : 'Pick a time slot'}
+            <View style={styles.titleLine}>
+              <Text style={styles.optionTitle}>Schedule</Text>
+              {isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
+            </View>
+            <Text style={styles.optionHint} numberOfLines={2}>
+              {isLater && scheduledLabel ? scheduledLabel : 'Pick a time'}
             </Text>
           </View>
-          {isLater ? <Check color={C.orange} size={16} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
       </View>
 
@@ -135,16 +139,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: { fontFamily: fonts.uiSemi, fontSize: 16, color: C.text },
-  row: { gap: 8 },
+  row: { flexDirection: 'row', gap: 8 },
   option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flex: 1,
+    gap: 10,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 12,
     backgroundColor: C.white,
+    minHeight: 118,
   },
   optionOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
   optionOff: { opacity: 0.5 },
@@ -157,7 +161,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.orangeSoft,
   },
   iconOn: { backgroundColor: C.orange },
-  copy: { flex: 1, gap: 2 },
+  copy: { gap: 2 },
+  titleLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optionTitle: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
   optionHint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
