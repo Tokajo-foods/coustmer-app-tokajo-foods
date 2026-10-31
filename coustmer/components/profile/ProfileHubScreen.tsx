@@ -11,13 +11,10 @@ import {
   Headset,
   LogOut,
   MapPin,
-  MonitorSmartphone,
   Bell,
   KeyRound,
   Phone,
   Receipt,
-  Settings2,
-  Smartphone,
   Ticket,
   Trash2,
   Wallet,
@@ -306,11 +303,6 @@ export function ProfileHubScreen() {
               onPress={() => router.push('/change-password' as import('expo-router').Href)}
             />
             <Row
-              icon={Settings2}
-              title="Preferences"
-              onPress={() => router.push('/profile/preferences')}
-            />
-            <Row
               icon={Wallet}
               title="Tokajo wallet"
               trailing={`${formatInr(balance)}`}
@@ -322,16 +314,6 @@ export function ProfileHubScreen() {
               onPress={() =>
                 router.push('/payments' as import('expo-router').Href)
               }
-            />
-            <Row
-              icon={MonitorSmartphone}
-              title="Active sessions"
-              onPress={() => router.push('/profile/sessions')}
-            />
-            <Row
-              icon={Smartphone}
-              title="Devices"
-              onPress={() => router.push('/profile/devices')}
               last
             />
           </MenuGroup>
