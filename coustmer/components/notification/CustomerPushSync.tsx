@@ -104,10 +104,23 @@ export function CustomerPushSync() {
         if (status !== 'granted' || cancelled) return;
 
         await registerCustomerPushDevice(N);
-        const reRegister = () => {
-          void registerCustomerPushDevice(N).catch((err) => console.warn('[push] re-register failed', err));
+        let lastNative = '';
+        let wait: ReturnType<typeof setTimeout> | null = null;
+        const reRegister = (native?: string) => {
+          if (cancelled) return;
+          if (native && native === lastNative) return;
+          if (native) lastNative = native;
+          if (wait) clearTimeout(wait);
+          wait = setTimeout(() => {
+            wait = null;
+            if (cancelled) return;
+            void registerCustomerPushDevice(N).catch((err) => console.warn('[push] re-register failed', err));
+          }, 1500);
         };
-        track(N.addPushTokenListener(reRegister));
+        track(N.addPushTokenListener((deviceToken) => {
+          const native = typeof deviceToken?.data === 'string' ? deviceToken.data : '';
+          reRegister(native);
+        }));
         // Re-bind on foreground so a token the server pruned (or one removed on another phone) comes back.
         track(AppState.addEventListener('change', (state) => {
           if (state === 'active') reRegister();
