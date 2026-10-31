@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { authTheme } from '@/constants/auth-theme';
 
 type Props = {
@@ -87,7 +88,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   scroll: {
-    paddingBottom: 32,
+    paddingBottom: 24 + APP_BOTTOM_NAV_INSET,
+    paddingTop: 4,
   },
   saveButton: {
     marginTop: 24,

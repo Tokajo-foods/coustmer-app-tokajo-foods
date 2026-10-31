@@ -8,6 +8,8 @@ type Props = {
   value: boolean;
   onValueChange: (value: boolean) => void;
   disabled?: boolean;
+  /** Default true; set false for the first row in a card. */
+  showTopBorder?: boolean;
 };
 
 export function ToggleRow({
@@ -16,9 +18,10 @@ export function ToggleRow({
   value,
   onValueChange,
   disabled,
+  showTopBorder = true,
 }: Props) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !showTopBorder && styles.rowFirst]}>
       <View style={styles.textWrap}>
         <Text style={styles.label}>{label}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -41,9 +44,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: authTheme.cardBorder,
     gap: 12,
+  },
+  rowFirst: {
+    borderTopWidth: 0,
   },
   textWrap: {
     flex: 1,
