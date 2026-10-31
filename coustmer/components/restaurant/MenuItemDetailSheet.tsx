@@ -263,6 +263,15 @@ export function MenuItemDetailSheet({
   if (!displayItem) return null;
 
   const quotedPay = quote.data?.unitPrice;
+  const modifierAdd = selectedModifiers.reduce(
+    (sum, m) => sum + (Number(m.price) || 0),
+    0
+  );
+  const unitPrice =
+    typeof quotedPay === 'number' && Number.isFinite(quotedPay)
+      ? quotedPay
+      : payPriceOf(displayItem) + modifierAdd;
+  const unitPriceLabel = formatInr(unitPrice);
   const description =
     displayItem.description?.trim() ||
     (displayItem.allergens?.length
