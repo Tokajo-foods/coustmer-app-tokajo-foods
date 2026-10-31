@@ -1,4 +1,4 @@
-import { CalendarClock, Check, Zap } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -55,14 +55,13 @@ export function ScheduleOrderSection({
           disabled={busy || !isLater}
           activeOpacity={0.88}
         >
-          <View style={[styles.icon, !isLater && styles.iconOn]}>
-            <Zap color={!isLater ? C.white : C.orange} size={14} strokeWidth={2.4} />
-          </View>
           <View style={styles.copy}>
-            <Text style={styles.optionTitle} numberOfLines={1}>Order now</Text>
-            <Text style={styles.optionHint} numberOfLines={1}>As soon as ready</Text>
+            <View style={styles.titleLine}>
+              <Text style={styles.optionTitle}>Order now</Text>
+              {!isLater ? <Check color={C.orange} size={15} strokeWidth={2.4} /> : null}
+            </View>
+            <Text style={styles.optionHint}>As soon as it is ready</Text>
           </View>
-          {!isLater ? <Check color={C.orange} size={14} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -75,16 +74,15 @@ export function ScheduleOrderSection({
           disabled={busy || unsupported}
           activeOpacity={0.88}
         >
-          <View style={[styles.icon, isLater && styles.iconOn]}>
-            <CalendarClock color={isLater ? C.white : C.orange} size={14} strokeWidth={2.3} />
-          </View>
           <View style={styles.copy}>
-            <Text style={styles.optionTitle} numberOfLines={1}>Schedule</Text>
+            <View style={styles.titleLine}>
+              <Text style={styles.optionTitle}>Schedule</Text>
+              {isLater ? <Check color={C.orange} size={15} strokeWidth={2.4} /> : null}
+            </View>
             <Text style={styles.optionHint} numberOfLines={1}>
               {isLater && scheduledLabel ? scheduledLabel : 'Pick a time'}
             </Text>
           </View>
-          {isLater ? <Check color={C.orange} size={14} strokeWidth={2.6} /> : null}
         </TouchableOpacity>
       </View>
 
@@ -135,33 +133,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text },
-  row: { flexDirection: 'row', gap: 8 },
+  row: { flexDirection: 'row', gap: 10 },
   option: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: C.white,
   },
   optionOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
-  optionOff: { opacity: 0.5 },
-  icon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.orangeSoft,
-  },
-  iconOn: { backgroundColor: C.orange },
-  copy: { flex: 1, gap: 1 },
-  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.text },
-  optionHint: { fontFamily: fonts.ui, fontSize: 11, color: C.textSec },
+  optionOff: { opacity: 0.55 },
+  copy: { gap: 2 },
+  titleLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 14, color: C.text },
+  optionHint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec, lineHeight: 18 },
   hintError: { fontFamily: fonts.ui, fontSize: 12, color: C.error, lineHeight: 18 },
