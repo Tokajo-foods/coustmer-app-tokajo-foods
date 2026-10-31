@@ -44,9 +44,20 @@ export function ScheduleTimeDropdowns({ minutes, onChange }: Props) {
           active={open === 'minute'}
           onPress={() => setOpen(open === 'minute' ? null : 'minute')}
         />
-        <TouchableOpacity style={styles.period} onPress={() => commit({ pm: !pm })}>
-          <Text style={styles.periodText}>{pm ? 'PM' : 'AM'}</Text>
-        </TouchableOpacity>
+        <View style={styles.period}>
+          <TouchableOpacity
+            style={[styles.periodHalf, !pm && styles.periodOn]}
+            onPress={() => commit({ pm: false })}
+          >
+            <Text style={[styles.periodText, !pm && styles.periodTextOn]}>AM</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.periodHalf, pm && styles.periodOn]}
+            onPress={() => commit({ pm: true })}
+          >
+            <Text style={[styles.periodText, pm && styles.periodTextOn]}>PM</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {open ? (
@@ -96,22 +107,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cellOn: { borderColor: C.text, backgroundColor: '#F8FAFC' },
+  cellOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
   value: { fontFamily: fonts.displayBold, fontSize: 22, color: C.text },
-  valueOn: { color: C.text },
+  valueOn: { color: C.orange },
   colon: { fontFamily: fonts.displayBold, fontSize: 22, color: C.textMuted },
   period: {
+    flexDirection: 'row',
     height: 52,
-    minWidth: 64,
-    paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: C.border,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: C.white,
+    overflow: 'hidden',
   },
-  periodText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.text, letterSpacing: 0.4 },
+  periodHalf: { width: 44, alignItems: 'center', justifyContent: 'center' },
+  periodOn: { backgroundColor: C.orange },
+  periodText: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.textSec, letterSpacing: 0.3 },
+  periodTextOn: { color: C.white },
   menu: { maxHeight: 168 },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   option: {
@@ -120,7 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  optionOn: { backgroundColor: C.text },
+  optionOn: { backgroundColor: C.orange },
   optionText: { fontFamily: fonts.uiMedium, fontSize: 14, color: C.text },
   optionTextOn: { color: C.white },
 });
