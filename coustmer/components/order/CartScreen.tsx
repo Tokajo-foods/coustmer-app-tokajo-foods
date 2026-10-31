@@ -67,6 +67,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 import {
+  paymentMethodHint,
   paymentMethodLabel,
   type PayChoice,
 } from '@/lib/checkout/payment-display';
@@ -859,6 +860,9 @@ export function CartScreen() {
               <Text style={styles.paymentTitle} numberOfLines={1}>
                 {paymentMethodLabel(paymentMethod)}
               </Text>
+              <Text style={styles.paymentHint} numberOfLines={1}>
+                {paymentMethodHint(paymentMethod)}
+              </Text>
             </View>
             <Text style={styles.paymentChangeText}>Change</Text>
           </Pressable>
@@ -1375,6 +1379,12 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     marginTop: 2,
+    fontFamily: fonts.uiSemi,
+    fontSize: 13,
+    color: TEXT,
+  },
+  paymentHint: {
+    marginTop: 1,
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,

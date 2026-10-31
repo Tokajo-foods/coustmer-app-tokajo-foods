@@ -2,7 +2,7 @@ import { Bike, Clock3, CreditCard, MapPin, Store, Wallet } from 'lucide-react-na
 import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import { ORANGE, styles } from '@/components/order/order-summary-styles';
-import { paymentMethodLabel } from '@/lib/checkout/payment-display';
+import { paymentMethodHint, paymentMethodLabel } from '@/lib/checkout/payment-display';
 import { formatLineTotal } from '@/lib/format/money';
 
 type SummaryItem = { id: string; name: string; quantity: number; itemTotal?: number | null };
@@ -102,6 +102,9 @@ export function OrderSummaryDetails(p: Props) {
             <Text style={styles.paymentEyebrow}>Pay using</Text>
             <Text style={styles.paymentTitle} numberOfLines={1}>
               {paymentMethodLabel(p.paymentMethod)}
+            </Text>
+            <Text style={styles.paymentHint} numberOfLines={1}>
+              {paymentMethodHint(p.paymentMethod)}
             </Text>
           </View>
           <Text style={styles.paymentChangeText}>Change</Text>

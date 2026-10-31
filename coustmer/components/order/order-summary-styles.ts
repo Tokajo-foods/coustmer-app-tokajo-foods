@@ -153,6 +153,12 @@ export const styles = StyleSheet.create({
   },
   paymentTitle: {
     marginTop: 2,
+    fontFamily: fonts.uiSemi,
+    fontSize: 13,
+    color: TEXT,
+  },
+  paymentHint: {
+    marginTop: 1,
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,
