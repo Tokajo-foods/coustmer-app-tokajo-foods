@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { UtensilsCrossed } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
+import { hubStyles as hub } from '@/components/notification/notifications-hub-styles';
 import { authTheme } from '@/constants/auth-theme';
+import { fonts } from '@/constants/typography';
 import { restaurantApi } from '@/lib/restaurant/api';
 import { restaurantKeys } from '@/lib/restaurant/hooks';
 import type { KitchenAlert } from '@/lib/restaurant/types';
@@ -28,72 +29,73 @@ export function KitchenAlertsBlock({ alerts }: { alerts: KitchenAlert[] }) {
   if (alerts.length === 0) return null;
 
   return (
-    <View style={styles.alertsBlock}>
-      <Text style={styles.alertsTitle}>Kitchen & stock alerts</Text>
-      {alerts.map((alert) => (
-        <View key={alert.id} style={styles.alertRow}>
-          <UtensilsCrossed color={authTheme.brand} size={16} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alertName} numberOfLines={1}>
-              {alert.itemName
-                ? `${alert.itemName}`
-                : alert.restaurantName || 'Kitchen open alert'}
-            </Text>
-            <Text style={styles.alertMeta} numberOfLines={1}>
-              {alert.itemId
-                ? `Back in stock · ${alert.restaurantName || 'Restaurant'}`
-                : 'Notify when kitchen opens'}
-              {alert.pushed === false ? ' · waiting to send' : ''}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => unsubscribeAlert.mutate(alert)}
-            disabled={unsubscribeAlert.isPending}
-            hitSlop={8}
+    <View>
+      <Text style={hub.sectionLabel}>Stock & kitchen alerts</Text>
+      <View style={styles.card}>
+        {alerts.map((alert, index) => (
+          <View
+            key={alert.id}
+            style={[styles.row, index < alerts.length - 1 && styles.rowBorder]}
           >
-            <Text style={styles.alertStop}>Stop</Text>
-          </Pressable>
-        </View>
-      ))}
+            <View style={styles.copy}>
+              <Text style={styles.name} numberOfLines={1}>
+                {alert.itemName || alert.restaurantName || 'Kitchen alert'}
+              </Text>
+              <Text style={styles.meta} numberOfLines={1}>
+                {alert.itemId
+                  ? `Back in stock · ${alert.restaurantName || 'Restaurant'}`
+                  : 'Notify when kitchen opens'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => unsubscribeAlert.mutate(alert)}
+              disabled={unsubscribeAlert.isPending}
+              hitSlop={8}
+            >
+              <Text style={styles.stop}>Remove</Text>
+            </Pressable>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  alertsBlock: {
-    marginBottom: 16,
-    gap: 8,
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
   },
-  alertsTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  alertRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#FFF7ED',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#FED7AA',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-  alertName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
+  rowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#EBEBEB',
   },
-  alertMeta: {
-    fontSize: 11,
-    color: '#9A3412',
-    marginTop: 2,
+  copy: { flex: 1, minWidth: 0 },
+  name: {
+    fontFamily: fonts.uiMedium,
+    fontSize: 15,
+    color: '#1A1A1A',
+    letterSpacing: -0.15,
   },
-  alertStop: {
+  meta: {
+    fontFamily: fonts.ui,
     fontSize: 12,
-    fontWeight: '800',
-    color: '#C2410C',
+    color: authTheme.textDim,
+    marginTop: 3,
+  },
+  stop: {
+    fontFamily: fonts.uiBold,
+    fontSize: 13,
+    color: '#6B7280',
   },
 });

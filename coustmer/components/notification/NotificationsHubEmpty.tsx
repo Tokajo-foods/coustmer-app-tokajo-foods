@@ -6,7 +6,6 @@ import {
   LoadingView,
 } from '@/components/common/StateViews';
 import { hubStyles as styles } from '@/components/notification/notifications-hub-styles';
-import { authTheme } from '@/constants/auth-theme';
 
 type Filter = 'all' | 'unread';
 
@@ -36,9 +35,9 @@ export function NotificationsHubEmpty({
     <View style={styles.emptyInline}>
       <View style={styles.emptyIconWrap}>
         {filter === 'unread' ? (
-          <BellOff color={authTheme.brand} size={32} strokeWidth={2} />
+          <BellOff color="#6B7280" size={26} strokeWidth={2} />
         ) : (
-          <Bell color={authTheme.brand} size={32} strokeWidth={2} />
+          <Bell color="#6B7280" size={26} strokeWidth={2} />
         )}
       </View>
       <Text style={styles.emptyTitle}>
@@ -46,8 +45,8 @@ export function NotificationsHubEmpty({
       </Text>
       <Text style={styles.emptySubtitle}>
         {filter === 'unread'
-          ? 'You are all caught up! New order updates will show here.'
-          : 'Order status, exclusive offers, and account alerts will appear here.'}
+          ? 'You are all caught up.'
+          : 'Order and account updates will appear here.'}
       </Text>
     </View>
   );

@@ -4,12 +4,13 @@ import { AppState, Linking, Platform, StyleSheet, Text, View } from 'react-nativ
 
 import { Pressable } from '@/components/common/Pressable';
 import { authTheme } from '@/constants/auth-theme';
+import { fonts } from '@/constants/typography';
 import { loadNotifications } from '@/lib/notification/load-notifications';
 import { registerCustomerPushDevice } from '@/lib/notification/push-device';
 
 type PermissionState = { granted: boolean; canAskAgain: boolean } | null;
 
-/** Shown only when OS notifications are off for this app, so order alerts would be missed. */
+/** Shown only when OS notifications are off for this app. */
 export function PushPermissionBanner() {
   const [perm, setPerm] = useState<PermissionState>(null);
   const [busy, setBusy] = useState(false);
@@ -52,13 +53,11 @@ export function PushPermissionBanner() {
   return (
     <View style={styles.card}>
       <View style={styles.icon}>
-        <BellRing color={authTheme.brand} size={20} />
+        <BellRing color="#374151" size={18} strokeWidth={2.2} />
       </View>
       <View style={styles.body}>
-        <Text style={styles.title}>Turn on notifications</Text>
-        <Text style={styles.text}>
-          Know the moment your order is accepted, being cooked and arriving at your door.
-        </Text>
+        <Text style={styles.title}>Enable push notifications</Text>
+        <Text style={styles.text}>Required for order status updates on this device.</Text>
       </View>
       <Pressable style={styles.btn} onPress={enable} disabled={busy}>
         <Text style={styles.btnText}>{perm.canAskAgain ? 'Enable' : 'Settings'}</Text>
@@ -72,24 +71,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     borderRadius: 16,
-    backgroundColor: '#FFF7ED',
-    borderWidth: 1,
-    borderColor: 'rgba(249, 115, 22, 0.25)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
   },
   icon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFEDD5',
+    backgroundColor: '#F3F4F6',
   },
   body: { flex: 1, minWidth: 0 },
-  title: { fontSize: 14, fontWeight: '800', color: authTheme.text },
-  text: { marginTop: 2, fontSize: 12, lineHeight: 17, color: authTheme.textMuted },
-  btn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: authTheme.brand },
-  btnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  title: {
+    fontFamily: fonts.uiBold,
+    fontSize: 14,
+    color: authTheme.text,
+    letterSpacing: -0.15,
+  },
+  text: {
+    marginTop: 2,
+    fontFamily: fonts.ui,
+    fontSize: 12,
+    lineHeight: 16,
+    color: authTheme.textDim,
+  },
+  btn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: authTheme.brand,
+  },
+  btnText: {
+    fontFamily: fonts.uiBold,
+    color: '#FFFFFF',
+    fontSize: 12,
+  },
 });

@@ -9,7 +9,6 @@ import { authTheme } from '@/constants/auth-theme';
 import { navigateBack } from '@/lib/motion/navigate-back';
 
 type Props = {
-  subtitle: string;
   unreadCount: number;
   inboxCount: number;
   onMarkAll: () => void;
@@ -19,7 +18,6 @@ type Props = {
 };
 
 export function NotificationsHubTopBar({
-  subtitle,
   unreadCount,
   inboxCount,
   onMarkAll,
@@ -33,7 +31,7 @@ export function NotificationsHubTopBar({
     <View style={styles.topBar}>
       <SmoothPressable
         onPress={() => navigateBack(router, '/home')}
-        style={styles.backBtn}
+        style={styles.sideSlot}
         pressScale={0.92}
         hitSlop={8}
         accessibilityLabel="Go back"
@@ -41,14 +39,11 @@ export function NotificationsHubTopBar({
         <ChevronLeft color="#1A1A1A" size={24} strokeWidth={2.5} />
       </SmoothPressable>
 
-      <View style={styles.titleBlock}>
-        <Text style={styles.pageTitle}>Notifications</Text>
-        <Text style={styles.pageSubtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </View>
+      <Text style={styles.pageTitle} numberOfLines={1}>
+        Notifications
+      </Text>
 
-      <View style={styles.headerActions}>
+      <View style={[styles.sideSlot, styles.headerActions]}>
         <Pressable
           style={styles.headerBtn}
           onPress={onMarkAll}
@@ -60,8 +55,8 @@ export function NotificationsHubTopBar({
             <ActivityIndicator color={authTheme.brand} size="small" />
           ) : (
             <CheckCheck
-              color={unreadCount > 0 ? '#1A1A1A' : '#C4C4C4'}
-              size={19}
+              color={unreadCount > 0 ? '#374151' : '#D1D5DB'}
+              size={18}
               strokeWidth={2.2}
             />
           )}
@@ -77,8 +72,8 @@ export function NotificationsHubTopBar({
             <ActivityIndicator color={authTheme.brand} size="small" />
           ) : (
             <Trash2
-              color={inboxCount > 0 ? '#1A1A1A' : '#C4C4C4'}
-              size={18}
+              color={inboxCount > 0 ? '#374151' : '#D1D5DB'}
+              size={17}
               strokeWidth={2.2}
             />
           )}

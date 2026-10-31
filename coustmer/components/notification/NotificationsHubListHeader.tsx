@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ChevronRight, Settings2, Smartphone } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
@@ -10,11 +10,10 @@ import type { KitchenAlert } from '@/lib/restaurant/types';
 
 type Filter = 'all' | 'unread';
 
-type Props = {
+type HeaderProps = {
   filter: Filter;
   unreadCount: number;
   onFilterChange: (next: Filter) => void;
-  kitchenAlerts: KitchenAlert[];
   showInboxLabel?: boolean;
 };
 
@@ -22,11 +21,8 @@ export function NotificationsHubListHeader({
   filter,
   unreadCount,
   onFilterChange,
-  kitchenAlerts,
   showInboxLabel,
-}: Props) {
-  const router = useRouter();
-
+}: HeaderProps) {
   return (
     <View style={styles.listHeader}>
       <View style={styles.segmentedControl}>
@@ -47,46 +43,51 @@ export function NotificationsHubListHeader({
           <Text
             style={[styles.segmentText, filter === 'unread' && styles.segmentTextActive]}
           >
-            Unread{unreadCount > 0 ? ` (${unreadCount})` : ''}
+            Unread{unreadCount > 0 ? ` · ${unreadCount}` : ''}
           </Text>
         </Pressable>
       </View>
 
       <PushPermissionBanner />
 
-      <View style={styles.shortcutCard}>
-        <Pressable
-          style={styles.shortcutRow}
-          onPress={() => router.push('/profile/preferences')}
-        >
-          <View style={styles.shortcutIcon}>
-            <Settings2 color="#374151" size={18} />
-          </View>
-          <View style={styles.shortcutCopy}>
-            <Text style={styles.shortcutTitle}>Notification preferences</Text>
-            <Text style={styles.shortcutSub}>Push, offers, SMS, email</Text>
-          </View>
-          <ChevronRight color="#9CA3AF" size={20} />
-        </Pressable>
-        <View style={styles.shortcutDivider} />
-        <Pressable
-          style={styles.shortcutRow}
-          onPress={() => router.push('/profile/devices')}
-        >
-          <View style={styles.shortcutIcon}>
-            <Smartphone color="#374151" size={18} />
-          </View>
-          <View style={styles.shortcutCopy}>
-            <Text style={styles.shortcutTitle}>This phone</Text>
-            <Text style={styles.shortcutSub}>Manage devices that receive alerts</Text>
-          </View>
-          <ChevronRight color="#9CA3AF" size={20} />
-        </Pressable>
-      </View>
+      {showInboxLabel ? <Text style={styles.inboxLabel}>Recent</Text> : null}
+    </View>
+  );
+}
+
+type FooterProps = {
+  kitchenAlerts: KitchenAlert[];
+  showSettings?: boolean;
+  showHint?: boolean;
+};
+
+export function NotificationsHubListFooter({
+  kitchenAlerts,
+  showSettings = true,
+  showHint,
+}: FooterProps) {
+  const router = useRouter();
+
+  return (
+    <View style={styles.listFooter}>
+      {showHint ? <Text style={styles.hint}>Long-press to delete</Text> : null}
 
       <KitchenAlertsBlock alerts={kitchenAlerts} />
 
-      {showInboxLabel ? <Text style={styles.inboxLabel}>Inbox</Text> : null}
+      {showSettings ? (
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionLabel}>Settings</Text>
+          <View style={styles.settingsCard}>
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => router.push('/profile/preferences')}
+            >
+              <Text style={styles.settingsRowTitle}>Notification preferences</Text>
+              <ChevronRight color="#C4C4C4" size={20} strokeWidth={2} />
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

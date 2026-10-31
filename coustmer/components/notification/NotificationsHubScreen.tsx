@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NotificationsHubEmpty } from '@/components/notification/NotificationsHubEmpty';
-import { NotificationsHubListHeader } from '@/components/notification/NotificationsHubListHeader';
+import { NotificationsHubListFooter, NotificationsHubListHeader } from '@/components/notification/NotificationsHubListHeader';
 import { NotificationsHubTopBar } from '@/components/notification/NotificationsHubTopBar';
 import { NotificationRow } from '@/components/notification/NotificationRow';
 import { SignedOutInbox } from '@/components/notification/SignedOutInbox';
@@ -79,12 +79,6 @@ export function NotificationsHubScreen() {
   };
   const count = unreadCount.data ?? 0;
 
-  const subtitle = useMemo(() => {
-    if (count > 0) return `${count} unread`;
-    if (notifications.length > 0) return 'All caught up';
-    return 'Order updates and offers';
-  }, [count, notifications.length]);
-
   const onOpen = (item: AppNotification) => {
     if (!item.isRead) {
       markRead.mutate(item.id);
@@ -132,11 +126,20 @@ export function NotificationsHubScreen() {
         filter={filter}
         unreadCount={count}
         onFilterChange={changeFilter}
-        kitchenAlerts={activeAlerts}
         showInboxLabel={hasInboxItems && !listQuery.isLoading}
       />
     ),
-    [filter, count, activeAlerts, hasInboxItems, listQuery.isLoading]
+    [filter, count, hasInboxItems, listQuery.isLoading]
+  );
+
+  const listFooter = useMemo(
+    () => (
+      <NotificationsHubListFooter
+        kitchenAlerts={activeAlerts}
+        showHint={notifications.length > 0 && !listQuery.isFetchingMore}
+      />
+    ),
+    [activeAlerts, notifications.length, listQuery.isFetchingMore]
   );
 
   if (!authed) {
@@ -161,7 +164,6 @@ export function NotificationsHubScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.container}>
         <NotificationsHubTopBar
-          subtitle={subtitle}
           unreadCount={count}
           inboxCount={notifications.length}
           onMarkAll={onMarkAll}
@@ -204,13 +206,14 @@ export function NotificationsHubScreen() {
             />
           )}
           ListFooterComponent={
-            notifications.length > 0 ? (
-              listQuery.isFetchingMore ? (
-                <ActivityIndicator color={authTheme.brand} style={{ marginVertical: 12 }} />
-              ) : (
-                <Text style={styles.hint}>Long-press to delete</Text>
-              )
-            ) : null
+            listQuery.isFetchingMore ? (
+              <View>
+                <ActivityIndicator color={authTheme.brand} style={{ marginVertical: 16 }} />
+                {listFooter}
+              </View>
+            ) : (
+              listFooter
+            )
           }
         />
       </View>

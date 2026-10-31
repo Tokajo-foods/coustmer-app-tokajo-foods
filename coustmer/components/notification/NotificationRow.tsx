@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Pressable } from '@/components/common/Pressable';
 import { authTheme } from '@/constants/auth-theme';
+import { fonts } from '@/constants/typography';
 import { notificationVisual } from '@/lib/notification/notification-visual';
 import type { AppNotification } from '@/lib/notification/types';
 
@@ -31,7 +32,7 @@ function text(v: unknown): string {
 }
 
 export function NotificationRow({ notification, onPress, onDelete }: Props) {
-  const { Icon, tint, bg, label } = notificationVisual(notification);
+  const { Icon, tint, label } = notificationVisual(notification);
   const unread = !notification.isRead;
   const orderNumber = text(notification.data?.orderNumber);
   const coupon = text(notification.data?.couponCode);
@@ -44,13 +45,15 @@ export function NotificationRow({ notification, onPress, onDelete }: Props) {
       style={[styles.card, unread && styles.cardUnread]}
       accessibilityLabel={`${notification.title}. ${notification.body}`}
     >
-      <View style={[styles.iconWrap, { backgroundColor: bg }]}>
-        <Icon color={tint} size={20} strokeWidth={2.2} />
+      {unread ? <View style={styles.unreadBar} /> : null}
+
+      <View style={styles.iconWrap}>
+        <Icon color={tint} size={19} strokeWidth={2.2} />
       </View>
 
       <View style={styles.body}>
         <View style={styles.metaRow}>
-          <Text style={[styles.meta, { color: tint }]} numberOfLines={1}>
+          <Text style={styles.meta} numberOfLines={1}>
             {meta}
           </Text>
           {notification.createdAt ? (
@@ -61,7 +64,7 @@ export function NotificationRow({ notification, onPress, onDelete }: Props) {
           {notification.title}
         </Text>
         {notification.body ? (
-          <Text style={styles.message} numberOfLines={3}>
+          <Text style={styles.message} numberOfLines={2}>
             {notification.body}
           </Text>
         ) : null}
@@ -70,12 +73,10 @@ export function NotificationRow({ notification, onPress, onDelete }: Props) {
         ) : null}
         {coupon ? (
           <View style={styles.coupon}>
-            <Text style={styles.couponText}>Use code {coupon}</Text>
+            <Text style={styles.couponText}>Code {coupon}</Text>
           </View>
         ) : null}
       </View>
-
-      {unread ? <View style={styles.dot} /> : null}
     </Pressable>
   );
 }
@@ -84,45 +85,93 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 14,
+    gap: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingLeft: 16,
+    marginBottom: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
+    overflow: 'hidden',
   },
   cardUnread: {
     backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(249, 115, 22, 0.35)',
-    borderWidth: 1,
+  },
+  unreadBar: {
+    position: 'absolute',
+    left: 0,
+    top: 12,
+    bottom: 12,
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: authTheme.brand,
   },
   iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 1,
   },
   body: { flex: 1, minWidth: 0 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  meta: { flex: 1, fontSize: 11, fontWeight: '700', letterSpacing: 0.2, textTransform: 'uppercase' },
-  time: { fontSize: 11, fontWeight: '600', color: authTheme.textDim },
-  title: { fontSize: 14.5, fontWeight: '700', color: authTheme.text, lineHeight: 20 },
-  titleUnread: { fontWeight: '800' },
-  message: { marginTop: 3, fontSize: 13, lineHeight: 18, color: authTheme.textMuted },
-  image: { marginTop: 10, width: '100%', aspectRatio: 2, borderRadius: 12, backgroundColor: '#F1F5F9' },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  meta: {
+    flex: 1,
+    fontFamily: fonts.uiMedium,
+    fontSize: 12,
+    color: '#6B7280',
+    letterSpacing: 0.1,
+  },
+  time: {
+    fontFamily: fonts.ui,
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  title: {
+    fontFamily: fonts.uiMedium,
+    fontSize: 15,
+    color: '#1A1A1A',
+    lineHeight: 20,
+    letterSpacing: -0.15,
+  },
+  titleUnread: {
+    fontFamily: fonts.uiBold,
+  },
+  message: {
+    marginTop: 4,
+    fontFamily: fonts.ui,
+    fontSize: 13,
+    lineHeight: 18,
+    color: authTheme.textMuted,
+  },
+  image: {
+    marginTop: 10,
+    width: '100%',
+    aspectRatio: 2,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
   coupon: {
     alignSelf: 'flex-start',
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#9333EA',
-    backgroundColor: '#FAF5FF',
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
   },
-  couponText: { fontSize: 12, fontWeight: '800', color: '#7E22CE', letterSpacing: 0.4 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: authTheme.brand, marginTop: 6 },
+  couponText: {
+    fontFamily: fonts.uiBold,
+    fontSize: 11,
+    color: '#374151',
+    letterSpacing: 0.3,
+  },
 });
