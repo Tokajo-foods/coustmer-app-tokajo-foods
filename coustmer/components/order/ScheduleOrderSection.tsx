@@ -57,7 +57,7 @@ export function ScheduleOrderSection({
         >
           <View style={styles.copy}>
             <View style={styles.titleLine}>
-              <Text style={styles.optionTitle}>Order now</Text>
+              <Text style={[styles.optionTitle, !isLater && styles.optionTitleOn]}>Order now</Text>
               {!isLater ? <Check color={C.orange} size={15} strokeWidth={2.4} /> : null}
             </View>
             <Text style={styles.optionHint}>As soon as it is ready</Text>
@@ -76,7 +76,7 @@ export function ScheduleOrderSection({
         >
           <View style={styles.copy}>
             <View style={styles.titleLine}>
-              <Text style={styles.optionTitle}>Schedule</Text>
+              <Text style={[styles.optionTitle, isLater && styles.optionTitleOn]}>Schedule</Text>
               {isLater ? <Check color={C.orange} size={15} strokeWidth={2.4} /> : null}
             </View>
             <Text style={styles.optionHint} numberOfLines={1}>
@@ -141,13 +141,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: C.white,
+    backgroundColor: '#FAFAFA',
   },
-  optionOn: { borderColor: C.orange, backgroundColor: C.orangeSoft },
+  optionOn: { borderColor: C.orange, backgroundColor: '#FFF7ED' },
   optionOff: { opacity: 0.55 },
   copy: { gap: 2 },
   titleLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 14, color: C.text },
+  optionTitle: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.textSec },
+  optionTitleOn: { color: C.orange, fontFamily: fonts.uiBold },
   optionHint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   hint: { fontFamily: fonts.ui, fontSize: 12, color: C.textSec, lineHeight: 18 },
