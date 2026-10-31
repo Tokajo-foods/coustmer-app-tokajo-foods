@@ -217,7 +217,7 @@ function mapCoupon(raw: unknown): CartCoupon | null {
   if (!code) return null;
   return {
     code,
-    discount: Number(c.discount ?? c.discountAmount ?? c.amount ?? 0) || undefined,
+    discount: Number(c.appliedDiscount ?? c.discount ?? c.discountAmount ?? c.amount ?? 0) || undefined,
     discountType: (c.discountType as string) || (c.type as string) || undefined,
     description: (c.description as string) || (c.message as string) || undefined,
   };
