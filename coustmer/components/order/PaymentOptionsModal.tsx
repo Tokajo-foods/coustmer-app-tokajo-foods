@@ -1,7 +1,8 @@
 import { Pressable } from '@/components/common/Pressable';
-import { CreditCard, Truck, Wallet, X } from 'lucide-react-native';
+import { Check, CreditCard, Truck, Wallet, X } from 'lucide-react-native';
 import { Alert, Modal, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fonts } from '@/constants/typography';
 import { canonicalPayChoice, type PayChoice } from '@/lib/checkout/payment-display';
@@ -65,7 +66,6 @@ export function PaymentOptionsModal({
   onClose,
   selectedMethod,
   onSelectMethod,
-  itemCount,
   total,
   savings,
   wallet,
@@ -74,6 +74,7 @@ export function PaymentOptionsModal({
   allowCod = true,
 }: Props) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const selected = canonicalPayChoice(selectedMethod);
 
   const choose = (id: PayChoice) => {
@@ -104,49 +105,38 @@ export function PaymentOptionsModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <View style={styles.header}>
             <View style={styles.headerText}>
               <Text style={styles.title}>Pay using</Text>
               <Text style={styles.subtitle}>
-                {itemCount} item{itemCount === 1 ? '' : 's'}
-                {amountReady ? ` · ${formatInr(total)}` : ''}
+                {amountReady ? formatInr(total) : 'Calculating…'}
                 {savings > 0 ? ` · saved ${formatInr(savings)}` : ''}
               </Text>
             </View>
-            <Pressable onPress={onClose} hitSlop={10} style={styles.close}>
-              <X color={TEXT} size={20} />
+            <Pressable onPress={onClose} hitSlop={10}>
+              <X color={TEXT_SEC} size={18} />
             </Pressable>
           </View>
 
-          <Text style={styles.amountLabel}>Amount to pay</Text>
-          <Text style={styles.amount}>{amountReady ? formatInr(total) : 'Calculating…'}</Text>
-
           {(allowCod ? OPTIONS : OPTIONS.filter((option) => option.id !== 'cod')).map((option) => {
             const on = selected === option.id;
-            const hint = !amountReady
-              ? 'Waiting for the delivery fee'
-              : option.id === 'online'
-                ? `${formatInr(total)} opens in Razorpay with every payment option`
-                : option.id === 'wallet' && wallet
-                  ? `Balance ${formatInr(wallet.balance)} · bill ${formatInr(total)}`
-                  : option.id === 'cod'
-                    ? `Pay ${formatInr(total)} in cash at the door`
-                    : option.hint;
+            const hint = option.id === 'wallet' && wallet
+              ? `Balance ${formatInr(wallet.balance)}`
+              : option.hint;
             return (
               <Pressable
                 key={option.id}
                 style={[styles.row, on && styles.rowOn]}
                 onPress={() => choose(option.id)}
               >
-                <View style={[styles.icon, on && styles.iconOn]}>
-                  <option.Icon color={on ? WHITE : ORANGE} size={18} strokeWidth={2.3} />
-                </View>
+                <option.Icon color={on ? ORANGE : TEXT_SEC} size={18} strokeWidth={2.2} />
                 <View style={styles.rowBody}>
                   <Text style={styles.rowTitle}>{option.title}</Text>
                   <Text style={styles.rowHint}>{hint}</Text>
                 </View>
-                <View style={[styles.radio, on && styles.radioOn]} />
+                {on ? <Check color={ORANGE} size={16} strokeWidth={2.4} /> : null}
               </Pressable>
             );
           })}
@@ -164,20 +154,20 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: WHITE,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 28,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   headerText: { flex: 1 },
   title: {
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
+    fontFamily: fonts.uiSemi,
+    fontSize: 16,
     color: TEXT,
   },
   subtitle: {
@@ -186,50 +176,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: TEXT_SEC,
   },
-  close: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  amountLabel: {
-    marginTop: 16,
-    fontFamily: fonts.ui,
-    fontSize: 12,
-    color: TEXT_SEC,
-  },
-  amount: {
-    marginBottom: 12,
-    fontFamily: fonts.displayBold,
-    fontSize: 28,
-    color: TEXT,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     marginTop: 8,
   },
   rowOn: {
     borderColor: ORANGE,
     backgroundColor: '#FFF7ED',
   },
-  icon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFEDD5',
-  },
-  iconOn: { backgroundColor: ORANGE },
-  rowBody: { flex: 1, marginLeft: 12 },
+  rowBody: { flex: 1 },
   rowTitle: {
-    fontFamily: fonts.uiBold,
-    fontSize: 15,
+    fontFamily: fonts.uiSemi,
+    fontSize: 14,
     color: TEXT,
   },
   rowHint: {
@@ -237,16 +202,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_SEC,
-  },
-  radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-  },
-  radioOn: {
-    borderColor: ORANGE,
-    backgroundColor: ORANGE,
   },
 });
