@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 
+import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { authTheme } from '@/constants/auth-theme';
 
 export const hubStyles = StyleSheet.create({
@@ -10,6 +11,21 @@ export const hubStyles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: 24 + APP_BOTTOM_NAV_INSET,
+  },
+  listHeader: {
+    paddingBottom: 4,
+  },
+  headerRightSlot: {
+    minWidth: 88,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   headerActions: {
     flexDirection: 'row',
@@ -31,8 +47,8 @@ export const hubStyles = StyleSheet.create({
     backgroundColor: '#FFF1E6',
     padding: 4,
     borderRadius: 12,
-    marginTop: 16,
-    marginBottom: 24,
+    marginTop: 8,
+    marginBottom: 16,
   },
   segmentBtn: {
     flex: 1,
@@ -58,48 +74,68 @@ export const hubStyles = StyleSheet.create({
     color: authTheme.brand,
     fontWeight: '700',
   },
-  metaCard: {
-    marginBottom: 10,
-    borderRadius: 12,
+  shortcutCard: {
+    marginBottom: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    backgroundColor: '#FAFAFA',
+    overflow: 'hidden',
   },
-  metaRow: {
+  shortcutRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  metaTitle: {
-    fontSize: 12,
-    color: '#475569',
+  shortcutDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E2E8F0',
+    marginLeft: 56,
+  },
+  shortcutIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#FFF1E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shortcutCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  shortcutTitle: {
+    fontSize: 14,
     fontWeight: '700',
-  },
-  metaValue: {
-    fontSize: 12,
     color: '#0F172A',
-    fontWeight: '800',
   },
-  list: {
-    paddingBottom: 40,
+  shortcutSub: {
+    marginTop: 2,
+    fontSize: 12,
+    color: authTheme.textMuted,
+    lineHeight: 16,
   },
   hint: {
     textAlign: 'center',
     color: '#94A3B8',
     fontSize: 13,
     fontWeight: '500',
-    marginTop: 16,
-    marginBottom: 20,
+    marginTop: 8,
+    marginBottom: 8,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-    marginTop: 40,
+    paddingBottom: APP_BOTTOM_NAV_INSET,
+  },
+  emptyInline: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 36,
   },
   emptyIconWrap: {
     width: 72,

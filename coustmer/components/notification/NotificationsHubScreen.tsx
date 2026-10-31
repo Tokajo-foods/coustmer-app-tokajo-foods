@@ -2,33 +2,29 @@ import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
 import {
   Bell,
-  BellOff,
   CheckCheck,
   Trash2,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator,
+import {
+  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
   Text,
-  View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/common/ScreenHeader';
-import {
-  ErrorView,
-  LoadingView,
-} from '@/components/common/StateViews';
-import { KitchenAlertsBlock } from '@/components/notification/KitchenAlertsBlock';
-import { NotificationPrefsCard } from '@/components/notification/NotificationPrefsCard';
+import { NotificationsHubEmpty } from '@/components/notification/NotificationsHubEmpty';
+import { NotificationsHubListHeader } from '@/components/notification/NotificationsHubListHeader';
 import { NotificationRow } from '@/components/notification/NotificationRow';
-import { PushPermissionBanner } from '@/components/notification/PushPermissionBanner';
 import { SignedOutInbox } from '@/components/notification/SignedOutInbox';
 import { hubStyles as styles } from '@/components/notification/notifications-hub-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { getApiErrorMessage } from '@/lib/errors';
+import { PREMIUM_LIST } from '@/lib/motion/premium';
 import {
   useClearAllNotifications,
   useDeleteNotification,
@@ -46,7 +42,6 @@ type Filter = 'all' | 'unread';
 
 export function NotificationsHubScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<Filter>('all');
   const token = useAuthStore((s) => s.token);
   const authed = Boolean(token);
@@ -63,6 +58,7 @@ export function NotificationsHubScreen() {
   });
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const unreadCount = useUnreadNotificationCount({
+    refetchInterval: 12_000,
     enabled: authed,
   });
   const markRead = useMarkNotificationRead();
@@ -134,159 +130,128 @@ export function NotificationsHubScreen() {
     );
   };
 
+  const listHeader = useMemo(
+    () => (
+      <NotificationsHubListHeader
+        filter={filter}
+        unreadCount={count}
+        onFilterChange={changeFilter}
+        kitchenAlerts={activeAlerts}
+      />
+    ),
+    [filter, count, activeAlerts]
+  );
+
   if (!authed) {
     return (
-      <View style={[styles.safe, { paddingTop: Math.max(insets.top, 32) }]}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
           <ScreenHeader title="Notifications" />
           <SignedOutInbox />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
+  const showEmpty =
+    listQuery.isLoading ||
+    listQuery.isError ||
+    notifications.length === 0;
+
   return (
-    <View
-      style={[styles.safe, { paddingTop: Math.max(insets.top, 32) }]}
-    >
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.container}>
         <ScreenHeader
           title="Notifications"
           subtitle={subtitle}
           right={
-            <View style={styles.headerActions}>
-              <Pressable
-                style={styles.headerBtn}
-                onPress={onMarkAll}
-                disabled={count <= 0 || markAllRead.isPending}
-                hitSlop={6}
-                accessibilityLabel="Mark all as read"
-              >
-                {markAllRead.isPending ? (
-                  <ActivityIndicator color={authTheme.brand} size="small" />
-                ) : (
-                  <CheckCheck
-                    color={count > 0 ? authTheme.brand : authTheme.textDim}
-                    size={18}
-                  />
-                )}
-              </Pressable>
-              <Pressable
-                style={styles.headerBtn}
-                onPress={onClearAll}
-                disabled={notifications.length === 0 || clearAll.isPending}
-                hitSlop={6}
-                accessibilityLabel="Clear all notifications"
-              >
-                {clearAll.isPending ? (
-                  <ActivityIndicator color={authTheme.brand} size="small" />
-                ) : (
-                  <Trash2
-                    color={
-                      notifications.length > 0
-                        ? authTheme.brand
-                        : authTheme.textDim
-                    }
-                    size={18}
-                  />
-                )}
-              </Pressable>
+            <View style={styles.headerRightSlot}>
+              <View style={styles.headerActions}>
+                <Pressable
+                  style={styles.headerBtn}
+                  onPress={onMarkAll}
+                  disabled={count <= 0 || markAllRead.isPending}
+                  hitSlop={6}
+                  accessibilityLabel="Mark all as read"
+                >
+                  {markAllRead.isPending ? (
+                    <ActivityIndicator color={authTheme.brand} size="small" />
+                  ) : (
+                    <CheckCheck
+                      color={count > 0 ? authTheme.brand : authTheme.textDim}
+                      size={18}
+                    />
+                  )}
+                </Pressable>
+                <Pressable
+                  style={styles.headerBtn}
+                  onPress={onClearAll}
+                  disabled={notifications.length === 0 || clearAll.isPending}
+                  hitSlop={6}
+                  accessibilityLabel="Clear all notifications"
+                >
+                  {clearAll.isPending ? (
+                    <ActivityIndicator color={authTheme.brand} size="small" />
+                  ) : (
+                    <Trash2
+                      color={
+                        notifications.length > 0
+                          ? authTheme.brand
+                          : authTheme.textDim
+                      }
+                      size={18}
+                    />
+                  )}
+                </Pressable>
+              </View>
             </View>
           }
         />
 
-        <View style={styles.segmentedControl}>
-          <Pressable
-            style={[styles.segmentBtn, filter === 'all' && styles.segmentBtnActive]}
-            onPress={() => changeFilter('all')}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                filter === 'all' && styles.segmentTextActive,
-              ]}
-            >
-              All
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.segmentBtn, filter === 'unread' && styles.segmentBtnActive]}
-            onPress={() => changeFilter('unread')}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                filter === 'unread' && styles.segmentTextActive,
-              ]}
-            >
-              Unread{count > 0 ? ` (${count})` : ''}
-            </Text>
-          </Pressable>
-        </View>
-
-        <PushPermissionBanner />
-
-        <NotificationPrefsCard enabled={authed} />
-
-        <KitchenAlertsBlock alerts={activeAlerts} />
-
-        {listQuery.isLoading ? (
-          <LoadingView label="Loading notifications…" />
-        ) : listQuery.isError ? (
-          <ErrorView
-            message={getApiErrorMessage(listQuery.error)}
-            onRetry={() => listQuery.refetch()}
-          />
-        ) : notifications.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconWrap}>
-              {filter === 'unread' ? (
-                <BellOff color={authTheme.brand} size={32} strokeWidth={2} />
-              ) : (
-                <Bell color={authTheme.brand} size={32} strokeWidth={2} />
-              )}
-            </View>
-            <Text style={styles.emptyTitle}>
-              {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              {filter === 'unread'
-                ? 'You are all caught up! New order updates will show here.'
-                : 'Order status, exclusive offers, and account alerts will appear here.'}
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={notifications}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.list}
-            refreshControl={
-              <RefreshControl
-                refreshing={pullRefreshing}
-                onRefresh={() => void onPullRefresh()}
-                tintColor={authTheme.brand}
-              />
-            }
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.4}
-            renderItem={({ item }) => (
-              <NotificationRow
-                notification={item}
-                onPress={() => onOpen(item)}
-                onDelete={() => onDelete(item)}
-              />
-            )}
-            ListFooterComponent={
+        <FlatList
+          style={styles.list}
+          data={showEmpty ? [] : notifications}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          {...PREMIUM_LIST}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={
+            <NotificationsHubEmpty
+              filter={filter}
+              loading={listQuery.isLoading}
+              isError={listQuery.isError}
+              errorMessage={getApiErrorMessage(listQuery.error)}
+              onRetry={() => listQuery.refetch()}
+            />
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={() => void onPullRefresh()}
+              tintColor={authTheme.brand}
+            />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.35}
+          renderItem={({ item }) => (
+            <NotificationRow
+              notification={item}
+              onPress={() => onOpen(item)}
+              onDelete={() => onDelete(item)}
+            />
+          )}
+          ListFooterComponent={
+            notifications.length > 0 ? (
               listQuery.isFetchingMore ? (
                 <ActivityIndicator color={authTheme.brand} style={{ marginVertical: 12 }} />
               ) : (
                 <Text style={styles.hint}>Long-press a notification to delete</Text>
               )
-            }
-          />
-        )}
+            ) : null
+          }
+        />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
