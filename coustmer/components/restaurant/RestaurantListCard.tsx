@@ -17,7 +17,6 @@ import {
   restaurantStars,
 } from '@/lib/restaurant/card-display';
 import type { Restaurant } from '@/lib/restaurant/types';
-import { prefetchRestaurantMenu } from '@/lib/restaurant/hooks';
 import { formatInr } from '@/lib/format/money';
 
 type Props = {
@@ -44,7 +43,6 @@ export function RestaurantListCard({
   return (
     <Pressable
       style={styles.card}
-      onPressIn={() => prefetchRestaurantMenu(restaurant.id)}
       onPress={onPress}
       disabled={!onPress}
     >

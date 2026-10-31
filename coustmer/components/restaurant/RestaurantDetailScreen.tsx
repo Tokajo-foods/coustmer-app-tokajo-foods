@@ -144,12 +144,12 @@ export function RestaurantDetailScreen() {
     enabled: Boolean(id),
   });
   const menu = useFullMenu(id);
-  const offers = useRestaurantOffers(id);
+  const offers = useRestaurantOffers(id, { enabled: tab === 'Offers' });
   const timings = useRestaurantTimings(id);
-  const holidays = useRestaurantHolidays(id);
-  const specialHours = useRestaurantSpecialHours(id);
-  const hygiene = useRestaurantHygiene(id);
-  const ratingsHistogram = useRestaurantRatings(id);
+  const holidays = useRestaurantHolidays(id, { enabled: tab === 'Info' });
+  const specialHours = useRestaurantSpecialHours(id, { enabled: tab === 'Info' });
+  const hygiene = useRestaurantHygiene(id, { enabled: tab === 'Info' });
+  const ratingsHistogram = useRestaurantRatings(id, { enabled: tab === 'Reviews' });
   const { data: unavailableIds } = useUnavailableItemIds(id);
   const unavailableSet = new Set(unavailableIds ?? []);
   const alerts = useKitchenAlerts({ enabled: Boolean(token && id) });

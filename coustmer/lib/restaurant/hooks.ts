@@ -336,38 +336,38 @@ export function useRestaurantTimings(restaurantId: string) {
   });
 }
 
-export function useRestaurantHolidays(restaurantId: string) {
+export function useRestaurantHolidays(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...restaurantKeys.all, 'holidays', restaurantId],
     queryFn: () => restaurantApi.getHolidays(restaurantId),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
     staleTime: 5 * 60_000,
   });
 }
 
-export function useRestaurantSpecialHours(restaurantId: string) {
+export function useRestaurantSpecialHours(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...restaurantKeys.all, 'special-hours', restaurantId],
     queryFn: () => restaurantApi.getSpecialHours(restaurantId),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
     staleTime: 5 * 60_000,
   });
 }
 
-export function useRestaurantHygiene(restaurantId: string) {
+export function useRestaurantHygiene(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: restaurantKeys.hygiene(restaurantId),
     queryFn: () => restaurantApi.getHygiene(restaurantId),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
     staleTime: 5 * 60_000,
   });
 }
 
-export function useRestaurantRatings(restaurantId: string) {
+export function useRestaurantRatings(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: restaurantKeys.ratings(restaurantId),
     queryFn: () => restaurantApi.getRatings(restaurantId),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }
@@ -395,12 +395,12 @@ export function useItemCustomizations(
   });
 }
 
-export function useRecommendedMenuItems(restaurantId: string) {
+export function useRecommendedMenuItems(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: restaurantKeys.recommendedItems(restaurantId),
     queryFn: () =>
       restaurantApi.getItems(restaurantId, { recommended: true }),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }
@@ -412,12 +412,10 @@ export function useKitchenAlerts(options?: { enabled?: boolean }) {
     queryFn: async () => {
       try {
         const { customerApi } = await import('@/lib/customer/api');
-        const fromCustomer = await customerApi.getMyAlerts();
-        if (fromCustomer.length) return fromCustomer;
+        return await customerApi.getMyAlerts();
       } catch {
-        // fall through to restaurant-service GET /alerts/me
+        return restaurantApi.getMyAlerts();
       }
-      return restaurantApi.getMyAlerts();
     },
     enabled: Boolean(token) && options?.enabled !== false,
     staleTime: 30_000,
@@ -432,11 +430,11 @@ export function useRestaurantMenu(restaurantId: string) {
   });
 }
 
-export function useRestaurantCategories(restaurantId: string) {
+export function useRestaurantCategories(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: restaurantKeys.categories(restaurantId),
     queryFn: () => restaurantApi.getCategories(restaurantId),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
   });
 }
 
@@ -483,17 +481,9 @@ export function useRestaurantItems(
 
 export function prefetchRestaurantMenu(restaurantId: string) {
   if (!restaurantId) return;
-  queryClient.prefetchQuery({
+  void queryClient.prefetchQuery({
     queryKey: restaurantKeys.menu(restaurantId),
     queryFn: () => restaurantApi.getMenu(restaurantId),
-  });
-  queryClient.prefetchQuery({
-    queryKey: restaurantKeys.categories(restaurantId),
-    queryFn: () => restaurantApi.getCategories(restaurantId),
-  });
-  queryClient.prefetchQuery({
-    queryKey: restaurantKeys.items(restaurantId),
-    queryFn: () => restaurantApi.getItems(restaurantId),
   });
 }
 
@@ -505,11 +495,11 @@ export function useMenuItem(restaurantId: string, itemId: string) {
   });
 }
 
-export function useRestaurantOffers(restaurantId: string) {
+export function useRestaurantOffers(restaurantId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: restaurantKeys.offers(restaurantId),
     queryFn: () => restaurantApi.getOffers(restaurantId),
-    enabled: Boolean(restaurantId),
+    enabled: Boolean(restaurantId) && (options?.enabled ?? true),
   });
 }
 
@@ -556,15 +546,20 @@ export function useTrendingDishes(
   });
 }
 
-/** Merges the live menu, categories, and items for one restaurant. */
+/** One menu call. Categories and items are loaded only when that menu payload is empty. */
 export function useFullMenu(restaurantId: string) {
   const menu = useRestaurantMenu(restaurantId);
-  const categories = useRestaurantCategories(restaurantId);
-  const items = useRestaurantItems(restaurantId);
-  const unavailable = useUnavailableItemIds(restaurantId);
-  const recommended = useRecommendedMenuItems(restaurantId);
-
   const menuFromApi = menu.data ?? { categories: [], items: [] };
+  const menuItemsLookValidEarly = (menu.data?.items ?? []).some(
+    (item) => item.name && item.name !== 'Item' && item.price > 0
+  );
+  const menuSettled = menu.isSuccess || menu.isError;
+  const needCategories = menuSettled && menuFromApi.categories.length === 0;
+  const needItems = menuSettled && !menuItemsLookValidEarly;
+  const categories = useRestaurantCategories(restaurantId, { enabled: needCategories });
+  const items = useRestaurantItems(restaurantId, {}, { enabled: needItems });
+  const unavailable = useUnavailableItemIds(restaurantId);
+
   const categoriesFromApi = categories.data ?? [];
   const itemsFromApi = items.data ?? [];
   const unavailableIds = useMemo(
@@ -603,22 +598,26 @@ export function useFullMenu(restaurantId: string) {
     unavailableIds,
   ]);
 
-  const isLoading = menu.isLoading || categories.isLoading || items.isLoading;
-  const isError = menu.isError && categories.isError && items.isError;
+  const recommended = useMemo(
+    () => mergedItems.filter((item) => item.isRecommended || item.isBestSeller).slice(0, 20),
+    [mergedItems],
+  );
+
+  const isLoading = menu.isLoading || (needCategories && categories.isLoading) || (needItems && items.isLoading);
+  const isError = menu.isError && (!needCategories || categories.isError) && (!needItems || items.isError);
 
   return {
     categories: mergedCategories,
     items: mergedItems,
-    recommended: recommended.data ?? [],
+    recommended,
     unavailableIds: [...unavailableIds],
     isLoading,
     isError,
     refetch: () => {
-      menu.refetch();
-      categories.refetch();
-      items.refetch();
-      unavailable.refetch();
-      recommended.refetch();
+      void menu.refetch();
+      void unavailable.refetch();
+      if (needCategories) void categories.refetch();
+      if (needItems) void items.refetch();
     },
   };
 }

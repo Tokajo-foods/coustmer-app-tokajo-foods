@@ -13,11 +13,11 @@ import { useSocketConnection, useSocketEvent } from '@/lib/socket/hooks';
 import { usePartnerLocationSocket } from '@/lib/socket/partner-location';
 
 /** Socket up: REST only refreshes ETA/partner. Socket down: REST is the live path. */
-const POLL_TRIP_SOCKET_MS = 15_000;
-const POLL_TRIP_FALLBACK_MS = 5_000;
-const POLL_NO_TRIP_MS = 10_000;
-const POLL_ORDER_SOCKET_MS = 20_000;
-const POLL_ORDER_FALLBACK_MS = 8_000;
+const POLL_TRIP_SOCKET_MS = 30_000;
+const POLL_TRIP_FALLBACK_MS = 8_000;
+const POLL_NO_TRIP_MS = 15_000;
+const POLL_ORDER_SOCKET_MS = 45_000;
+const POLL_ORDER_FALLBACK_MS = 12_000;
 
 type Push = { status: string; at: number };
 

@@ -448,8 +448,7 @@ export function DeliveryLocationPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- startPoint snapshotted on open
   }, [visible, pinOnly, autoDetectOnOpen, syncLocationToggle]);
 
-  // When user leaves app to toggle phone Location, refresh when they come back.
-  // Poll only on the browse screen — polling on the map was re-triggering GPS and flickering Confirm.
+  // When the user leaves to turn on phone Location, refresh once they come back.
   useEffect(() => {
     if (!visible || pinOnly) return;
 
@@ -460,21 +459,10 @@ export function DeliveryLocationPicker({
     };
 
     const sub = AppState.addEventListener('change', onAppState);
-    if (viewMode !== 'browse') {
-      return () => {
-        sub.remove();
-      };
-    }
-
-    const poll = setInterval(() => {
-      void syncLocationToggle({ detectIfOn: false });
-    }, 4000);
-
     return () => {
       sub.remove();
-      clearInterval(poll);
     };
-  }, [visible, viewMode, pinOnly, syncLocationToggle]);
+  }, [visible, pinOnly, syncLocationToggle]);
 
   useEffect(() => {
     if (!visible || viewMode !== 'map' || !mapReady) return;

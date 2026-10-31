@@ -59,11 +59,10 @@ export function NotificationsHubScreen() {
   const listQuery = useInboxPages(pageCount, {
     unread: filter === 'unread' ? true : undefined,
     enabled: authed,
-    refetchInterval: 20_000,
+    refetchInterval: 45_000,
   });
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const unreadCount = useUnreadNotificationCount({
-    refetchInterval: 12_000,
     enabled: authed,
   });
   const markRead = useMarkNotificationRead();

@@ -38,7 +38,7 @@ export function TokajoTopBar({
   const token = useAuthStore((s) => s.token);
   const unread = useUnreadNotificationCount({
     enabled: Boolean(token),
-    refetchInterval: 12_000,
+    refetchInterval: 45_000,
   });
   const unreadCount = unread.data ?? 0;
 

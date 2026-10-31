@@ -1,8 +1,5 @@
 import { addMenuItemToCart } from '@/lib/order/add-to-cart';
-import {
-  useRecommendedMenuItems,
-  useRestaurantItems,
-} from '@/lib/restaurant/hooks';
+import { useRecommendedMenuItems } from '@/lib/restaurant/hooks';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import { useCartStore } from '@/store/cart-store';
 import { Image } from 'expo-image';
@@ -18,9 +15,6 @@ export function CartSuggestionsFromStore() {
   const restaurant = useCartStore((s) => s.restaurant);
   const cartItems = useCartStore((s) => s.items);
   const suggested = useRecommendedMenuItems(restaurant?.id ?? '');
-  const allItems = useRestaurantItems(restaurant?.id ?? '', {}, {
-    enabled: Boolean(restaurant?.id),
-  });
 
   if (!restaurant?.id) {
     return null;
@@ -30,16 +24,9 @@ export function CartSuggestionsFromStore() {
     cartItems.map((item) => String(item.menuItemId ?? item.id))
   );
 
-  const recommendedRows = (suggested.data ?? []).filter(
-    (item) =>
-      item.isAvailable !== false && !cartItemIds.has(String(item.id))
-  );
-  const fallbackRows = (allItems.data ?? []).filter(
-    (item) =>
-      item.isAvailable !== false && !cartItemIds.has(String(item.id))
-  );
-  const menuRows =
-    (recommendedRows.length ? recommendedRows : fallbackRows).slice(0, 10);
+  const menuRows = (suggested.data ?? [])
+    .filter((item) => item.isAvailable !== false && !cartItemIds.has(String(item.id)))
+    .slice(0, 10);
 
   if (!menuRows.length) return null;
 

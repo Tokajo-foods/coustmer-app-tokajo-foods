@@ -38,7 +38,7 @@ export function OrdersHubScreen() {
   const [tab, setTab] = useState<Tab>('all');
 
   const all = useOrders({ limit: 50 });
-  const active = useActiveOrders({ refetchInterval: 15_000 });
+  const active = useActiveOrders({ refetchInterval: 30_000 });
   const scheduled = useScheduledOrders();
 
   const orders: Order[] = useMemo(() => {
