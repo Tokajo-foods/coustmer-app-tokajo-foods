@@ -168,6 +168,7 @@ export type FavouriteDish = {
   name: string;
   imageUrl?: string;
   price?: number;
+  discountedPrice?: number | null;
   restaurantId?: string;
   restaurantName?: string;
   isVeg?: boolean;

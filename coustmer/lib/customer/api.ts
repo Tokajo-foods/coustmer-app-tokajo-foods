@@ -591,17 +591,34 @@ export const customerApi = {
           ?? res.data
           ?? res
       );
-      return rows.map((raw) => ({
-        id: String(raw._id ?? raw.id ?? ''),
-        name: String(raw.name ?? raw.itemName ?? ''),
-        imageUrl: (raw.imageUrl ?? raw.image) as string | undefined,
-        price: typeof raw.price === 'number' ? raw.price : typeof raw.basePrice === 'number' ? raw.basePrice : undefined,
-        restaurantId: (raw.restaurantId ?? raw.restaurant_id) as string | undefined,
-        restaurantName: (raw.restaurantName ?? raw.restaurant?.name) as string | undefined,
-        isVeg: raw.isVeg as boolean | undefined,
-        rating: typeof raw.rating === 'number' ? raw.rating : undefined,
-        ...raw,
-      }));
+      return rows.map((raw) => {
+        const list =
+          typeof raw.price === 'number'
+            ? raw.price
+            : typeof raw.basePrice === 'number'
+              ? raw.basePrice
+              : undefined;
+        const offer =
+          typeof raw.discountedPrice === 'number'
+            ? raw.discountedPrice
+            : typeof raw.effectivePrice === 'number' && list != null && raw.effectivePrice < list
+              ? raw.effectivePrice
+              : undefined;
+        return {
+          id: String(raw.itemId ?? raw._id ?? raw.id ?? ''),
+          name: String(raw.name ?? raw.itemName ?? ''),
+          imageUrl: (raw.imageUrl ?? raw.image) as string | undefined,
+          price: list,
+          discountedPrice: offer,
+          restaurantId: typeof raw.restaurantId === 'string' ? raw.restaurantId : undefined,
+          restaurantName:
+            typeof raw.restaurantName === 'string'
+              ? raw.restaurantName
+              : undefined,
+          isVeg: raw.isVeg as boolean | undefined,
+          rating: typeof raw.rating === 'number' ? raw.rating : undefined,
+        };
+      });
     } catch {
       return [];
     }

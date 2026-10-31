@@ -35,7 +35,7 @@ import {
 import { CustomerServiceStatus } from '@/components/customer/CustomerServiceStatus';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
-import type { FavouriteDish, RestaurantCard } from '@/lib/customer/types';
+import type { RestaurantCard } from '@/lib/customer/types';
 import {
   useFavouriteDishes,
   useFavorites,
@@ -46,7 +46,7 @@ import { navigateBack } from '@/lib/motion/navigate-back';
 import { PREMIUM_LIST } from '@/lib/motion/premium';
 import type { Restaurant } from '@/lib/restaurant/types';
 import { useFavoritesStore } from '@/store/favorites-store';
-import { formatInr } from '@/lib/format/money';
+import { FavouriteDishCard } from '@/components/favorites/FavouriteDishCard';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const HERO_HEIGHT = Math.round(SCREEN_H * 0.45);
@@ -121,102 +121,6 @@ function ConfettiBits() {
 }
 
 type Tab = 'restaurants' | 'dishes';
-
-function DishCard({
-  dish,
-  onRemove,
-  removing,
-}: {
-  dish: FavouriteDish;
-  onRemove: () => void;
-  removing: boolean;
-}) {
-  return (
-    <View style={dishStyles.card}>
-      <View style={dishStyles.imgWrap}>
-        {dish.imageUrl ? (
-          <Image source={{ uri: dish.imageUrl }} style={dishStyles.img} contentFit="cover" />
-        ) : (
-          <View style={[dishStyles.img, dishStyles.imgFallback]}>
-            <UtensilsCrossed size={24} color="#D1D5DB" strokeWidth={1.5} />
-          </View>
-        )}
-        {dish.isVeg !== undefined && (
-          <View style={[dishStyles.vegDot, { borderColor: dish.isVeg ? '#16A34A' : '#DC2626' }]}>
-            <View style={[dishStyles.vegInner, { backgroundColor: dish.isVeg ? '#16A34A' : '#DC2626' }]} />
-          </View>
-        )}
-      </View>
-      <View style={dishStyles.info}>
-        <Text style={dishStyles.name} numberOfLines={1}>{dish.name}</Text>
-        {dish.restaurantName && (
-          <Text style={dishStyles.resto} numberOfLines={1}>{dish.restaurantName}</Text>
-        )}
-        <View style={dishStyles.meta}>
-          {dish.price != null && (
-            <Text style={dishStyles.price}>{formatInr(dish.price)}</Text>
-          )}
-          {typeof dish.rating === 'number' && dish.rating > 0 && (
-            <View style={dishStyles.ratingPill}>
-              <Text style={dishStyles.ratingText}>★ {dish.rating.toFixed(1)}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-      <TouchableOpacity
-        onPress={onRemove}
-        disabled={removing}
-        style={dishStyles.heartBtn}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        {removing ? (
-          <ActivityIndicator size="small" color="#F43F5E" />
-        ) : (
-          <Heart size={20} color="#F43F5E" fill="#F43F5E" strokeWidth={2} />
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const dishStyles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#F1F3F5',
-    elevation: 1,
-  },
-  imgWrap: { position: 'relative', marginRight: 12 },
-  img: { width: 72, height: 72, borderRadius: 12 },
-  imgFallback: { backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
-  vegDot: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 14,
-    height: 14,
-    borderRadius: 3,
-    borderWidth: 1.5,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vegInner: { width: 7, height: 7, borderRadius: 3.5 },
-  info: { flex: 1 },
-  name: { fontFamily: fonts.displayBold, fontSize: 15, color: '#0B1220', letterSpacing: -0.2, marginBottom: 2 },
-  resto: { fontFamily: fonts.ui, fontSize: 12, color: '#6B7280', marginBottom: 6 },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  price: { fontFamily: fonts.uiBold, fontSize: 13, color: '#374151' },
-  ratingPill: { backgroundColor: '#16A34A', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
-  ratingText: { fontFamily: fonts.uiBold, fontSize: 10, color: '#FFFFFF' },
-  heartBtn: { padding: 6 },
-});
 
 export function FavouritesScreen() {
   const router = useRouter();
@@ -420,7 +324,7 @@ export function FavouritesScreen() {
           onRefresh={dishesRefetch}
           refreshing={dishesRefetching}
           renderItem={({ item }) => (
-            <DishCard
+            <FavouriteDishCard
               dish={item}
               removing={removeDishMutation.isPending && removeDishMutation.variables === item.id}
               onRemove={() => removeDishMutation.mutate(item.id)}

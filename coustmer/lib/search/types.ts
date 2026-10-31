@@ -80,6 +80,7 @@ export type SearchSuggestion = {
   slug?: string;
   source?: SearchCategorySource;
   price?: number;
+  discountedPrice?: number;
   isVeg?: boolean;
   rating?: number;
   isOpen?: boolean;

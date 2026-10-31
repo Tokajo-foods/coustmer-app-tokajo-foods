@@ -8,6 +8,7 @@ import { restaurantClosedLabel } from '@/lib/restaurant/card-display';
 import type { SearchDish, SearchRestaurant } from '@/lib/search/types';
 
 import { searchColors } from './search-styles';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import { formatInr } from '@/lib/format/money';
 
 const { ink: INK, muted: MUTED, border: BORDER } = searchColors;
@@ -71,7 +72,7 @@ export const DishRow = memo(function DishRow({ dish, onPress }: { dish: SearchDi
           <Text style={styles.resultName} numberOfLines={1}>{dish.name}</Text>
         </View>
         <Text style={styles.resultMeta} numberOfLines={1}>{dish.restaurantName || 'Restaurant'}</Text>
-        <Text style={styles.dishPrice}>{formatInr(dish.price)}</Text>
+        <DishPrice price={dish.price} discountedPrice={dish.discountedPrice} size="sm" />
       </View>
     </Pressable>
   );
@@ -125,7 +126,6 @@ const styles = StyleSheet.create({
   dishNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   vegDot: { width: 10, height: 10, borderRadius: 2, borderWidth: 1.5, borderColor: '#22C55E' },
   nonVegDot: { borderColor: '#EF4444' },
-  dishPrice: { fontFamily: fonts.uiSemi, fontSize: 13, color: INK, marginTop: 2 },
   skeleton: { backgroundColor: '#F1F5F9' },
   skeletonLine: { height: 10, borderRadius: 5, marginVertical: 2 },
 });

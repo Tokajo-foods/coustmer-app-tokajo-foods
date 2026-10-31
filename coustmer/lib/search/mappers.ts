@@ -116,6 +116,7 @@ export function mapSearchSuggestion(raw: Raw): SearchSuggestion | null {
     slug: str(raw.slug),
     source: type === 'category' ? (raw.source === 'cuisine' ? 'cuisine' : 'food_category') : undefined,
     price: num(raw.price),
+    discountedPrice: num(raw.discountedPrice),
     isVeg: bool(raw.isVeg),
     rating: num(raw.rating),
     isOpen: bool(raw.isOpen),

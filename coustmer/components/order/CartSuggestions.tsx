@@ -5,8 +5,8 @@ import { useCartStore } from '@/store/cart-store';
 import { Image } from 'expo-image';
 import { Plus } from 'lucide-react-native';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import { fonts } from '@/constants/typography';
-import { formatInr } from '@/lib/format/money';
 
 /**
  * Same-restaurant add-ons based on recommended menu API.
@@ -48,7 +48,9 @@ export function CartSuggestionsFromStore() {
             <Text style={styles.name} numberOfLines={2}>
               {item.name}
             </Text>
-            <Text style={styles.price}>{formatInr(item.price)}</Text>
+            <View style={styles.priceWrap}>
+              <DishPrice price={item.price} discountedPrice={item.discountedPrice} size="sm" />
+            </View>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() => {
@@ -120,12 +122,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#0B1220',
   },
-  price: {
-    marginTop: 4,
-    fontFamily: fonts.uiBold,
-    fontSize: 13,
-    color: '#0B1220',
-  },
+  priceWrap: { marginTop: 4 },
   addBtn: {
     marginTop: 8,
     height: 30,

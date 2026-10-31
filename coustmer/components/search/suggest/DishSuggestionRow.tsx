@@ -3,7 +3,7 @@ import { UtensilsCrossed } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { formatInr } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import type { SearchSuggestion } from '@/lib/search/types';
 
 import { HighlightedText } from '../HighlightedText';
@@ -46,7 +46,7 @@ export const DishSuggestionRow = memo(function DishSuggestionRow({ item, query, 
       </View>
       {item.price ? (
         <View style={s.trailing}>
-          <Text style={s.price}>{formatInr(item.price)}</Text>
+          <DishPrice price={item.price} discountedPrice={item.discountedPrice} size="sm" />
         </View>
       ) : null}
     </Pressable>

@@ -66,10 +66,12 @@ function mapRestaurant(raw: Raw): SearchRestaurant {
 }
 
 function mapDish(raw: Raw): SearchDish {
+  const offer = num(raw.discountedPrice);
   return {
     id: String(raw.id ?? ''),
     name: str(raw.name) ?? 'Dish',
     price: num(raw.price) ?? 0,
+    discountedPrice: offer !== undefined && offer > 0 ? offer : undefined,
     imageUrl: str(raw.image),
     isVeg: typeof raw.isVeg === 'boolean' ? raw.isVeg : undefined,
     restaurantId: String(raw.restaurantId ?? ''),
@@ -88,6 +90,7 @@ export function toSuggestions(q: string, hit: LiveHit): SearchSuggestionsResult 
     restaurantName: d.restaurantName,
     dishId: d.id,
     price: d.price,
+    discountedPrice: d.discountedPrice,
     isVeg: d.isVeg,
   }));
   const restaurants: SearchSuggestion[] = hit.restaurants
