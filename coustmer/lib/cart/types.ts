@@ -96,6 +96,9 @@ export type Cart = {
   tip: number;
   discount: number;
   deliveryFee?: number;
+  deliveryFeeBase?: number;
+  superFreeDelivery?: boolean;
+  autoFreeDelivery?: boolean;
   tax?: number;
   platformFee?: number;
   taxesAndCharges?: number;
@@ -109,6 +112,11 @@ export type Cart = {
   /** Amount to pay now (cart-service grandTotal). */
   total: number;
   coupon?: CartCoupon | null;
+  instructions?: {
+    cooking?: string;
+    cutlery?: boolean;
+    leaveAtDoor?: boolean;
+  };
   specialInstructions?: string;
   deliveryAddress?: CartAddress | null;
   deliveryType?: DeliveryType;

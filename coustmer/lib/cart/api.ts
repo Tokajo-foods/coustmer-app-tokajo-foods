@@ -209,6 +209,20 @@ function mapAddress(raw: unknown): CartAddress | null {
   };
 }
 
+function mapCartInstructions(raw: unknown): Cart['instructions'] {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const row = asRecord(raw);
+  const cooking = String(row.cooking ?? '').trim();
+  const cutlery = row.cutlery === true;
+  const leaveAtDoor = row.leaveAtDoor === true;
+  if (!cooking && !cutlery && !leaveAtDoor) return undefined;
+  return {
+    cooking: cooking || undefined,
+    cutlery,
+    leaveAtDoor,
+  };
+}
+
 function mapCoupon(raw: unknown): CartCoupon | null {
   if (!raw) return null;
   if (typeof raw === 'string') return { code: raw };
@@ -397,6 +411,7 @@ export function mapCart(data: unknown): Cart {
     walletApplied,
     total: Number.isFinite(total) ? total : 0,
     coupon: mapCoupon(nestedCart.coupon ?? nestedCart.promo ?? nestedCart.appliedCoupon),
+    instructions: mapCartInstructions(nestedCart.instructions),
     specialInstructions:
       (nestedCart.specialInstructions as string) ||
       (nestedCart.notes as string) ||

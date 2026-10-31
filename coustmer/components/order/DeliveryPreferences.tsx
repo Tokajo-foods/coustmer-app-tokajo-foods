@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Switch,
@@ -11,6 +11,7 @@ import { Heart, MessageSquare, UtensilsCrossed } from 'lucide-react-native';
 
 import { fonts } from '@/constants/typography';
 import {
+  useCart,
   useUpdateCartInstructions,
 } from '@/lib/cart/hooks';
 import { useAuthStore } from '@/store/auth-store';
@@ -35,18 +36,37 @@ export function DeliveryPreferences({ tip, setTip }: Props) {
   const tipPresets = moneyConfig.data?.tipPresetsInr ?? [];
 
   const updateInstructions = useUpdateCartInstructions();
+  const cart = useCart();
+  const hydrated = useRef(false);
 
   const [cooking, setCooking] = useState('');
   const [cutlery, setCutlery] = useState(false);
   const [leaveAtDoor, setLeaveAtDoor] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = cart.data?.instructions;
+    if (hydrated.current || !saved) return;
+    hydrated.current = true;
+    setCooking(saved.cooking ?? '');
+    setCutlery(saved.cutlery === true);
+    setLeaveAtDoor(saved.leaveAtDoor === true);
+  }, [cart.data?.instructions]);
 
   const syncInstructions = (updates: { cooking?: string; cutlery?: boolean; leaveAtDoor?: boolean }) => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      setSaveError('Sign in to send these notes with the order');
+      return;
+    }
+    setSaveError(null);
     updateInstructions.mutate(updates, {
       onSuccess: () => {
         setSavedTick(true);
         setTimeout(() => setSavedTick(false), 1200);
+      },
+      onError: (error) => {
+        setSaveError(error instanceof Error ? error.message : 'Could not save these notes');
       },
     });
   };
@@ -78,12 +98,14 @@ export function DeliveryPreferences({ tip, setTip }: Props) {
       {/* Instructions */}
       <View style={styles.divider} />
       <Text style={styles.cardTitle}>Delivery instructions</Text>
-      <Text style={styles.liveHint}>
+      <Text style={[styles.liveHint, saveError ? { color: '#DC2626' } : null]}>
         {updateInstructions.isPending
-          ? 'Saving instructions...'
-          : savedTick
-            ? 'Saved to cart'
-            : 'These notes are sent to the kitchen live'}
+          ? 'Saving…'
+          : saveError
+            ? saveError
+            : savedTick
+              ? 'Saved. The kitchen and rider get these with the order'
+              : 'Cutlery and cooking notes go to the kitchen. Leave at door goes to the rider'}
       </Text>
 
       <View style={styles.instructionRow}>
