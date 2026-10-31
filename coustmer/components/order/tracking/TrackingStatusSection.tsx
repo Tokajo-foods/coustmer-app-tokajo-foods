@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Check, Clock3 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -15,7 +15,6 @@ import Animated, {
 import type { EtaLabel } from '@/components/order/tracking/tracking-eta';
 import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_SOFT, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
-import { pickupReadyCopy } from './pickup-ready-copy';
 import { TrackingPickupTimeline } from './TrackingPickupTimeline';
 import {
   PICKUP_TRACKING_STEPS,
@@ -93,23 +92,6 @@ export function TrackingStatusSection({
     };
   });
 
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!pickup || !phase.active) return;
-    const id = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(id);
-  }, [pickup, phase.active, promisedReadyAt]);
-
-  const pickupTiming = pickup
-    ? pickupReadyCopy({
-        promisedReadyAt,
-        estimatedPrepTime,
-        delayMinutes,
-        ready: phase.key === 'ready' || phase.completed,
-        now,
-      })
-    : null;
-
   const onRailLayout = (e: LayoutChangeEvent) => {
     railWidth.value = e.nativeEvent.layout.width;
   };
@@ -119,27 +101,6 @@ export function TrackingStatusSection({
       <Text style={styles.kicker}>{kicker}</Text>
       <Text style={styles.statusTitle}>{phase.title}</Text>
       <Text style={styles.statusHint}>{phase.hint}</Text>
-
-      {pickup && pickupTiming ? (
-        <View style={styles.etaRow}>
-          <View style={styles.etaBlock}>
-            <Text style={styles.etaLabel}>{pickupTiming.label}</Text>
-            <View style={styles.etaValueRow}>
-              <Text style={styles.etaValue}>{pickupTiming.value}</Text>
-              {pickupTiming.unit ? <Text style={styles.etaUnit}>{pickupTiming.unit}</Text> : null}
-            </View>
-            <Text style={styles.pickupSub} numberOfLines={2}>{pickupTiming.sub}</Text>
-          </View>
-          <View style={styles.etaDivider} />
-          <View style={styles.etaSide}>
-            <Clock3 color={ORANGE} size={16} strokeWidth={2.3} />
-            <Text style={styles.etaSideText}>
-              {itemCount ? `${itemCount} item${itemCount === 1 ? '' : 's'}` : 'Order'}
-            </Text>
-            <Text style={styles.etaSideSub}>Takeaway</Text>
-          </View>
-        </View>
-      ) : null}
 
       {phase.active && phase.showEta && !pickup ? (
         <View style={styles.etaRow}>
@@ -162,7 +123,13 @@ export function TrackingStatusSection({
       ) : null}
 
       {pickup ? (
-        <TrackingPickupTimeline phase={phase} activeIdx={activeIdx} />
+        <TrackingPickupTimeline
+          phase={phase}
+          activeIdx={activeIdx}
+          promisedReadyAt={promisedReadyAt}
+          estimatedPrepTime={estimatedPrepTime}
+          delayMinutes={delayMinutes}
+        />
       ) : (
         <View style={styles.timeline}>
           <View style={styles.timelineRail} onLayout={onRailLayout}>
@@ -222,7 +189,6 @@ const styles = StyleSheet.create({
   etaValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   etaValue: { fontFamily: fonts.displayBold, fontSize: 34, color: INK, letterSpacing: -1 },
   etaUnit: { fontFamily: fonts.uiSemi, fontSize: 14, color: INK_SOFT, marginBottom: 4 },
-  pickupSub: { marginTop: 4, fontFamily: fonts.ui, fontSize: 11, color: MUTED, lineHeight: 15 },
   etaDivider: { width: 1, height: 42, backgroundColor: '#F3D5BE', marginHorizontal: 14 },
   etaSide: { width: 108, gap: 4 },
   etaSideText: { fontFamily: fonts.uiBold, fontSize: 13, color: INK },
