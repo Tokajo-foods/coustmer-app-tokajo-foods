@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Mail, Phone } from 'lucide-react-native';
+import { Mail, Phone, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { authTheme } from '@/constants/auth-theme';
@@ -11,35 +11,29 @@ type Props = {
   onChange: (mode: LoginModePref) => void;
 };
 
+const TABS: { mode: LoginModePref; label: string; Icon: LucideIcon }[] = [
+  { mode: 'phone', label: 'Phone OTP', Icon: Phone },
+  { mode: 'email', label: 'Email', Icon: Mail },
+];
+
 export function LoginModeTabs({ value, onChange }: Props) {
   return (
     <View style={styles.row}>
-      <Pressable
-        onPress={() => onChange('email')}
-        style={[styles.tab, value === 'email' && styles.tabActive]}
-        accessibilityRole="button"
-        accessibilityState={{ selected: value === 'email' }}
-      >
-        <Mail
-          size={16}
-          color={value === 'email' ? authTheme.brand : authTheme.textDim}
-          strokeWidth={2.4}
-        />
-        <Text style={[styles.label, value === 'email' && styles.labelActive]}>Email</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => onChange('phone')}
-        style={[styles.tab, value === 'phone' && styles.tabActive]}
-        accessibilityRole="button"
-        accessibilityState={{ selected: value === 'phone' }}
-      >
-        <Phone
-          size={16}
-          color={value === 'phone' ? authTheme.brand : authTheme.textDim}
-          strokeWidth={2.4}
-        />
-        <Text style={[styles.label, value === 'phone' && styles.labelActive]}>Phone OTP</Text>
-      </Pressable>
+      {TABS.map(({ mode, label, Icon }) => {
+        const active = value === mode;
+        return (
+          <Pressable
+            key={mode}
+            onPress={() => onChange(mode)}
+            style={[styles.tab, active && styles.tabActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+          >
+            <Icon size={16} color={active ? authTheme.brand : authTheme.textDim} strokeWidth={2.4} />
+            <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

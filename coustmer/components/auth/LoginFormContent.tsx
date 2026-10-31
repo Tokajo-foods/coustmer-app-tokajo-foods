@@ -28,7 +28,7 @@ export function LoginFormContent({
   initialPhone,
 }: Props) {
   const router = useRouter();
-  const [pref, setPref] = useState<LoginModePref>(initialMode ?? (initialPhone ? 'phone' : 'email'));
+  const [pref, setPref] = useState<LoginModePref>(initialMode ?? 'phone');
   const isPhone = pref === 'phone';
 
   const handleForgotPassword = () =>
