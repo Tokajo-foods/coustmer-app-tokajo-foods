@@ -132,10 +132,10 @@ export function useCheckoutPayment({ customerName, contact, setPhase }: Options)
         ]);
         return;
       }
-      const cancelled = reason === 'dismissed';
-      const detail = !cancelled && reason && reason !== 'payment_failed' ? `${reason}\n\n` : '';
-      Alert.alert(cancelled ? 'Payment cancelled' : 'Payment failed', `${detail}${SAVED_NOTE}`, [
-        { text: 'View order', onPress: () => goOrder(order.id) },
+      if (reason === 'dismissed') return;
+      const detail = reason && reason !== 'payment_failed' ? `${reason}\n\n` : '';
+      Alert.alert('Payment failed', `${detail}${SAVED_NOTE}`, [
+        { text: 'Back to summary', style: 'cancel' },
         { text: 'Retry payment', onPress: () => void pay(order) },
       ]);
     },
