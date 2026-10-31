@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Bike, Phone, PhoneCall, Star, Store, Wifi } from 'lucide-react-native';
+import { Bike, PhoneCall, Star, Store, Wifi } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -8,7 +8,6 @@ import { fonts } from '@/constants/typography';
 import type { CallRole } from '@/lib/call/types';
 
 const ORANGE = '#FF6A00';
-const GREEN = '#16A34A';
 const INK = '#111827';
 const MUTED = '#6B7280';
 
@@ -20,9 +19,7 @@ type Props = {
   caption: string;
   imageUrl?: string | null;
   rating?: string | null;
-  phone: ContactActionState;
   internet: ContactActionState;
-  onPhone: () => void;
   onInternet: () => void;
 };
 
@@ -57,7 +54,7 @@ function RoundAction(props: {
       <View
         style={[
           styles.actionCircle,
-          { backgroundColor: live ? GREEN : `${tint}1A`, borderColor: live ? GREEN : `${tint}33` },
+          { backgroundColor: live ? '#16A34A' : `${tint}1A`, borderColor: live ? '#16A34A' : `${tint}33` },
           state === 'unavailable' && styles.dim,
         ]}
       >
@@ -70,9 +67,9 @@ function RoundAction(props: {
   );
 }
 
-/** One person on the order: who they are, then a phone call and an in-app call. */
+/** One person on the order: who they are, then an in-app internet call. */
 export function ContactCallRow(props: Props) {
-  const { role, name, caption, rating, phone, internet } = props;
+  const { role, name, caption, rating, internet } = props;
   const live = internet === 'on_call';
   return (
     <View style={styles.row}>
@@ -91,14 +88,6 @@ export function ContactCallRow(props: Props) {
           <Text style={styles.caption} numberOfLines={1}>{caption}</Text>
         </View>
       </View>
-      <RoundAction
-        label="Call"
-        hint={`Phone call ${name}`}
-        tint={GREEN}
-        state={live ? 'unavailable' : phone}
-        icon={<Phone color={GREEN} size={18} strokeWidth={2.4} />}
-        onPress={props.onPhone}
-      />
       <RoundAction
         label="Internet"
         hint={`Internet call ${name}`}

@@ -35,28 +35,12 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
   if (!phase.active && (phase.cancelled || hideRider !== true)) return null;
 
   const rowFor = (role: CallRole) => calls.rows.find((row) => row.role === role) ?? null;
-  const phoneState = (role: CallRole, row: CallRow | null): ContactActionState => {
-    if (calls.busy === `cell:${role}`) return 'busy';
-    return row?.virtualNumber ? 'ready' : 'unavailable';
-  };
   const netState = (role: CallRole, row: CallRow | null): ContactActionState => {
     if (live?.peerRole === role) return 'on_call';
     if (calls.busy === `net:${role}`) return 'busy';
     return row?.internetAvailable ? 'ready' : 'unavailable';
   };
 
-  const onPhone = (role: CallRole, row: CallRow | null) => {
-    setHint(null);
-    if (!row) {
-      setHint(NOT_READY[role]);
-      return;
-    }
-    if (!row.virtualNumber) {
-      setHint('The private phone line is still being set up. Use Internet call for now.');
-      return;
-    }
-    void calls.dial(role);
-  };
   const onInternet = (role: CallRole, row: CallRow | null, name: string) => {
     setHint(null);
     if (!row) {
@@ -64,7 +48,7 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
       return;
     }
     if (!row.internetAvailable) {
-      setHint('Internet calling is not available right now. Try a phone call.');
+      setHint('Internet calling is not available right now. Try again in a moment.');
       return;
     }
     void calls.startInternet(role, name);
@@ -94,9 +78,7 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
           caption={vehicle || 'Delivery partner'}
           imageUrl={partner.imageUrl}
           rating={rating}
-          phone={phoneState('rider', riderRow)}
           internet={netState('rider', riderRow)}
-          onPhone={() => onPhone('rider', riderRow)}
           onInternet={() => onInternet('rider', riderRow, partner.name || 'Delivery partner')}
         />
       ) : null}
@@ -105,9 +87,7 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
         role="restaurant"
         name={restaurantName}
         caption="Restaurant"
-        phone={phoneState('restaurant', restaurantRow)}
         internet={netState('restaurant', restaurantRow)}
-        onPhone={() => onPhone('restaurant', restaurantRow)}
         onInternet={() => onInternet('restaurant', restaurantRow, restaurantName)}
       />
 
