@@ -25,6 +25,8 @@ import { formatInr } from '@/lib/format/money';
 import { useCart, useCartBill } from '@/lib/cart/hooks';
 import { formatScheduledForDisplay } from '@/lib/cart/schedule';
 import { useCreateOrder } from '@/lib/order/hooks';
+import { alertOngoingOrderBlocks } from '@/lib/order/ongoing-order-alert';
+import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { buildCheckoutOrder, resolveCheckoutMethod } from '@/lib/order/build-checkout-order';
 import { usePaymentWallet } from '@/lib/payment/hooks';
 import { needsOnlinePayment, type PaymentMethodType } from '@/lib/payment/types';
@@ -68,6 +70,7 @@ export function OrderSummaryScreen() {
   const hasItems = items.length > 0;
   const bill = useCartBill(billPin?.lat, billPin?.lng, hasItems, normalizedDeliveryType, hasItems);
   const createOrder = useCreateOrder();
+  const { order: activeOrder } = usePrimaryActiveOrder();
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -135,6 +138,11 @@ export function OrderSummaryScreen() {
       return;
     }
 
+    if (activeOrder) {
+      alertOngoingOrderBlocks(activeOrder, router);
+      return;
+    }
+
     setPaying(true);
 
     try {
@@ -187,6 +195,11 @@ export function OrderSummaryScreen() {
       });
     } catch (err) {
       setOrderPlacementPhase('none');
+      const code = (err as { code?: string }).code;
+      if (code === 'ACTIVE_ORDER_EXISTS' && activeOrder) {
+        alertOngoingOrderBlocks(activeOrder, router);
+        return;
+      }
       Alert.alert('Could not place order', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setPaying(false);

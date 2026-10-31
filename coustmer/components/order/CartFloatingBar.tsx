@@ -1,7 +1,7 @@
 import { Pressable } from '@/components/common/Pressable';
 import React, { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, MapPin } from 'lucide-react-native';
 import { StyleSheet, Text, View, Animated, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import {
   appBottomNavOffset,
   isAppTabRoot,
 } from '@/components/navigation/AppBottomNav';
+import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { useCartStore } from '@/store/cart-store';
 
 /** Extra scroll space a screen needs so its last row clears the cart pill. */
@@ -33,14 +34,22 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const restaurant = useCartStore((s) => s.restaurant);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const hasCart = totalItems > 0;
+  const { order: activeOrder } = usePrimaryActiveOrder();
 
-  const slideAnim = useRef(new Animated.Value(hasCart ? 0 : 300)).current;
-  const wasVisible = useRef(hasCart);
+  const mode: 'cart' | 'track' | null = hasCart
+    ? 'cart'
+    : activeOrder
+      ? 'track'
+      : null;
+  const visible = mode !== null;
+
+  const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
+  const wasVisible = useRef(visible);
 
   useEffect(() => {
     const showing = wasVisible.current;
-    wasVisible.current = hasCart;
-    if (!hasCart) {
+    wasVisible.current = visible;
+    if (!visible) {
       slideAnim.stopAnimation();
       return;
     }
@@ -52,42 +61,66 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
       friction: 8,
       tension: 50,
     }).start();
-  }, [hasCart, slideAnim]);
+  }, [visible, slideAnim]);
 
-  if (!hasCart) return null;
+  if (!visible) return null;
+
+  const onPress = () => {
+    if (mode === 'track' && activeOrder) {
+      router.push({
+        pathname: '/orders/[orderId]/tracking',
+        params: { orderId: activeOrder.id },
+      });
+      return;
+    }
+    router.push('/cart');
+  };
+
+  const title = mode === 'track' ? 'Track order' : 'View Cart';
+  const subtitle =
+    mode === 'track'
+      ? activeOrder?.restaurantName || 'On the way'
+      : `${totalItems} item${totalItems > 1 ? 's' : ''}`;
+
+  const imageUri =
+    mode === 'track'
+      ? (activeOrder?.raw?.restaurantImage as string | undefined) ||
+        (activeOrder?.raw?.restaurantLogo as string | undefined)
+      : items[0]?.imageUrl || restaurant?.imageUrl;
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]} pointerEvents="box-none">
       <Animated.View
         style={[
           styles.bgContainer,
-          { 
+          {
             position: 'absolute',
             bottom,
             alignSelf: 'center',
-            transform: [{ translateY: slideAnim }]
+            transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        <Pressable 
-          style={styles.cardContent}
-          onPress={() => router.push('/cart')}
-        >
+        <Pressable style={styles.cardContent} onPress={onPress}>
           <View style={styles.imageWrap}>
-            {items[0]?.imageUrl ? (
-              <Image source={{ uri: items[0].imageUrl }} style={styles.restImage} />
-            ) : restaurant?.imageUrl ? (
-              <Image source={{ uri: restaurant.imageUrl }} style={styles.restImage} />
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.restImage} />
             ) : (
-              <View style={[styles.restImage, { backgroundColor: '#EEEEEE' }]} />
+              <View style={[styles.restImage, styles.imagePlaceholder]}>
+                {mode === 'track' ? (
+                  <MapPin color="#E87431" size={18} strokeWidth={2.2} />
+                ) : null}
+              </View>
             )}
           </View>
           <View style={styles.textCol}>
-            <Text style={styles.viewCartText}>View Cart</Text>
-            <Text style={styles.itemCountText}>{totalItems} item{totalItems > 1 ? 's' : ''}</Text>
+            <Text style={styles.viewCartText}>{title}</Text>
+            <Text style={styles.itemCountText} numberOfLines={1}>
+              {subtitle}
+            </Text>
           </View>
           <View style={styles.chevronWrap}>
-             <ChevronRight color="#FFFFFF" size={24} />
+            <ChevronRight color="#FFFFFF" size={24} />
           </View>
         </Pressable>
       </Animated.View>
@@ -126,9 +159,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  imagePlaceholder: {
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   textCol: {
     justifyContent: 'center',
     paddingRight: 16,
+    maxWidth: 200,
   },
   viewCartText: {
     color: '#FFFFFF',

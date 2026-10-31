@@ -57,6 +57,8 @@ import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
 import { CouponPickerSheet } from '@/components/order/CouponPickerSheet';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
+import { alertOngoingOrderBlocks } from '@/lib/order/ongoing-order-alert';
+import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { isDeliveryFeeReady } from '@/lib/cart/delivery-fee-ready';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { DishPrice } from '@/components/restaurant/DishPrice';
@@ -200,6 +202,15 @@ export function CartScreen() {
   const insets = useSafeAreaInsets();
   const token = useAuthStore((s) => s.token);
   const isLoggedIn = Boolean(token);
+  const { order: activeOrder } = usePrimaryActiveOrder();
+
+  const goOrderSummary = useCallback(() => {
+    if (activeOrder) {
+      alertOngoingOrderBlocks(activeOrder, router);
+      return;
+    }
+    router.push('/cart/summary' as import('expo-router').Href);
+  }, [activeOrder, router]);
 
   const restaurant = useCartStore((s) => s.restaurant);
   const items = useCartStore((s) => s.items);
@@ -537,10 +548,10 @@ export function CartScreen() {
 
   useEffect(() => {
     if (params.checkoutNow === '1') {
-      router.replace('/cart/summary' as import('expo-router').Href);
+      goOrderSummary();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.checkoutNow]);
+  }, [params.checkoutNow, goOrderSummary]);
 
   const handleApplyVoucher = async () => {
     const code = voucherCode.trim();
@@ -891,9 +902,7 @@ export function CartScreen() {
         <View style={[styles.checkoutBar, { paddingBottom: footerPad }]}>
           <TouchableOpacity
             style={styles.checkoutBtn}
-            onPress={() => {
-              router.push('/cart/summary' as import('expo-router').Href);
-            }}
+            onPress={goOrderSummary}
             disabled={
               !priceReady ||
               Boolean(rangeMessage) ||

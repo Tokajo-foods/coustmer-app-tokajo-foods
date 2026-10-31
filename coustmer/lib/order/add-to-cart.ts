@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+
 import { cartApi } from '@/lib/cart/api';
 import { cartLineLocalId } from '@/lib/cart/modifiers';
 import type { CartModifier } from '@/lib/cart/types';
@@ -13,6 +15,15 @@ import {
   rememberCart,
   revertFailedAdd,
 } from '@/lib/order/cart-qty-sync';
+import { alertOngoingOrderBlocks } from '@/lib/order/ongoing-order-alert';
+import { useActiveOrderStore } from '@/store/active-order-store';
+
+function blockNewCartWhileOrderLive(): boolean {
+  const order = useActiveOrderStore.getState().order;
+  if (!order) return false;
+  alertOngoingOrderBlocks(order, router);
+  return true;
+}
 
 export {
   decrementCartItem,
@@ -71,6 +82,7 @@ async function addRemote(
   restaurant: RestaurantRef,
   options?: { onAdded?: () => void }
 ) {
+  if (blockNewCartWhileOrderLive()) return { ok: false as const };
   const store = useCartStore.getState();
   const modifiers = item.modifiers?.length ? item.modifiers : undefined;
   const menuItemId = item.menuItemId || item.id;
@@ -130,6 +142,8 @@ export function addMenuItemToCart(
   const lineId = cartLineLocalId(menuItemId, modifiers);
   const existing = findLine(menuItemId, modifiers ?? []);
 
+  if (!existing && blockNewCartWhileOrderLive()) return false;
+
   if (existing) {
     options?.onAdded?.();
     void incrementCartItem(existing.id);
@@ -181,6 +195,7 @@ export async function executeReplaceCart(
   restaurant: RestaurantRef,
   options?: { onAdded?: () => void }
 ) {
+  if (blockNewCartWhileOrderLive()) return;
   const store = useCartStore.getState();
   try {
     await cartApi.clearCart();

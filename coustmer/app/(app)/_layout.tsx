@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
 import { LocationEnablePrompt } from '@/components/location/LocationEnablePrompt';
+import { ActiveOrderSync } from '@/components/order/ActiveOrderSync';
 import { ReplaceCartModal } from '@/components/order/ReplaceCartModal';
 import { RestaurantShareLinkHandler } from '@/components/restaurant/RestaurantShareLinkHandler';
 import { RestaurantNotServiceableModal } from '@/components/restaurant/RestaurantNotServiceableModal';
@@ -50,6 +51,7 @@ export default function AppLayout() {
         />
       </Stack>
       <AppBottomNav />
+      <ActiveOrderSync />
       <RestaurantShareLinkHandler />
       <RestaurantNotServiceableModal />
       <ReplaceCartModal />

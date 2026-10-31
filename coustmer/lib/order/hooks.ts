@@ -87,11 +87,13 @@ export function useRecentOrders() {
 }
 
 /** GET /orders/active */
-export function useActiveOrders(options?: { refetchInterval?: number }) {
+export function useActiveOrders(options?: { refetchInterval?: number; enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   return useQuery({
     queryKey: orderKeys.active(),
     queryFn: orderApi.getActiveOrders,
-    refetchInterval: options?.refetchInterval ?? 15_000,
+    enabled,
+    refetchInterval: enabled ? (options?.refetchInterval ?? 15_000) : false,
   });
 }
 
