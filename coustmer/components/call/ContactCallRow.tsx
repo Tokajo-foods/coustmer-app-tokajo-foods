@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Bike, PhoneCall, Star, Store, Wifi } from 'lucide-react-native';
+import { Bike, MessageCircle, PhoneCall, Star, Store, Wifi } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -21,6 +21,7 @@ type Props = {
   rating?: string | null;
   internet: ContactActionState;
   onInternet: () => void;
+  onChat?: () => void;
 };
 
 function Avatar({ role, name, imageUrl }: { role: CallRole; name: string; imageUrl?: string | null }) {
@@ -88,14 +89,26 @@ export function ContactCallRow(props: Props) {
           <Text style={styles.caption} numberOfLines={1}>{caption}</Text>
         </View>
       </View>
-      <RoundAction
-        label="Internet"
-        hint={`Internet call ${name}`}
-        tint={ORANGE}
-        state={internet}
-        icon={live ? <PhoneCall color="#FFFFFF" size={18} strokeWidth={2.4} /> : <Wifi color={ORANGE} size={18} strokeWidth={2.4} />}
-        onPress={props.onInternet}
-      />
+      <View style={styles.actions}>
+        {props.onChat ? (
+          <RoundAction
+            label="Chat"
+            hint={`Chat with ${name}`}
+            tint="#2563EB"
+            state="ready"
+            icon={<MessageCircle color="#2563EB" size={18} strokeWidth={2.4} />}
+            onPress={props.onChat}
+          />
+        ) : null}
+        <RoundAction
+          label="Internet"
+          hint={`Internet call ${name}`}
+          tint={ORANGE}
+          state={internet}
+          icon={live ? <PhoneCall color="#FFFFFF" size={18} strokeWidth={2.4} /> : <Wifi color={ORANGE} size={18} strokeWidth={2.4} />}
+          onPress={props.onInternet}
+        />
+      </View>
     </View>
   );
 }
@@ -129,6 +142,7 @@ const styles = StyleSheet.create({
   },
   ratingText: { fontFamily: fonts.uiBold, fontSize: 11, color: '#92400E' },
   caption: { flexShrink: 1, fontFamily: fonts.uiMedium, fontSize: 12, color: MUTED, textTransform: 'capitalize' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   action: { alignItems: 'center', width: 56, gap: 4 },
   actionCircle: {
     width: 42,

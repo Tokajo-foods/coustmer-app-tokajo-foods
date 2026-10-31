@@ -31,7 +31,7 @@ const POLL_ORDER_FALLBACK_MS = 12_000;
 
 type Push = { status: string; at: number };
 
-const NO_PARTNER_TRIP = new Set(['assigned', 'cancelled', 'reassigned', 'failed']);
+const NO_PARTNER_TRIP = new Set(['cancelled', 'reassigned', 'failed']);
 
 function newer(push: Push | null, restStatus: string | undefined, restAt: number): string | null {
   if (push && (push.at > restAt || !restStatus)) return push.status;

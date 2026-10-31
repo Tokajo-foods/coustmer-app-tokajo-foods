@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { PartnerChatEntry } from '@/components/order/PartnerChatEntry';
 import { Pressable } from '@/components/common/Pressable';
 import { GREEN, INK, LINE, MUTED, ORANGE, RED, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
@@ -143,6 +144,7 @@ export function TrackingPartnerCard({ orderId, phase, partner, onHelp }: Props) 
         {partner ? (
           <>
             <View style={styles.partnerActions}>
+              <PartnerChatEntry orderId={orderId} partnerName={partner.name || 'Delivery partner'} />
               <Pressable style={styles.helpBtn} onPress={onHelp}>
                 <Headset color={INK} size={16} strokeWidth={2.4} />
                 <Text style={styles.helpBtnText}>Help</Text>

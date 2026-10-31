@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { Lock } from 'lucide-react-native';
 import { useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
@@ -27,6 +28,7 @@ const NOT_READY: Record<CallRole, string> = {
 
 /** Rider and restaurant contacts on the track screen. Hidden once the order is closed. */
 export function OrderContactCard({ orderId, phase, partner, restaurantName, hideRider }: Props) {
+  const router = useRouter();
   const calls = useOrderCalls(orderId, 'customer');
   const live = useCallStore((s) => (s.call?.orderId === orderId ? s.call : null));
   const [hint, setHint] = useState<string | null>(null);
@@ -80,6 +82,12 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
           rating={rating}
           internet={netState('rider', riderRow)}
           onInternet={() => onInternet('rider', riderRow, partner.name || 'Delivery partner')}
+          onChat={() =>
+            router.push({
+              pathname: '/orders/[orderId]/partner-chat',
+              params: { orderId, partnerName: partner.name || 'Delivery partner' },
+            })
+          }
         />
       ) : null}
       {!hideRider && partner ? <View style={styles.divider} /> : null}

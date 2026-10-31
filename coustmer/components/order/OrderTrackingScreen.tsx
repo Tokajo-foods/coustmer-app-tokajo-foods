@@ -38,7 +38,8 @@ export function OrderTrackingScreen() {
   const clearCart = useCartStore((s) => s.clearCart);
   const live = useLiveOrderTracking(id);
   const { order, o, t, phase, pickup } = live;
-  const otpQuery = useDropOtp(id, !pickup && phase.active && Boolean(t?.deliveryId) && !phase.rto);
+  const otpEnabled = !pickup && phase.active && Boolean(t?.deliveryId) && !phase.rto;
+  const otpQuery = useDropOtp(id, otpEnabled);
 
   useEffect(() => {
     if (newOrder !== 'true') return;
@@ -151,8 +152,12 @@ export function OrderTrackingScreen() {
 
           {!phase.active ? <TrackingCompletedActions orderId={id} orderStatus={live.orderStatus} /> : null}
 
-          {!pickup && phase.active && otpQuery.data?.otp ? (
-            <TrackingOtpCard otp={otpQuery.data} atDoor={phase.key === 'at_door'} />
+          {!pickup && otpEnabled ? (
+            <TrackingOtpCard
+              otp={otpQuery.data}
+              loading={otpQuery.isFetching && !otpQuery.data?.otp}
+              atDoor={phase.key === 'at_door'}
+            />
           ) : null}
 
           {pickup ? null : (
