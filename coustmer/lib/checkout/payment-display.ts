@@ -1,57 +1,31 @@
-import type { SavedPaymentMethod } from '@/lib/payment/types';
+export type PayChoice = 'cod' | 'wallet' | 'online';
 
-export function paymentMethodLabel(
-  method: string,
-  savedMethods?: SavedPaymentMethod[]
-): string {
-  switch (method) {
+/** Cart and checkout only offer these three. Older UPI/card picks are pay online. */
+export function canonicalPayChoice(method: string): PayChoice {
+  const value = method.trim().toLowerCase();
+  if (value === 'cod' || value === 'cash' || value === 'cash_on_delivery') return 'cod';
+  if (value === 'wallet' || value === 'tokajo_wallet') return 'wallet';
+  return 'online';
+}
+
+export function paymentMethodLabel(method: string): string {
+  switch (canonicalPayChoice(method)) {
     case 'cod':
-      return 'Pay on Delivery';
-    case 'paytm_upi':
-      return 'Paytm UPI';
-    case 'gpay':
-      return 'Google Pay';
-    case 'phonepe':
-      return 'PhonePe';
-    case 'netbanking':
-      return 'Netbanking';
+      return 'Cash on delivery';
     case 'wallet':
-      return 'Tokajo Foods Wallet';
-    case 'card':
-      return 'Credit / Debit Card';
-    case 'upi':
-      return 'UPI';
-    default: {
-      const saved = savedMethods?.find((m) => m.id === method);
-      if (!saved) return 'Choose payment';
-      if (saved.type === 'upi' && saved.upiId) return saved.upiId;
-      if (saved.type === 'card' && saved.last4) {
-        return `${(saved.brand || 'Card').toUpperCase()} •••• ${saved.last4}`;
-      }
-      return 'Saved payment';
-    }
+      return 'Wallet';
+    case 'online':
+      return 'Pay online';
   }
 }
 
 export function paymentMethodHint(method: string): string {
-  switch (method) {
+  switch (canonicalPayChoice(method)) {
     case 'cod':
-      return 'Cash or UPI at delivery';
-    case 'paytm_upi':
-      return 'Opens Paytm with the order amount';
-    case 'gpay':
-      return 'Opens Google Pay with the order amount';
-    case 'phonepe':
-      return 'Opens PhonePe with the order amount';
-    case 'upi':
-      return 'Opens your UPI app with the order amount';
-    case 'netbanking':
-      return 'Choose your bank on the secure payment screen';
+      return 'Pay cash when the order arrives';
     case 'wallet':
-      return 'Pay from Tokajo Foods Wallet';
-    case 'card':
-      return 'Secure card payment';
-    default:
-      return 'Tap to change';
+      return 'Pay the full bill from your Tokajo balance';
+    case 'online':
+      return 'GPay, PhonePe, Paytm, cards and netbanking';
   }
 }

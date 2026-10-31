@@ -17,7 +17,6 @@ type Props = {
   scheduledLabel?: string | null;
   onChangeSchedule: () => void;
   paymentMethod: string;
-  savedMethods: Parameters<typeof paymentMethodLabel>[1];
   onChangePayment: () => void;
 };
 
@@ -102,7 +101,7 @@ export function OrderSummaryDetails(p: Props) {
           <View style={styles.paymentBody}>
             <Text style={styles.paymentEyebrow}>PAY USING</Text>
             <Text style={styles.paymentTitle} numberOfLines={1}>
-              {paymentMethodLabel(p.paymentMethod, p.savedMethods)}
+              {paymentMethodLabel(p.paymentMethod)}
             </Text>
             <Text style={styles.paymentHint} numberOfLines={1}>
               {paymentMethodHint(p.paymentMethod)}

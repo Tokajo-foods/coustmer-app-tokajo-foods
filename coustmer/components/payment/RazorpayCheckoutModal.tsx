@@ -124,6 +124,7 @@ export function RazorpayCheckoutModal({ visible, session, onClose, onResult }: P
       var options = {
         key: "${esc(session.keyId)}",
         order_id: "${esc(session.orderId)}",
+        amount: ${Math.max(0, Math.round(Number(session.amount) * 100))},
         currency: "${esc(session.currency) || 'INR'}",
         name: "Tokajo Foods",
         description: "${esc(session.description) || 'Order payment'}",

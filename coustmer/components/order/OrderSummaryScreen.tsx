@@ -16,18 +16,17 @@ import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { SlideToConfirm } from '@/components/order/SlideToConfirm';
 import { ORANGE, TEXT, styles } from '@/components/order/order-summary-styles';
 import { RazorpayCheckoutModal } from '@/components/payment/RazorpayCheckoutModal';
-import { paymentMethodLabel } from '@/lib/checkout/payment-display';
-import { ensureWalletCoversCheckout } from '@/lib/cart/ensure-wallet-checkout';
+import { paymentMethodLabel, type PayChoice } from '@/lib/checkout/payment-display';
+import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr } from '@/lib/format/money';
 import { useCart, useCartBill } from '@/lib/cart/hooks';
 import { formatScheduledForDisplay } from '@/lib/cart/schedule';
 import { useCreateOrder } from '@/lib/order/hooks';
 import { buildCheckoutOrder, resolveCheckoutMethod } from '@/lib/order/build-checkout-order';
-import { usePaymentMethods, usePaymentWallet } from '@/lib/payment/hooks';
+import { usePaymentWallet } from '@/lib/payment/hooks';
 import { needsOnlinePayment, type PaymentMethodType } from '@/lib/payment/types';
 import { preflightCheckoutMethod } from '@/lib/payment/checkout-preflight';
-import { upiAppForChoice } from '@/lib/payment/upi-app';
 import { useCheckoutPayment } from '@/lib/payment/use-checkout-payment';
 import { useUserProfile } from '@/lib/profile/hooks';
 import { useAuthStore } from '@/store/auth-store';
@@ -51,7 +50,6 @@ export function OrderSummaryScreen() {
   const setPaymentMethod = useCartStore((s) => s.setPaymentMethod);
 
   const profile = useUserProfile();
-  const paymentMethods = usePaymentMethods();
   const wallet = usePaymentWallet();
   const remoteCart = useCart();
   const cartData = remoteCart.data;
@@ -122,10 +120,7 @@ export function OrderSummaryScreen() {
     setOrderPlacementPhase('placing');
 
     try {
-      const { method: mappedMethod, methodId: mappedMethodId } = resolveCheckoutMethod(
-        paymentMethod,
-        paymentMethods.data
-      );
+      const { method: mappedMethod } = resolveCheckoutMethod(paymentMethod);
       const blocked = await preflightCheckoutMethod(mappedMethod, {
         amount: payable, restaurantId: restaurant.id, isTakeaway, lat: billPin?.lat, lng: billPin?.lng,
       });
@@ -166,8 +161,7 @@ export function OrderSummaryScreen() {
 
       await checkout.pay({
         id: order.id, orderNumber: order.orderNumber, amount,
-        method: mappedMethod as PaymentMethodType, methodId: mappedMethodId,
-        upiApp: upiAppForChoice(paymentMethod),
+        method: mappedMethod as PaymentMethodType,
       });
     } catch (err) {
       Alert.alert('Could not place order', err instanceof Error ? err.message : 'Please try again.');
@@ -177,17 +171,15 @@ export function OrderSummaryScreen() {
     }
   };
 
-  const chooseMethod = async (m: string) => {
-    if (m === 'wallet') {
-      try {
-        await ensureWalletCoversCheckout();
-        void bill.refetch();
-      } catch (err) {
-        Alert.alert('Wallet', err instanceof Error ? err.message : 'Could not apply wallet');
-        return;
-      }
+  const chooseMethod = async (method: PayChoice) => {
+    try {
+      await syncCheckoutWallet(method);
+      void bill.refetch();
+    } catch (err) {
+      Alert.alert('Wallet', err instanceof Error ? err.message : 'Could not apply wallet');
+      return;
     }
-    setPaymentMethod(m);
+    setPaymentMethod(method);
     setPaymentModalOpen(false);
   };
 
@@ -215,7 +207,6 @@ export function OrderSummaryScreen() {
           scheduledLabel={scheduledLabel}
           onChangeSchedule={() => router.back()}
           paymentMethod={paymentMethod}
-          savedMethods={paymentMethods.data}
           onChangePayment={() => setPaymentModalOpen(true)}
         />
 
@@ -245,7 +236,7 @@ export function OrderSummaryScreen() {
             <Text style={styles.footerTotalValue}>{formatInr(payable)}</Text>
           </View>
           <Text style={styles.footerMethod} numberOfLines={1}>
-            {paymentMethodLabel(paymentMethod, paymentMethods.data)}
+            {paymentMethodLabel(paymentMethod)}
           </Text>
         </View>
         <SlideToConfirm
@@ -274,7 +265,6 @@ export function OrderSummaryScreen() {
         restaurantName={restaurant?.name || ''}
         addressLabel={location?.label || 'Delivery'}
         addressText={location?.formattedAddress || ''}
-        savedMethods={paymentMethods.data}
         wallet={wallet.data}
       />
 

@@ -61,22 +61,18 @@ import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import type { DeliveryLocationResult } from '@/components/location/DeliveryLocationPicker';
 import { extractCityFromAddress, normalizeCityName } from '@/lib/location/format';
-import {
-  ensureWalletCoversCheckout,
-} from '@/lib/cart/ensure-wallet-checkout';
+import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr, formatLineTotal } from '@/lib/format/money';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
-import {
-  usePaymentMethods,
-  usePaymentWallet,
-} from '@/lib/payment/hooks';
+import { usePaymentWallet } from '@/lib/payment/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 import {
   paymentMethodHint,
   paymentMethodLabel,
+  type PayChoice,
 } from '@/lib/checkout/payment-display';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
@@ -207,7 +203,6 @@ export function CartScreen() {
   const setDeliveryTypeLocal = useCartStore((s) => s.setDeliveryType);
   const location = useDeliveryLocationStore((s) => s.location);
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
-  const paymentMethods = usePaymentMethods(isLoggedIn);
   const wallet = usePaymentWallet(isLoggedIn);
 
   const remoteCart = useCart();
@@ -300,17 +295,15 @@ export function CartScreen() {
   const addressLine = location?.formattedAddress || 'Add a delivery address';
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
 
-  const selectPaymentMethod = async (method: string) => {
-    if (method === 'wallet') {
-      try {
-        await ensureWalletCoversCheckout();
-      } catch (err) {
-        Alert.alert(
-          'Wallet',
-          err instanceof Error ? err.message : 'Could not apply wallet'
-        );
-        return;
-      }
+  const selectPaymentMethod = async (method: PayChoice) => {
+    try {
+      await syncCheckoutWallet(method);
+    } catch (err) {
+      Alert.alert(
+        'Wallet',
+        err instanceof Error ? err.message : 'Could not apply wallet'
+      );
+      return;
     }
     setPaymentMethod(method);
     setPaymentModalOpen(false);
@@ -874,7 +867,7 @@ export function CartScreen() {
             <View style={styles.paymentBody}>
               <Text style={styles.paymentEyebrow}>PAY USING</Text>
               <Text style={styles.paymentTitle} numberOfLines={1}>
-                {paymentMethodLabel(paymentMethod, paymentMethods.data)}
+                {paymentMethodLabel(paymentMethod)}
               </Text>
               <Text style={styles.paymentHint} numberOfLines={1}>
                 {paymentMethodHint(paymentMethod)}
@@ -980,7 +973,6 @@ export function CartScreen() {
           deliveryTime={restaurant?.deliveryTime}
           addressLabel={addressLabel}
           addressText={addressLine}
-          savedMethods={paymentMethods.data}
           wallet={wallet.data}
         />
 

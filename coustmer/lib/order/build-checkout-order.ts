@@ -1,19 +1,13 @@
+import { canonicalPayChoice } from '@/lib/checkout/payment-display';
 import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import type { CreateOrderPayload } from '@/lib/order/types';
-import type { SavedPaymentMethod } from '@/lib/payment/types';
 import type { CartItem } from '@/store/cart-store';
 import type { DeliveryLocation } from '@/store/delivery-location-store';
 
-const UPI_APP_CHOICES = new Set(['paytm_upi', 'gpay', 'phonepe']);
-
-/** Cart payment choice → order-service method (+ saved instrument id). UPI app shortcuts are plain UPI. */
-export function resolveCheckoutMethod(
-  choice: string,
-  saved: SavedPaymentMethod[] | undefined
-): { method: string; methodId?: string } {
-  if (UPI_APP_CHOICES.has(choice)) return { method: 'upi' };
-  const instrument = saved?.find((m) => m.id === choice);
-  return instrument ? { method: instrument.type, methodId: instrument.id } : { method: choice };
+/** Cart choice → order-service method. Pay online is one Razorpay checkout (UPI, cards, banks). */
+export function resolveCheckoutMethod(choice: string): { method: string } {
+  const pay = canonicalPayChoice(choice);
+  return { method: pay === 'online' ? 'upi' : pay };
 }
 
 type BuildInput = {

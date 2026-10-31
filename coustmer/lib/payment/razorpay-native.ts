@@ -42,10 +42,12 @@ export async function openNativeRazorpay(
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const RazorpayCheckout = require('react-native-razorpay').default;
   try {
+    const paise = Math.round(Number(session.amount) * 100);
     const res = (await RazorpayCheckout.open({
       key: session.keyId,
       order_id: session.orderId,
       currency: session.currency || 'INR',
+      ...(paise > 0 ? { amount: String(paise) } : {}),
       name: 'Tokajo Foods',
       description: session.description || 'Order payment',
       prefill: {
@@ -61,7 +63,9 @@ export async function openNativeRazorpay(
             method: { upi: true, card: false, netbanking: false, wallet: false },
             config: upiIntentConfig(session.upiApp),
           }
-        : {}),
+        : {
+            method: { upi: true, card: true, netbanking: true, wallet: true },
+          }),
     })) as NativeSuccess;
     return {
       success: Boolean(res?.razorpay_payment_id),
