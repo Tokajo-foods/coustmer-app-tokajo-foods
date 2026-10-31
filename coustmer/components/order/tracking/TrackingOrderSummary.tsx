@@ -23,7 +23,15 @@ function addressOf(o: Order): string {
   return a?.formattedAddress || [a?.street, a?.area, a?.city].filter(Boolean).join(', ') || 'Delivery address';
 }
 
-export function TrackingOrderSummary({ order, active }: { order: Order; active: boolean }) {
+export function TrackingOrderSummary({
+  order,
+  active,
+  pickup,
+}: {
+  order: Order;
+  active: boolean;
+  pickup?: boolean;
+}) {
   const router = useRouter();
   const items = order.items ?? [];
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
@@ -91,12 +99,20 @@ export function TrackingOrderSummary({ order, active }: { order: Order; active: 
       </View>
 
       <View style={[styles.section, styles.deliveringSection]}>
-        <Text style={styles.sectionTitle}>Delivering to</Text>
+        <Text style={styles.sectionTitle}>{pickup ? 'Pickup at' : 'Delivering to'}</Text>
         <View style={styles.addressRow}>
           <View style={styles.addressIcon}>
-            <MapPin color={ORANGE} size={16} strokeWidth={2.4} />
+            {pickup ? (
+              <Store color={ORANGE} size={16} strokeWidth={2.4} />
+            ) : (
+              <MapPin color={ORANGE} size={16} strokeWidth={2.4} />
+            )}
           </View>
-          <Text style={styles.addressText}>{addressOf(order)}</Text>
+          <Text style={styles.addressText}>
+            {pickup
+              ? order.restaurantName || 'Restaurant counter'
+              : addressOf(order)}
+          </Text>
         </View>
       </View>
     </>

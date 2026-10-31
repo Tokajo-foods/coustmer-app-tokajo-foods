@@ -31,6 +31,7 @@ type TimelineStep = {
 type Props = {
   currentStatus: string;
   timestamps?: Record<string, string | undefined>;
+  pickup?: boolean;
 };
 
 const ORANGE = '#FF6A00';
@@ -38,15 +39,6 @@ const INK = '#111827';
 const MUTED = '#6B7280';
 const LINE = '#E5E7EB';
 const WHITE = '#FFFFFF';
-
-const STATUS_ORDER: OrderStatus[] = [
-  'pending',
-  'accepted',
-  'preparing',
-  'ready',
-  'out-for-delivery',
-  'delivered',
-];
 
 /** Map API statuses onto the timeline steps */
 export function mapToTimelineStatus(status?: string): OrderStatus {
@@ -78,8 +70,10 @@ export function mapToTimelineStatus(status?: string): OrderStatus {
 export function OrderStatusTimeline({
   currentStatus,
   timestamps = {},
+  pickup = false,
 }: Props) {
-  const mapped = mapToTimelineStatus(currentStatus);
+  let mapped = mapToTimelineStatus(currentStatus);
+  if (pickup && mapped === 'out-for-delivery') mapped = 'ready';
   const steps: TimelineStep[] = [
     {
       status: 'pending',
@@ -105,24 +99,26 @@ export function OrderStatusTimeline({
       icon: <CheckCircle2 color={WHITE} size={15} strokeWidth={2.4} />,
       timestamp: timestamps.ready || timestamps.readyAt,
     },
-    {
-      status: 'out-for-delivery',
-      label: 'Out for delivery',
-      icon: <Truck color={WHITE} size={15} strokeWidth={2.4} />,
-      timestamp:
-        timestamps['out-for-delivery'] ||
-        timestamps.out_for_delivery ||
-        timestamps.outForDeliveryAt,
-    },
+    ...(pickup
+      ? []
+      : [{
+          status: 'out-for-delivery' as const,
+          label: 'Out for delivery',
+          icon: <Truck color={WHITE} size={15} strokeWidth={2.4} />,
+          timestamp:
+            timestamps['out-for-delivery'] ||
+            timestamps.out_for_delivery ||
+            timestamps.outForDeliveryAt,
+        }]),
     {
       status: 'delivered',
-      label: 'Delivered',
+      label: pickup ? 'Picked up' : 'Delivered',
       icon: <CheckCircle2 color={WHITE} size={15} strokeWidth={2.4} />,
       timestamp: timestamps.delivered || timestamps.deliveredAt,
     },
   ];
 
-  const currentIndex = Math.max(0, STATUS_ORDER.indexOf(mapped));
+  const currentIndex = Math.max(0, steps.findIndex((s) => s.status === mapped));
   const isRejected = mapped === 'rejected';
   const isCancelled = mapped === 'cancelled';
 

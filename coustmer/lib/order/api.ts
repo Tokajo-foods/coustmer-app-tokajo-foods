@@ -360,6 +360,8 @@ export function mapOrder(data: Record<string, unknown>): Order {
     deliveryAddress: mapAddress(
       data.deliveryAddress ?? data.address ?? data.shippingAddress
     ),
+    deliveryType: String(data.deliveryType ?? data.fulfillmentType ?? '') || undefined,
+    fulfillmentType: String(data.fulfillmentType ?? data.deliveryType ?? '') || undefined,
     specialInstructions:
       (data.specialInstructions as string) ||
       (data.notes as string) ||

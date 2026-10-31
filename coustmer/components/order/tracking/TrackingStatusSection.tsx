@@ -15,7 +15,13 @@ import Animated, {
 import type { EtaLabel } from '@/components/order/tracking/tracking-eta';
 import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_SOFT, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
-import { stepIndex, TRACKING_STEPS, type TrackingPhase } from '@/lib/order/tracking-phase';
+import {
+  PICKUP_TRACKING_STEPS,
+  stepIndex,
+  TRACKING_STEPS,
+  type TrackingPhase,
+  type TrackingStep,
+} from '@/lib/order/tracking-phase';
 
 const BIKE_IMAGE = 'https://cdn-icons-png.flaticon.com/512/2830/2830305.png';
 const SCOOTER_W = 44;
@@ -26,21 +32,23 @@ type Props = {
   kicker: string;
   eta: EtaLabel | null;
   itemCount: number;
+  pickup?: boolean;
 };
 
-export function TrackingStatusSection({ phase, kicker, eta, itemCount }: Props) {
-  const activeIdx = stepIndex(phase.step);
+export function TrackingStatusSection({ phase, kicker, eta, itemCount, pickup }: Props) {
+  const steps = pickup ? PICKUP_TRACKING_STEPS : TRACKING_STEPS;
+  const activeIdx = stepIndex(phase.step, steps);
   const progress = useSharedValue(0);
   const bob = useSharedValue(0);
   const railWidth = useSharedValue(0);
-  const moving = phase.active && !phase.rto && phase.step !== 'delivered';
+  const moving = !pickup && phase.active && !phase.rto && phase.step !== 'delivered';
 
   useEffect(() => {
-    progress.value = withTiming(activeIdx / (TRACKING_STEPS.length - 1), {
+    progress.value = withTiming(activeIdx / Math.max(1, steps.length - 1), {
       duration: 700,
       easing: Easing.out(Easing.cubic),
     });
-  }, [activeIdx, progress]);
+  }, [activeIdx, progress, steps.length]);
 
   useEffect(() => {
     if (!moving) {
@@ -81,7 +89,24 @@ export function TrackingStatusSection({ phase, kicker, eta, itemCount }: Props) 
       <Text style={styles.statusTitle}>{phase.title}</Text>
       <Text style={styles.statusHint}>{phase.hint}</Text>
 
-      {phase.active && phase.showEta ? (
+      {pickup ? (
+        <View style={styles.etaRow}>
+          <View style={styles.etaBlock}>
+            <Text style={styles.etaLabel}>ORDER TYPE</Text>
+            <Text style={styles.pickupType}>Takeaway</Text>
+          </View>
+          <View style={styles.etaDivider} />
+          <View style={styles.etaSide}>
+            <Clock3 color={ORANGE} size={16} strokeWidth={2.3} />
+            <Text style={styles.etaSideText}>
+              {itemCount ? `${itemCount} item${itemCount === 1 ? '' : 's'}` : 'Order'}
+            </Text>
+            <Text style={styles.etaSideSub}>Collect at restaurant</Text>
+          </View>
+        </View>
+      ) : null}
+
+      {phase.active && phase.showEta && !pickup ? (
         <View style={styles.etaRow}>
           <View style={styles.etaBlock}>
             <Text style={styles.etaLabel}>ARRIVING IN</Text>
@@ -106,13 +131,15 @@ export function TrackingStatusSection({ phase, kicker, eta, itemCount }: Props) 
           <View style={styles.timelineTrack}>
             <Animated.View style={[styles.timelineFill, fillStyle]} />
           </View>
-          <Animated.View style={[styles.scooterWrap, scooterStyle]} pointerEvents="none">
-            <Image source={{ uri: BIKE_IMAGE }} style={styles.scooterImage} contentFit="contain" />
-            <View style={styles.scooterShadow} />
-          </Animated.View>
+          {!pickup ? (
+            <Animated.View style={[styles.scooterWrap, scooterStyle]} pointerEvents="none">
+              <Image source={{ uri: BIKE_IMAGE }} style={styles.scooterImage} contentFit="contain" />
+              <View style={styles.scooterShadow} />
+            </Animated.View>
+          ) : null}
         </View>
         <View style={styles.timelineSteps}>
-          {TRACKING_STEPS.map((s, i) => {
+          {steps.map((s: { key: TrackingStep; label: string }, i) => {
             const done = i <= activeIdx;
             const current = i === activeIdx && phase.active;
             const last = phase.completed && i === TRACKING_STEPS.length - 1;
@@ -129,7 +156,7 @@ export function TrackingStatusSection({ phase, kicker, eta, itemCount }: Props) 
                   {(done && !current) || last ? <Check color={WHITE} size={11} strokeWidth={3} /> : null}
                 </View>
                 <Text style={[styles.timelineLabel, done && styles.timelineLabelDone]}>
-                  {s.key === 'delivered' && phase.completed ? 'Completed' : s.label}
+                  {s.key === 'delivered' && phase.completed ? (pickup ? 'Picked up' : 'Completed') : s.label}
                 </Text>
               </View>
             );
@@ -158,6 +185,7 @@ const styles = StyleSheet.create({
   etaValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   etaValue: { fontFamily: fonts.displayBold, fontSize: 34, color: INK, letterSpacing: -1 },
   etaUnit: { fontFamily: fonts.uiSemi, fontSize: 14, color: INK_SOFT, marginBottom: 4 },
+  pickupType: { fontFamily: fonts.displayBold, fontSize: 22, color: INK, letterSpacing: -0.4, marginTop: 2 },
   etaDivider: { width: 1, height: 42, backgroundColor: '#F3D5BE', marginHorizontal: 14 },
   etaSide: { width: 108, gap: 4 },
   etaSideText: { fontFamily: fonts.uiBold, fontSize: 13, color: INK },

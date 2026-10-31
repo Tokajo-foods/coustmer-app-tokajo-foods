@@ -16,6 +16,7 @@ type Props = {
   phase: TrackingPhase;
   partner: DeliveryPartner | null;
   restaurantName: string;
+  hideRider?: boolean;
 };
 
 const NOT_READY: Record<CallRole, string> = {
@@ -25,12 +26,13 @@ const NOT_READY: Record<CallRole, string> = {
 };
 
 /** Rider and restaurant contacts on the track screen. Hidden once the order is closed. */
-export function OrderContactCard({ orderId, phase, partner, restaurantName }: Props) {
+export function OrderContactCard({ orderId, phase, partner, restaurantName, hideRider }: Props) {
   const calls = useOrderCalls(orderId, 'customer');
   const live = useCallStore((s) => (s.call?.orderId === orderId ? s.call : null));
   const [hint, setHint] = useState<string | null>(null);
 
-  if (!orderId || !phase.active || phase.key === 'awaiting_payment') return null;
+  if (!orderId || phase.key === 'awaiting_payment') return null;
+  if (!phase.active && (phase.cancelled || hideRider !== true)) return null;
 
   const rowFor = (role: CallRole) => calls.rows.find((row) => row.role === role) ?? null;
   const phoneState = (role: CallRole, row: CallRow | null): ContactActionState => {
@@ -85,7 +87,7 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName }: Pr
         </View>
       </View>
 
-      {partner ? (
+      {!hideRider && partner ? (
         <ContactCallRow
           role="rider"
           name={partner.name || 'Delivery partner'}
@@ -98,7 +100,7 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName }: Pr
           onInternet={() => onInternet('rider', riderRow, partner.name || 'Delivery partner')}
         />
       ) : null}
-      {partner ? <View style={styles.divider} /> : null}
+      {!hideRider && partner ? <View style={styles.divider} /> : null}
       <ContactCallRow
         role="restaurant"
         name={restaurantName}

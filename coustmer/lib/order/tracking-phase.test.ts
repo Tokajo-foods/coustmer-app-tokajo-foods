@@ -34,4 +34,17 @@ describe('resolveTrackingPhase', () => {
     assert.equal(resolveTrackingPhase('cancelled', 'accepted').active, false);
     assert.equal(resolveTrackingPhase('placed', null).key, 'placed');
   });
+
+  it('uses kitchen-only copy for takeaway', () => {
+    const ready = resolveTrackingPhase('ready', 'assigned', { pickup: true });
+    assert.equal(ready.key, 'ready');
+    assert.equal(ready.step, 'ready');
+    assert.match(ready.hint, /restaurant counter/);
+    assert.equal(ready.showEta, false);
+    const done = resolveTrackingPhase('delivered', 'delivered', { pickup: true });
+    assert.equal(done.title, 'Picked up');
+    assert.equal(done.completed, true);
+    const prep = resolveTrackingPhase('preparing', 'accepted', { pickup: true });
+    assert.doesNotMatch(prep.hint, /delivery partner/);
+  });
 });

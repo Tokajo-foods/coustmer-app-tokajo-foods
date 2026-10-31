@@ -3,7 +3,7 @@
  * The order ticket owns kitchen phases; the trip owns everything from pickup onward (and RTO).
  */
 
-export type TrackingStep = 'placed' | 'preparing' | 'on_the_way' | 'delivered';
+export type TrackingStep = 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered';
 
 export type TrackingPhaseKey =
   | 'awaiting_payment'
@@ -40,6 +40,13 @@ export const TRACKING_STEPS: { key: TrackingStep; label: string }[] = [
   { key: 'delivered', label: 'Delivered' },
 ];
 
+export const PICKUP_TRACKING_STEPS: { key: TrackingStep; label: string }[] = [
+  { key: 'placed', label: 'Placed' },
+  { key: 'preparing', label: 'Preparing' },
+  { key: 'ready', label: 'Ready' },
+  { key: 'delivered', label: 'Picked up' },
+];
+
 const CANCELLED = new Set(['cancelled', 'canceled', 'rejected', 'failed', 'payment_failed']);
 const ON_THE_WAY = new Set(['picked_up', 'out_for_delivery', 'on_the_way']);
 
@@ -70,7 +77,45 @@ function riderPickupHint(trip: string, fallback: string): string {
   return fallback;
 }
 
-export function resolveTrackingPhase(orderStatus?: string | null, tripStatus?: string | null): TrackingPhase {
+function resolvePickupPhase(orderStatus?: string | null): TrackingPhase {
+  const o = norm(orderStatus);
+  if (o === 'delivered' || o === 'completed') {
+    return phase('delivered', 'Picked up', 'You collected this order at the restaurant', 'delivered', {
+      active: false, completed: true, showEta: false,
+    });
+  }
+  if (CANCELLED.has(o)) {
+    return phase('cancelled', 'Cancelled', 'This order was cancelled', 'preparing', {
+      active: false, cancelled: true, showEta: false,
+    });
+  }
+  if (o === 'pending_payment' || o === 'pending') {
+    return phase('awaiting_payment', 'Awaiting payment', 'Complete payment to place your order', 'placed', { showEta: false });
+  }
+  if (o === 'scheduled') {
+    return phase('scheduled', 'Scheduled', 'The kitchen will start closer to your slot', 'placed', {
+      active: false, showEta: false,
+    });
+  }
+  if (o === 'ready' || o === 'out_for_delivery') {
+    return phase('ready', 'Ready for pickup', 'Collect your order at the restaurant counter', 'ready', { showEta: false });
+  }
+  if (o === 'preparing') {
+    return phase('preparing', 'Preparing your food', 'The kitchen is making your order', 'preparing', { showEta: false });
+  }
+  if (o === 'accepted' || o === 'confirmed' || o === 'partially_fulfilled') {
+    return phase('confirmed', 'Order confirmed', 'The restaurant has accepted your takeaway order', 'placed', { showEta: false });
+  }
+  return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed', { showEta: false });
+}
+
+export function resolveTrackingPhase(
+  orderStatus?: string | null,
+  tripStatus?: string | null,
+  opts?: { pickup?: boolean },
+): TrackingPhase {
+  if (opts?.pickup) return resolvePickupPhase(orderStatus);
+
   const o = norm(orderStatus);
   const t = norm(tripStatus);
 
@@ -120,6 +165,10 @@ export function resolveTrackingPhase(orderStatus?: string | null, tripStatus?: s
   return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed');
 }
 
-export function stepIndex(step: TrackingStep): number {
-  return TRACKING_STEPS.findIndex((s) => s.key === step);
+export function stepIndex(
+  step: TrackingStep,
+  steps: { key: TrackingStep; label: string }[] = TRACKING_STEPS,
+): number {
+  const idx = steps.findIndex((s) => s.key === step);
+  return idx >= 0 ? idx : 0;
 }

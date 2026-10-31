@@ -7,6 +7,7 @@ import { deliveryKeys, useOrderTracking } from '@/lib/delivery/hooks';
 import { errorStatus } from '@/lib/delivery/http';
 import { fresherRiderPoint, isFixStale, routeLeg, trackingMapVisible } from '@/lib/delivery/rider-fix';
 import { useOrder } from '@/lib/order/hooks';
+import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { resolveTrackingPhase } from '@/lib/order/tracking-phase';
 import { isActiveOrderStatus } from '@/lib/order/types';
 import { useSocketConnection, useSocketEvent } from '@/lib/socket/hooks';
@@ -42,15 +43,18 @@ export function useLiveOrderTracking(orderId: string) {
       return socketLiveRef.current ? POLL_ORDER_SOCKET_MS : POLL_ORDER_FALLBACK_MS;
     },
   });
+  const oPreview = order.data;
+  const pickup = isPickupOrder(oPreview);
   const tracking = useOrderTracking(orderId, {
+    enabled: Boolean(orderId) && !pickup,
     refetchInterval: (q) => {
-      if (!activeRef.current) return false;
+      if (pickup || !activeRef.current) return false;
       if (!q.state.data) return POLL_NO_TRIP_MS;
       return socketLiveRef.current ? POLL_TRIP_SOCKET_MS : POLL_TRIP_FALLBACK_MS;
     },
   });
   const o = order.data;
-  const t = tracking.data;
+  const t = pickup ? undefined : tracking.data;
   const noTripYet = errorStatus(tracking.error) === 404;
 
   const [orderPush, setOrderPush] = useState<Push | null>(null);
@@ -92,8 +96,14 @@ export function useLiveOrderTracking(orderId: string) {
   }, [orderId]);
 
   const orderStatus = newer(orderPush, o?.status, order.dataUpdatedAt);
-  const tripStatus = noTripYet && !tripPush ? null : newer(tripPush, t?.status, tracking.dataUpdatedAt);
-  const phase = resolveTrackingPhase(orderStatus ?? (orderId ? 'placed' : null), tripStatus);
+  const tripStatus = pickup || (noTripYet && !tripPush)
+    ? null
+    : newer(tripPush, t?.status, tracking.dataUpdatedAt);
+  const phase = resolveTrackingPhase(
+    orderStatus ?? (orderId ? 'placed' : null),
+    tripStatus,
+    { pickup },
+  );
   activeRef.current = phase.active;
 
   useEffect(() => {
@@ -107,14 +117,14 @@ export function useLiveOrderTracking(orderId: string) {
     if (socketLive && activeRef.current) refetchTracking();
   }, [socketLive, refetchTracking]);
 
-  const riderVisible = phase.active && trackingMapVisible(tripStatus);
+  const riderVisible = !pickup && phase.active && trackingMapVisible(tripStatus);
   const socketLocation = usePartnerLocationSocket(orderId, riderVisible);
   const polledFix = riderVisible && t?.rider ? t.rider : null;
   const riderFix = riderVisible ? fresherRiderPoint(socketLocation.fix, polledFix) : null;
   const forcedStale = socketLocation.stale && riderFix != null && riderFix === socketLocation.fix;
   const riderStale = riderFix ? isFixStale(riderFix.updatedAt, Date.now(), forcedStale) : false;
 
-  const partner = t?.partner && tripStatus && !NO_PARTNER_TRIP.has(tripStatus) ? t.partner : null;
+  const partner = !pickup && t?.partner && tripStatus && !NO_PARTNER_TRIP.has(tripStatus) ? t.partner : null;
   const destination = t?.destination ?? null;
   const eta = resolveEtaLabel({
     phase,
@@ -140,7 +150,8 @@ export function useLiveOrderTracking(orderId: string) {
     partner,
     eta,
     distanceMeters: destination === 'customer' && phase.showEta ? t?.distanceMeters : undefined,
-    trackingForbidden: errorStatus(tracking.error) === 403,
+    trackingForbidden: !pickup && errorStatus(tracking.error) === 403,
+    pickup,
     refetchAll,
   };
 }

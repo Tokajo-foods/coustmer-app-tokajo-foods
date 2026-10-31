@@ -122,6 +122,8 @@ export type Order = {
   paymentMethod?: string;
   paymentStatus?: string;
   deliveryAddress?: OrderAddress;
+  deliveryType?: string;
+  fulfillmentType?: string;
   specialInstructions?: string;
   scheduledFor?: string;
   isScheduled?: boolean;

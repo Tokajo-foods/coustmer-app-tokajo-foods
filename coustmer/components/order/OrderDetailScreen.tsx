@@ -51,6 +51,7 @@ import {
   usePartialCancelItems,
   useReorder,
 } from '@/lib/order/hooks';
+import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
 import {
   canCancelOrder,
@@ -88,18 +89,18 @@ function formatWhen(iso?: string) {
   return `${date}, ${time}`;
 }
 
-function statusHeadline(status?: string) {
+function statusHeadline(status?: string, pickup = false) {
   const s = normalizeOrderStatus(status);
   if (['cancelled', 'canceled'].includes(s)) return 'Cancelled';
   if (['rejected', 'failed'].includes(s)) return 'Rejected';
-  if (['delivered', 'completed'].includes(s)) return 'Completed';
-  if (s.includes('out') || s.includes('way') || s.includes('pick')) {
+  if (['delivered', 'completed'].includes(s)) return pickup ? 'Picked up' : 'Completed';
+  if (!pickup && (s.includes('out') || s.includes('way') || s.includes('pick'))) {
     return 'Out for delivery';
   }
   if (s.includes('ready')) return 'Ready for pickup';
   if (s.includes('prepar')) return 'Preparing your food';
   if (s.includes('confirm') || s.includes('accept')) return 'Order confirmed';
-  return 'Order placed';
+  return pickup ? 'Takeaway order placed' : 'Order placed';
 }
 
 export function OrderDetailScreen() {
@@ -114,7 +115,8 @@ export function OrderDetailScreen() {
   const [showPartialCancel, setShowPartialCancel] = useState(false);
 
   const order = useOrder(id);
-  const proofs = useOrderTracking(id, { enabled: Boolean(id), refetchInterval: 20_000 });
+  const pickup = isPickupOrder(order.data);
+  const proofs = useOrderTracking(id, { enabled: Boolean(id) && !pickup, refetchInterval: 20_000 });
   const reorder = useReorder(id);
   const cancelOrder = useCancelOrder(id);
   const cancelScheduled = useCancelScheduledOrder(id);
@@ -402,15 +404,17 @@ export function OrderDetailScreen() {
                   isActive && { color: ORANGE },
                 ]}
               >
-                {statusHeadline(data.status)}
+                {statusHeadline(data.status, pickup)}
               </Text>
             </View>
             <Text style={styles.heroWhen}>{formatWhen(data.createdAt)}</Text>
           </View>
-          <Text style={styles.heroTitle}>{statusHeadline(data.status)}</Text>
+          <Text style={styles.heroTitle}>{statusHeadline(data.status, pickup)}</Text>
           <Text style={styles.heroSub}>
             {isActive
-              ? 'Track live progress or review your bill below'
+              ? pickup
+                ? 'Kitchen status, pickup details, and your bill'
+                : 'Track live progress or review your bill below'
               : completed
                 ? 'Hope you enjoyed your meal'
                 : 'Order details and bill summary'}
@@ -427,6 +431,7 @@ export function OrderDetailScreen() {
       >
         <View style={styles.block}>
           <OrderStatusTimeline
+            pickup={pickup}
             currentStatus={data.status}
             timestamps={{
               pending: data.createdAt,
@@ -443,12 +448,14 @@ export function OrderDetailScreen() {
           />
         </View>
 
-        <View style={styles.block}>
-          <ParcelProofSection
-            pickupProofUrl={proofs.data?.pickupProofUrl}
-            proofOfDelivery={proofs.data?.proofOfDelivery}
-          />
-        </View>
+        {pickup ? null : (
+          <View style={styles.block}>
+            <ParcelProofSection
+              pickupProofUrl={proofs.data?.pickupProofUrl}
+              proofOfDelivery={proofs.data?.proofOfDelivery}
+            />
+          </View>
+        )}
 
         {/* ── API Timeline (GET /orders/:id/timeline) ─────────────── */}
         <View style={styles.card}>

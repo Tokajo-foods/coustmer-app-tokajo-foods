@@ -36,8 +36,8 @@ export function OrderTrackingScreen() {
   const id = String(orderId ?? '');
   const clearCart = useCartStore((s) => s.clearCart);
   const live = useLiveOrderTracking(id);
-  const { order, o, t, phase } = live;
-  const otpQuery = useDropOtp(id, phase.active && Boolean(t?.deliveryId) && !phase.rto);
+  const { order, o, t, phase, pickup } = live;
+  const otpQuery = useDropOtp(id, !pickup && phase.active && Boolean(t?.deliveryId) && !phase.rto);
 
   useEffect(() => {
     if (newOrder !== 'true') return;
@@ -95,9 +95,9 @@ export function OrderTrackingScreen() {
     addressLng: o.deliveryAddress?.lng,
   });
   const itemCount = (o.items ?? []).reduce((n, i) => n + i.quantity, 0);
-  const kicker = `${o.restaurantName || 'Your order'}${o.orderNumber ? `  ·  #${String(o.orderNumber).replace(/^#/, '')}` : ''}`;
-  const showMap = live.riderVisible;
-  const showControls = Boolean(live.partner) && (phase.active || phase.completed);
+  const kicker = `${pickup ? 'Takeaway  ·  ' : ''}${o.restaurantName || 'Your order'}${o.orderNumber ? `  ·  #${String(o.orderNumber).replace(/^#/, '')}` : ''}`;
+  const showMap = !pickup && live.riderVisible;
+  const showControls = !pickup && Boolean(live.partner) && (phase.active || phase.completed);
 
   return (
     <View style={styles.container}>
@@ -125,28 +125,39 @@ export function OrderTrackingScreen() {
             paddingHorizontal: 18,
           }}
         >
-          <TrackingStatusSection phase={phase} kicker={kicker} eta={live.eta} itemCount={itemCount} />
+          <TrackingStatusSection
+            phase={phase}
+            kicker={kicker}
+            eta={live.eta}
+            itemCount={itemCount}
+            pickup={pickup}
+          />
 
-          <TrackingPartnerCard orderId={id} phase={phase} partner={live.partner} onHelp={openHelp} />
+          {pickup ? null : (
+            <TrackingPartnerCard orderId={id} phase={phase} partner={live.partner} onHelp={openHelp} />
+          )}
 
           <OrderContactCard
             orderId={id}
             phase={phase}
-            partner={live.partner}
+            partner={pickup ? null : live.partner}
             restaurantName={o.restaurantName || 'Restaurant'}
+            hideRider={pickup}
           />
 
           {!phase.active ? <TrackingCompletedActions orderId={id} orderStatus={live.orderStatus} /> : null}
 
-          {phase.active && otpQuery.data?.otp ? (
+          {!pickup && phase.active && otpQuery.data?.otp ? (
             <TrackingOtpCard otp={otpQuery.data} atDoor={phase.key === 'at_door'} />
           ) : null}
 
-          <ParcelProofSection pickupProofUrl={t?.pickupProofUrl} proofOfDelivery={t?.proofOfDelivery} />
+          {pickup ? null : (
+            <ParcelProofSection pickupProofUrl={t?.pickupProofUrl} proofOfDelivery={t?.proofOfDelivery} />
+          )}
 
           {showControls ? <TrackingDeliveryControls orderId={id} phase={phase} /> : null}
 
-          <TrackingOrderSummary order={o} active={phase.active} />
+          <TrackingOrderSummary order={o} active={phase.active} pickup={pickup} />
         </ScrollView>
       </View>
     </View>
