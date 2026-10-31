@@ -3,7 +3,7 @@ import { locationPromptStyles as styles } from '@/components/location/location-e
 import * as Location from 'expo-location';
 import { Check, MapPin } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { AppState, Linking, Modal, Platform, Text, View } from 'react-native';
+import { AppState, Linking, Modal, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -15,28 +15,12 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { captureGpsPlace } from '@/lib/location/capture-gps-place';
+import { ensureLocationReady } from '@/lib/location/ensure-location-ready';
 import { restorePreviousDeliveryLocation } from '@/lib/location/restore-previous-location';
 import { useAuthStore } from '@/store/auth-store';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 
-async function ensureLocationReady(): Promise<'ready' | 'off' | 'denied'> {
-  let perm = await Location.getForegroundPermissionsAsync();
-  if (perm.status !== 'granted') {
-    perm = await Location.requestForegroundPermissionsAsync();
-  }
-  if (perm.status !== 'granted') return 'denied';
-
-  let servicesOn = await Location.hasServicesEnabledAsync();
-  if (!servicesOn && Platform.OS === 'android') {
-    try {
-      await Location.enableNetworkProviderAsync();
-      servicesOn = await Location.hasServicesEnabledAsync();
-    } catch {
-      servicesOn = false;
-    }
-  }
-  return servicesOn ? 'ready' : 'off';
-}
+const CLOSE_AFTER_FOUND_MS = 1400;
 
 export function LocationEnablePrompt() {
   const insets = useSafeAreaInsets();
@@ -47,6 +31,8 @@ export function LocationEnablePrompt() {
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const setGate = useDeliveryLocationStore((s) => s.setLocationGate);
   const [phase, setPhase] = useState<'ask' | 'locking' | 'done'>('ask');
+  const [error, setError] = useState<string | null>(null);
+  const [found, setFound] = useState<string | null>(null);
   const pulse = useSharedValue(0.72);
   const pop = useSharedValue(1);
 
@@ -55,6 +41,8 @@ export function LocationEnablePrompt() {
   useEffect(() => {
     if (!visible) {
       setPhase('ask');
+      setError(null);
+      setFound(null);
       return;
     }
     pulse.value = withRepeat(
@@ -66,25 +54,33 @@ export function LocationEnablePrompt() {
 
   const lockOn = async () => {
     setPhase('locking');
+    setError(null);
     setDetecting(true);
     try {
       const status = await ensureLocationReady();
       if (status !== 'ready') {
-        setGate(status);
+        setGate(status === 'blocked' ? 'denied' : status);
         setPhase('ask');
-        if (status === 'denied') await Linking.openSettings();
+        if (status === 'off') setError('Location is off. Turn it on to set your delivery pin.');
+        else if (status === 'denied') setError('Allow location so we can find restaurants near you.');
+        else {
+          setError('Location is blocked for TOKAJO FOODS. Allow it in Settings → Permissions.');
+          await Linking.openSettings();
+        }
         return;
       }
       const precise = await captureGpsPlace((quick) => setLocation(quick));
-      if (precise) setLocation(precise);
+      setLocation(precise);
+      setFound(precise.formattedAddress || precise.label);
       setPhase('done');
       pop.value = withSequence(
         withTiming(1.12, { duration: 180 }),
         withTiming(1, { duration: 180 }),
       );
-      setTimeout(() => setGate('idle'), 800);
+      setTimeout(() => setGate('idle'), CLOSE_AFTER_FOUND_MS);
     } catch {
       setPhase('ask');
+      setError('Couldn’t get your location. Move near a window or turn on GPS, then try again.');
     } finally {
       setDetecting(false);
     }
@@ -121,12 +117,16 @@ export function LocationEnablePrompt() {
 
   const body =
     phase === 'done'
-      ? 'Your address is on the top bar.'
+      ? (found ?? 'Your address is on the top bar.')
       : phase === 'locking'
         ? 'Setting your delivery pin.'
-        : 'Used only to set your delivery address.';
+        : (error ?? 'Used only to set your delivery address.');
 
-  const buttonLabel = gate === 'denied' ? 'Allow location' : 'Turn on location';
+  const buttonLabel = error
+    ? 'Try again'
+    : gate === 'denied'
+      ? 'Allow location'
+      : 'Turn on location';
 
   const onNotNow = () => {
     dismiss();

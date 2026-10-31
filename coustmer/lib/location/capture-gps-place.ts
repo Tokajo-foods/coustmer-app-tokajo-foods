@@ -6,6 +6,8 @@ import type { DeliveryLocation } from '@/store/delivery-location-store';
 const LAST_MAX_AGE_MS = 10 * 60_000;
 const LAST_ACCURACY_M = 2000;
 const FRESH_WAIT_MS = 4000;
+/** No cached fix (fresh install / phone just rebooted): a cold network fix can take several seconds. */
+const COLD_FIX_WAIT_MS = 10_000;
 const ADDRESS_WAIT_MS = 2500;
 
 function withDeadline<T>(work: Promise<T>, ms: number): Promise<T | null> {
@@ -97,7 +99,13 @@ export async function captureGpsPlace(
     return quick;
   }
 
-  const fresh = await freshPromise;
+  const fresh =
+    (await freshPromise) ??
+    (await withDeadline(
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low }),
+      COLD_FIX_WAIT_MS,
+    ));
   if (!fresh) throw new Error('LOCATION_TIMEOUT');
+  onQuick?.(fallbackPlace(fresh.coords.latitude, fresh.coords.longitude));
   return placeFromFix(fresh);
 }
