@@ -4,7 +4,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { forgotPasswordStyles as styles } from '@/components/auth/forgot-password-styles';
 import { PhoneOtpStep } from '@/components/auth/PhoneOtpStep';
-import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
+import { useFirebasePhoneOtp, type VerifiedPhone } from '@/components/auth/use-firebase-phone-otp';
 import { getAuthErrorCode } from '@/lib/auth/http';
 import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
 import { phoneAuthApi } from '@/lib/auth/phone-auth-api';
@@ -20,6 +20,7 @@ type Props = {
 export function ForgotPhoneReset({ onDone }: Props) {
   const otp = useFirebasePhoneOtp({
     precheck: async (phone) => (await precheckPhone(phone, 'forgot_password'))?.message ?? null,
+    onAutoVerified: (verified) => void issueWith(verified),
   });
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [password, setPassword] = useState('');
@@ -32,7 +33,11 @@ export function ForgotPhoneReset({ onDone }: Props) {
     if (busy || otp.verifying) return;
     setBanner(null);
     const verified = await otp.verify(code);
-    if (!verified) return;
+    if (verified) await issueWith(verified);
+  };
+
+  const issueWith = async (verified: VerifiedPhone) => {
+    setBanner(null);
     setBusy(true);
     try {
       const issued = await phoneAuthApi.forgotPassword({

@@ -18,8 +18,10 @@ const FIREBASE_MESSAGES: Record<string, string> = {
   'auth/missing-app-credential': 'Security check failed. Try sending the OTP again.',
   'auth/operation-not-allowed':
     'Phone sign-in is disabled for this app. Enable the Phone provider in Firebase Console.',
-  'auth/app-not-authorized': 'This app is not authorized for Firebase phone sign-in.',
-  'auth/unauthorized-domain':
+  'auth/app-not-authorized':
+    'Phone sign-in is not set up for this app version yet. Use email sign-in or update the app.',
+  'auth/missing-client-identifier':
+    'Phone sign-in is not set up for this app version yet. Use email sign-in or update the app.',  'auth/unauthorized-domain':
     'This app domain is not authorized in Firebase. Add it under Authentication → Settings.',
   'auth/user-disabled': 'This phone number has been disabled.',
   'auth/invalid-api-key': FIREBASE_CLIENT_NOT_CONFIGURED_MESSAGE,

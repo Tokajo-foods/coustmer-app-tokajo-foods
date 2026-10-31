@@ -15,9 +15,12 @@ import {
   getFreshIdToken,
   getVerifiedFirebasePhone,
   isFirebasePhoneConfigured,
+  NATIVE_AUTO_VERIFIED,
+  nativePhoneAuthAvailable,
   signOutFirebase,
   startFirebasePhoneOtp,
 } from '@/lib/auth/firebase-phone';
+import { watchNativePhoneSignIn } from '@/lib/auth/firebase-phone-native';
 import { FIREBASE_SERVER_NOT_CONFIGURED_MESSAGE } from '@/lib/auth/phone-auth-errors';
 import { normalizePhoneE164, validatePhoneE164 } from '@/lib/auth/phone-number';
 import { validateOtp } from '@/utils/validation';
@@ -32,13 +35,20 @@ type Options = {
   initialPhone?: string;
   /** Runs before the first SMS for a number; a returned message blocks the send. Skipped on resend. */
   precheck?: (phoneE164: string) => Promise<string | null>;
+  /** Android verified the number without a typed code (native builds only). */
+  onAutoVerified?: (verified: VerifiedPhone) => void;
 };
 
-/** Firebase SMS OTP: phone → reCAPTCHA → code → Firebase ID token. */
-export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
+/** Firebase SMS OTP: phone → (native: Play Integrity | web: reCAPTCHA) → code → Firebase ID token. */
+export function useFirebasePhoneOtp({ initialPhone, precheck, onAutoVerified }: Options = {}) {
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const firebaseConfig = useMemo(() => getFirebaseWebConfig(), []);
+  const native = nativePhoneAuthAvailable();
   const clientReady = isFirebasePhoneConfigured();
+  const onAutoVerifiedRef = useRef(onAutoVerified);
+  onAutoVerifiedRef.current = onAutoVerified;
+  /** Set once a sign-in for the current SMS is owned (typed code or auto) so the watcher can't double-submit. */
+  const signInClaimedRef = useRef(false);
   const { serverReady, cooldownSeconds } = usePhoneAuthStatus(clientReady);
 
   const [phoneInput, setPhoneInputRaw] = useState(initialPhone ?? '');
@@ -88,7 +98,27 @@ export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
     setCodeError(message);
   }, []);
 
-  const send = async (target?: string, { skipPrecheck = false } = {}): Promise<boolean> => {
+  const markAutoVerified = useCallback(async (target: string) => {
+    if (signInClaimedRef.current) return;
+    signInClaimedRef.current = true;
+    setPhone(target);
+    setVerificationId(null);
+    setCodeRaw('');
+    setCodeError(null);
+    setStep('verified');
+    const idToken = await getFreshIdToken().catch(() => null);
+    if (idToken) onAutoVerifiedRef.current?.({ idToken, phone: target });
+  }, []);
+
+  useEffect(() => {
+    if (!native || step !== 'code' || !phone) return;
+    return watchNativePhoneSignIn(phone, () => void markAutoVerified(phone));
+  }, [native, step, phone, markAutoVerified]);
+
+  const send = async (
+    target?: string,
+    { skipPrecheck = false, forceResend = false } = {},
+  ): Promise<boolean> => {
     const raw = target ?? phoneInput;
     const invalid = validatePhoneE164(raw);
     setError(null);
@@ -101,7 +131,7 @@ export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
       return false;
     }
     const verifier = recaptchaRef.current;
-    if (!verifier) {
+    if (!native && !verifier) {
       setError('Security check is still loading. Try again in a moment.');
       return false;
     }
@@ -117,7 +147,12 @@ export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
           return false;
         }
       }
-      const id = await startFirebasePhoneOtp(e164, verifier);
+      signInClaimedRef.current = false;
+      const id = await startFirebasePhoneOtp(e164, verifier, { forceResend });
+      if (id === NATIVE_AUTO_VERIFIED) {
+        await markAutoVerified(e164);
+        return true;
+      }
       setPhone(e164);
       setVerificationId(id);
       setStep('code');
@@ -143,7 +178,7 @@ export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
 
   const resendCode = async () => {
     if (resend.active || busy !== 'idle' || !phone) return false;
-    return send(phone, { skipPrecheck: true });
+    return send(phone, { skipPrecheck: true, forceResend: true });
   };
 
   const verify = async (value?: string): Promise<VerifiedPhone | null> => {
@@ -159,12 +194,15 @@ export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
       return null;
     }
 
+    if (signInClaimedRef.current) return null;
+    signInClaimedRef.current = true;
     setBusy('verifying');
     try {
       const idToken = await confirmFirebasePhoneOtp(verificationId, entered);
       setStep('verified');
       return { idToken, phone };
     } catch (err) {
+      signInClaimedRef.current = false;
       const fbCode = getFirebaseErrorCode(err);
       const message = describeFirebaseError(err, 'Could not verify the code. Try again.');
       if (fbCode === 'auth/invalid-verification-code') {
@@ -222,6 +260,7 @@ export function useFirebasePhoneOtp({ initialPhone, precheck }: Options = {}) {
   return {
     recaptchaRef,
     firebaseConfig,
+    native,
     clientReady,
     blockedReason,
     step,

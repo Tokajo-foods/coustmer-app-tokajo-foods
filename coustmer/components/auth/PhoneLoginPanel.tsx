@@ -33,6 +33,7 @@ export function PhoneLoginPanel({ initialPhone, onLoginSuccess, onCreateAccount 
       setUnknownPhone(miss?.code && NO_CUSTOMER_ACCOUNT.has(miss.code) ? phone : null);
       return miss?.message ?? null;
     },
+    onAutoVerified: (verified) => void submit(verified.idToken, verified.phone),
   });
   const loginWithPhone = useAuthStore((s) => s.loginWithPhone);
   const [submitting, setSubmitting] = useState(false);

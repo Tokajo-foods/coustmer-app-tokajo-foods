@@ -24,7 +24,7 @@ type Props = {
   lockPhone?: boolean;
 };
 
-/** Phone entry → Firebase SMS → 6-digit code. Hosts the reCAPTCHA verifier. */
+/** Phone entry → Firebase SMS → 6-digit code. Hosts the reCAPTCHA verifier only without native Firebase. */
 export function PhoneOtpStep({
   otp,
   onVerify,
@@ -39,7 +39,7 @@ export function PhoneOtpStep({
 
   return (
     <>
-      {otp.clientReady ? (
+      {otp.clientReady && !otp.native ? (
         <FirebaseRecaptchaVerifierModal
           ref={otp.recaptchaRef}
           firebaseConfig={otp.firebaseConfig}

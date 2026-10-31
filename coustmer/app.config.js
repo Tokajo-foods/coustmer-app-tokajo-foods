@@ -54,6 +54,7 @@ const config = {
         },
       },
     ],
+    './plugins/with-native-firebase.js',
     '@react-native-community/datetimepicker',
     './withMinSdkVersion.js',
     './plugins/with-eas-autolinking-cache.js',
