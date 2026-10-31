@@ -22,6 +22,7 @@ type Props = {
   saveLabel?: string;
   saving?: boolean;
   saveDisabled?: boolean;
+  backFallback?: string;
 };
 
 export function ProfileFormLayout({
@@ -33,15 +34,16 @@ export function ProfileFormLayout({
   saveLabel = 'Save changes',
   saving,
   saveDisabled,
+  backFallback,
 }: Props) {
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.container}>
-          <ScreenHeader title={title} subtitle={subtitle} />
+          <ScreenHeader title={title} subtitle={subtitle} backFallback={backFallback} />
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"

@@ -22,11 +22,13 @@ export function usePasswordChangeFlow() {
   const [emailNotice, setEmailNotice] = useState<string | null>(null);
   const [changeToken, setChangeToken] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
   const start = useCallback(async () => {
     setBusy(true);
     setBanner(null);
+    setErrorCode(null);
     try {
       const next = await passwordChangeApi.start();
       setInfo(next);
@@ -40,6 +42,7 @@ export function usePasswordChangeFlow() {
       );
       setStage('verify');
     } catch (error) {
+      setErrorCode(getAuthErrorCode(error) ?? null);
       setBanner(describePhoneAuthError(error, 'Could not start the password change.'));
     } finally {
       setBusy(false);
@@ -73,6 +76,7 @@ export function usePasswordChangeFlow() {
     if (!info || busy || !emailReady || !phoneReady) return;
     setBusy(true);
     setBanner(null);
+    setErrorCode(null);
     try {
       let phoneIdToken: string | undefined;
       if (info.phoneRequired) {
@@ -89,6 +93,7 @@ export function usePasswordChangeFlow() {
       setStage('password');
     } catch (error) {
       const code = getAuthErrorCode(error);
+      setErrorCode(code ?? null);
       const message = describePhoneAuthError(error, 'Could not verify the codes.');
       if (code && PHONE_REVERIFY_CODES.has(code)) phoneOtp.requireReverify(message);
       else if (code && EMAIL_CODE_ERRORS.has(code)) setEmailError(message);
@@ -102,12 +107,14 @@ export function usePasswordChangeFlow() {
     if (!changeToken || busy) return false;
     setBusy(true);
     setBanner(null);
+    setErrorCode(null);
     try {
       await passwordChangeApi.confirm(changeToken, newPassword);
       setStage('done');
       return true;
     } catch (error) {
       const code = getAuthErrorCode(error);
+      setErrorCode(code ?? null);
       setBanner(describePhoneAuthError(error, 'Could not save the new password.'));
       if (code === 'CHANGE_TOKEN_INVALID') {
         setChangeToken(null);
@@ -135,6 +142,7 @@ export function usePasswordChangeFlow() {
     verify,
     save,
     banner,
+    errorCode,
     busy,
     retryStart: start,
   };
