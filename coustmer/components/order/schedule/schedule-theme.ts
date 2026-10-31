@@ -11,5 +11,8 @@ export const SCHEDULE_COLORS = {
   error: '#DC2626',
   errorSoft: '#FEF2F2',
   errorBorder: '#FECACA',
+  ok: '#15803D',
+  okSoft: '#F0FDF4',
+  okBorder: '#BBF7D0',
   white: '#FFFFFF',
 } as const;

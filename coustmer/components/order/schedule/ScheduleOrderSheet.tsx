@@ -1,4 +1,4 @@
-import { AlertCircle, X } from 'lucide-react-native';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,11 +18,15 @@ import {
   formatScheduledForDisplay,
   type ScheduleDay,
   type SchedulePolicy,
-  type ScheduleSlot,
 } from '@/lib/cart/schedule';
-import { formatWindows, isoToIstChoice, validateScheduleChoice } from '@/lib/cart/schedule-validation';
+import {
+  firstAvailableMinutes,
+  formatWindows,
+  isoToIstChoice,
+  validateScheduleChoice,
+} from '@/lib/cart/schedule-validation';
 
-import { ScheduleSlotList } from './ScheduleSlotList';
+import { ScheduleClock } from './ScheduleClock';
 import { SCHEDULE_COLORS as C } from './schedule-theme';
 
 type Props = {
@@ -35,17 +39,13 @@ type Props = {
 };
 
 function firstOpenDay(days: ScheduleDay[]): ScheduleDay | undefined {
-  return days.find((day) => day.slots.some((slot) => slot.available));
-}
-
-function firstOpenSlot(day: ScheduleDay | undefined): ScheduleSlot | undefined {
-  return day?.slots.find((slot) => slot.available && slot.startIso);
+  return days.find((day) => firstAvailableMinutes(day) != null);
 }
 
 export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClose, onConfirm }: Props) {
   const insets = useSafeAreaInsets();
   const [date, setDate] = useState('');
-  const [slotIso, setSlotIso] = useState<string | null>(null);
+  const [minutes, setMinutes] = useState(12 * 60);
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -54,11 +54,9 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
     if (!visible) return;
     const saved = scheduledFor ? isoToIstChoice(scheduledFor) : null;
     const savedDay = saved ? days.find((day) => day.date === saved.date) : undefined;
-    const day = savedDay && firstOpenSlot(savedDay) ? savedDay : firstOpenDay(days);
-    const slot = day?.slots.find((row) => row.startIso === scheduledFor && row.available)
-      ?? firstOpenSlot(day);
-    setDate(day?.date ?? days[0]?.date ?? '');
-    setSlotIso(slot?.startIso ?? null);
+    const day = savedDay ?? firstOpenDay(days) ?? days[0];
+    setDate(day?.date ?? '');
+    setMinutes(saved && saved.date === day?.date ? saved.minutes : firstAvailableMinutes(day) ?? 12 * 60);
     setServerError(null);
     setNow(Date.now());
     const tick = setInterval(() => setNow(Date.now()), 30_000);
@@ -66,18 +64,22 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
   }, [visible, days, scheduledFor]);
 
   const activeDay = days.find((day) => day.date === date);
-  const choice = slotIso ? isoToIstChoice(slotIso) : null;
-  const check = useMemo(() => {
-    if (!choice) return { ok: false as const, message: 'Pick a time' };
-    return validateScheduleChoice(choice, days, policy, now);
-  }, [choice, days, policy, now]);
+  const check = useMemo(
+    () => validateScheduleChoice({ date, minutes }, days, policy, now),
+    [date, minutes, days, policy, now],
+  );
   const error = serverError ?? (check.ok ? null : check.message);
+  const label = check.ok ? formatScheduledForDisplay(check.iso) : null;
 
   const pickDate = (next: string) => {
     setServerError(null);
     const day = days.find((row) => row.date === next);
     setDate(next);
-    setSlotIso(firstOpenSlot(day)?.startIso ?? null);
+    const stillOk = validateScheduleChoice({ date: next, minutes }, days, policy, Date.now()).ok;
+    if (!stillOk) {
+      const fallback = firstAvailableMinutes(day);
+      if (fallback != null) setMinutes(fallback);
+    }
   };
 
   const confirm = async () => {
@@ -94,8 +96,6 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
     }
   };
 
-  const label = check.ok ? formatScheduledForDisplay(check.iso) : null;
-
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
@@ -106,8 +106,8 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
             <Text style={styles.title}>Schedule order</Text>
             <Text style={styles.subtitle}>
               {activeDay?.windows.length
-                ? `Open ${formatWindows(activeDay.windows)}`
-                : `Up to ${policy.maxAdvanceDays} days ahead`}
+                ? `Restaurant hours ${formatWindows(activeDay.windows)}`
+                : 'Choose a time on the clock'}
             </Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.close} accessibilityLabel="Close">
@@ -115,13 +115,9 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.days}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
           {days.map((day) => {
-            const open = day.slots.some((slot) => slot.available);
+            const open = firstAvailableMinutes(day) != null;
             const on = day.date === date;
             return (
               <TouchableOpacity
@@ -140,20 +136,25 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
         </ScrollView>
 
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <ScheduleSlotList
-            slots={activeDay?.slots ?? []}
-            selectedIso={slotIso}
-            onSelect={(slot) => {
+          <ScheduleClock
+            minutes={minutes}
+            stepMinutes={policy.stepMinutes}
+            valid={check.ok}
+            onChange={(next) => {
               setServerError(null);
-              setSlotIso(slot.startIso);
+              setMinutes(next);
             }}
           />
-          {error && !check.ok ? (
-            <View style={styles.errorBox}>
+          <View style={[styles.status, check.ok ? styles.statusOk : styles.statusBad]}>
+            {check.ok ? (
+              <CheckCircle2 size={16} color={C.ok} />
+            ) : (
               <AlertCircle size={16} color={C.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
+            )}
+            <Text style={[styles.statusText, check.ok ? styles.statusTextOk : styles.statusTextBad]}>
+              {check.ok ? 'This time is within restaurant hours' : error}
+            </Text>
+          </View>
         </ScrollView>
 
         <TouchableOpacity
@@ -165,7 +166,7 @@ export function ScheduleOrderSheet({ visible, days, policy, scheduledFor, onClos
           {saving ? (
             <ActivityIndicator color={C.white} />
           ) : (
-            <Text style={styles.ctaText}>{label ? `Confirm · ${label}` : 'Pick a time'}</Text>
+            <Text style={styles.ctaText}>{label ? `Confirm · ${label}` : 'Pick a time inside restaurant hours'}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
     paddingTop: 8,
-    maxHeight: '88%',
+    maxHeight: '92%',
   },
   handle: {
     alignSelf: 'center',
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.disabledBg,
   },
-  days: { gap: 8, paddingBottom: 12 },
+  days: { gap: 8, paddingBottom: 8 },
   day: {
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -217,18 +218,20 @@ const styles = StyleSheet.create({
   dayText: { fontFamily: fonts.uiSemi, fontSize: 13, color: C.text },
   dayTextOn: { color: C.white },
   dayTextOff: { color: C.textMuted },
-  body: { gap: 12, paddingBottom: 12 },
-  errorBox: {
+  body: { gap: 12, paddingBottom: 8 },
+  status: {
     flexDirection: 'row',
     gap: 8,
     alignItems: 'flex-start',
-    backgroundColor: C.errorSoft,
     borderWidth: 1,
-    borderColor: C.errorBorder,
     borderRadius: 12,
     padding: 12,
   },
-  errorText: { flex: 1, fontFamily: fonts.uiMedium, fontSize: 13, color: C.error, lineHeight: 18 },
+  statusOk: { backgroundColor: C.okSoft, borderColor: C.okBorder },
+  statusBad: { backgroundColor: C.errorSoft, borderColor: C.errorBorder },
+  statusText: { flex: 1, fontFamily: fonts.uiMedium, fontSize: 13, lineHeight: 18 },
+  statusTextOk: { color: C.ok },
+  statusTextBad: { color: C.error },
   cta: {
     backgroundColor: C.orange,
     borderRadius: 14,
@@ -237,5 +240,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ctaOff: { backgroundColor: C.textMuted },
-  ctaText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.white },
+  ctaText: { fontFamily: fonts.uiSemi, fontSize: 15, color: C.white, textAlign: 'center' },
 });
