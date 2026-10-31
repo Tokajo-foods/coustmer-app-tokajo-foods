@@ -54,7 +54,6 @@ import { CartAddressCard } from '@/components/order/CartAddressCard';
 import { AutoFreeDeliveryBanner } from '@/components/order/AutoFreeDeliveryBanner';
 import { ScheduleOrderSection } from '@/components/order/ScheduleOrderSection';
 import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
-import { GroupOrderSheet } from '@/components/order/GroupOrderSheet';
 import { CouponPickerSheet } from '@/components/order/CouponPickerSheet';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
@@ -268,7 +267,6 @@ export function CartScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherBusy, setVoucherBusy] = useState(false);
-  const [groupOrderOpen, setGroupOrderOpen] = useState(false);
   const [couponPickerOpen, setCouponPickerOpen] = useState(false);
   const [rangeMessage, setRangeMessage] = useState<string | null>(null);
   const onRangeMessage = useCallback((next: string | null) => {
@@ -926,16 +924,6 @@ export function CartScreen() {
               >
                 <Text style={styles.menuItemText}>View saved carts</Text>
               </Pressable>
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  if (!isLoggedIn) { requireLogin('start a group order'); return; }
-                  setGroupOrderOpen(true);
-                }}
-              >
-                <Text style={styles.menuItemText}>👥 Group order</Text>
-              </Pressable>
               <Pressable style={styles.menuItem} onPress={handleClear}>
                 <Text style={[styles.menuItemText, { color: '#EF4444' }]}>
                   Clear cart
@@ -961,12 +949,6 @@ export function CartScreen() {
           addressText={addressLine}
           wallet={wallet.data}
           allowCod={!scheduledFor}
-        />
-
-        {/* Group Order Sheet */}
-        <GroupOrderSheet
-          visible={groupOrderOpen}
-          onClose={() => setGroupOrderOpen(false)}
         />
 
         {/* Coupon Picker Sheet */}
