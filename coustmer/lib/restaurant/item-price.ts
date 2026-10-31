@@ -31,3 +31,16 @@ export function discountPercentOf(item: {
   if (pct < 1) return undefined;
   return Math.min(pct, 99);
 }
+
+/** `price` = list, `discountedPrice` = pay — only when both exist. */
+export function catalogPayOf(item: {
+  price: number;
+  listPrice?: number | null;
+}): { price: number; discountedPrice?: number } {
+  const pay = item.price;
+  const list = item.listPrice;
+  if (typeof list === 'number' && Number.isFinite(list) && list > pay) {
+    return { price: list, discountedPrice: pay };
+  }
+  return { price: pay };
+}

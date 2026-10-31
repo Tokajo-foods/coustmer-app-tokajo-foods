@@ -59,7 +59,9 @@ import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
 import { isDeliveryFeeReady } from '@/lib/cart/delivery-fee-ready';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
-import { formatInr, formatLineTotal } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
+import { formatInr } from '@/lib/format/money';
+import { catalogPayOf } from '@/lib/restaurant/item-price';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
 import { usePaymentWallet } from '@/lib/payment/hooks';
 import { useAuthStore } from '@/store/auth-store';
@@ -129,6 +131,7 @@ function CartItemCard({
     id: string;
     name: string;
     price: number;
+    listPrice?: number;
     itemTotal?: number;
     quantity: number;
     imageUrl?: string;
@@ -161,13 +164,22 @@ function CartItemCard({
             {modifierLabel}
           </Text>
         ) : null}
-        <Text style={styles.itemUnitPrice}>
-          {item.itemTotal != null ? `${formatInr(item.price)} each` : 'Updating price…'}
-        </Text>
+        {item.itemTotal != null ? (
+          <View style={styles.itemUnitPrice}>
+            <DishPrice {...catalogPayOf(item)} size="sm" />
+            <Text style={styles.itemEach}> each</Text>
+          </View>
+        ) : (
+          <Text style={styles.itemEach}>Updating price…</Text>
+        )}
         <View style={styles.itemBottomRow}>
-          <Text style={styles.itemPrice}>
-            {formatLineTotal(item.itemTotal)}
-          </Text>
+          <DishPrice
+            {...catalogPayOf({
+              price: item.itemTotal ?? item.price * item.quantity,
+              listPrice:
+                item.listPrice != null ? item.listPrice * item.quantity : undefined,
+            })}
+          />
           <QuantityStepper
             quantity={item.quantity}
             onDecrement={onDecrement}
@@ -1170,6 +1182,12 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   itemUnitPrice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: 2,
+  },
+  itemEach: {
     fontFamily: fonts.ui,
     fontSize: 12,
     color: TEXT_MUTED,

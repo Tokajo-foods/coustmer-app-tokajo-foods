@@ -3,9 +3,17 @@ import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import { ORANGE, styles } from '@/components/order/order-summary-styles';
 import { paymentMethodHint, paymentMethodLabel } from '@/lib/checkout/payment-display';
-import { formatLineTotal } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
+import { catalogPayOf } from '@/lib/restaurant/item-price';
 
-type SummaryItem = { id: string; name: string; quantity: number; itemTotal?: number | null };
+type SummaryItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  listPrice?: number;
+  itemTotal?: number | null;
+};
 
 type Props = {
   restaurantName: string;
@@ -47,7 +55,14 @@ export function OrderSummaryDetails(p: Props) {
                 {item.name}
               </Text>
               <Text style={styles.itemQty}>×{item.quantity}</Text>
-              <Text style={styles.itemPrice}>{formatLineTotal(item.itemTotal ?? 0)}</Text>
+              <DishPrice
+                {...catalogPayOf({
+                  price: item.itemTotal ?? item.price * item.quantity,
+                  listPrice:
+                    item.listPrice != null ? item.listPrice * item.quantity : undefined,
+                })}
+                size="sm"
+              />
             </View>
           ))}
         </View>

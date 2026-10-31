@@ -136,11 +136,14 @@ export function addMenuItemToCart(
     return true;
   }
 
+  const modifierAdd = (modifiers ?? []).reduce((sum, m) => sum + (Number(m.price) || 0), 0);
+  const listUnit = item.price + modifierAdd;
   const cartLine = {
     id: lineId,
     menuItemId,
     name: item.name,
     price: basePrice,
+    listPrice: listUnit > basePrice ? listUnit : undefined,
     basePrice,
     isVeg: item.isVeg,
     imageUrl: item.imageUrl,

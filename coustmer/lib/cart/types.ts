@@ -26,8 +26,10 @@ export type CartLineItem = {
   id: string;
   menuItemId: string;
   name: string;
-  /** Unit price including selected modifiers (for display). */
+  /** Unit price including selected modifiers (what the customer pays). */
   price: number;
+  /** Catalog list unit when the kitchen set an offer. */
+  listPrice?: number;
   /** Base menu price before modifiers (when known). */
   basePrice?: number;
   /** Server line total (unit + modifiers) × quantity. */

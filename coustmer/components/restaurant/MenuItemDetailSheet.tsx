@@ -33,7 +33,7 @@ import { useItemQuote } from '@/lib/cart/hooks';
 import { sameModifiers } from '@/lib/cart/modifiers';
 import { DishPrice } from '@/components/restaurant/DishPrice';
 import { formatInr } from '@/lib/format/money';
-import { payPriceOf } from '@/lib/restaurant/item-price';
+import { catalogPayOf, payPriceOf } from '@/lib/restaurant/item-price';
 import type { CartModifier } from '@/lib/cart/types';
 import {
   useItemCustomizations,
@@ -271,7 +271,12 @@ export function MenuItemDetailSheet({
     typeof quotedPay === 'number' && Number.isFinite(quotedPay)
       ? quotedPay
       : payPriceOf(displayItem) + modifierAdd;
-  const unitPriceLabel = formatInr(unitPrice);
+  const quotedList = quote.data?.originalPrice;
+  const listUnit =
+    typeof quotedList === 'number' && quotedList > 0
+      ? quotedList + modifierAdd
+      : displayItem.price + modifierAdd;
+  const unitOffer = catalogPayOf({ price: unitPrice, listPrice: listUnit });
   const description =
     displayItem.description?.trim() ||
     (displayItem.allergens?.length
@@ -455,7 +460,10 @@ export function MenuItemDetailSheet({
               )
             ) : quantity === 0 ? (
               <Pressable style={styles.addToCartPillCentered} onPress={handleAdd}>
-                <Text style={styles.addToCartText}>Add to cart · {unitPriceLabel}</Text>
+                <Text style={styles.addToCartText}>Add to cart · {formatInr(unitPrice)}</Text>
+                {unitOffer.discountedPrice != null ? (
+                  <Text style={styles.addToCartStrike}>{formatInr(unitOffer.price)}</Text>
+                ) : null}
               </Pressable>
             ) : (
               <View style={styles.addToCartPill}>
@@ -757,6 +765,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     borderRadius: 30,
     paddingVertical: 18,
     shadowColor: '#E87431',
@@ -811,6 +820,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  addToCartStrike: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 15,
+    fontWeight: '600',
+    textDecorationLine: 'line-through',
   },
   stepperWrap: {
     backgroundColor: '#E5E5E5',

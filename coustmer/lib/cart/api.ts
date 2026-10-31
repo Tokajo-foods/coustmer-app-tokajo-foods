@@ -155,12 +155,17 @@ function mapLineItem(raw: Record<string, unknown>): CartLineItem {
   const basePrice = Number(raw.price ?? raw.basePrice ?? 0) || 0;
   const itemTotal = Number(raw.itemTotal ?? raw.lineTotal ?? 0);
   const quantity = Number(raw.quantity ?? raw.qty ?? 1) || 1;
+  const pay = Number(raw.unitPrice ?? basePrice) || 0;
+  const mods = (modifiers ?? []).reduce((sum, m) => sum + (Number(m.price) || 0), 0);
+  const catalog = Number(raw.originalPrice ?? 0);
+  const list = catalog > 0 ? catalog + mods : undefined;
 
   return {
     id: lineId,
     menuItemId: menuItemId || lineId,
     name: String(raw.name ?? raw.itemName ?? raw.title ?? 'Item'),
-    price: Number(raw.unitPrice ?? basePrice) || 0,
+    price: pay,
+    listPrice: list != null && list > pay ? list : undefined,
     basePrice,
     itemTotal: itemTotal > 0 ? itemTotal : undefined,
     quantity,
@@ -1047,7 +1052,12 @@ export const cartApi = {
     menuItemId: string;
     quantity?: number;
     modifiers: Array<{ groupId: string; optionId: string }>;
-  }): Promise<{ unitPrice: number; itemTotal: number; modifiersTotal: number }> => {
+  }): Promise<{
+    unitPrice: number;
+    itemTotal: number;
+    modifiersTotal: number;
+    originalPrice?: number;
+  }> => {
     const res = await request<Record<string, unknown>>(`${CART_BASE}/items/quote`, {
       method: 'POST',
       body,
@@ -1057,6 +1067,7 @@ export const cartApi = {
       unitPrice: Number(d.unitPrice ?? 0),
       itemTotal: Number(d.itemTotal ?? 0),
       modifiersTotal: Number(d.modifiersTotal ?? 0),
+      originalPrice: Number(d.originalPrice ?? 0) || undefined,
     };
   },
 

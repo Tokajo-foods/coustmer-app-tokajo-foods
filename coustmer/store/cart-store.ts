@@ -12,8 +12,10 @@ export type CartItem = {
   id: string;
   menuItemId?: string;
   name: string;
-  /** Unit price including selected modifiers. */
+  /** Unit price including selected modifiers (what the customer pays). */
   price: number;
+  /** Catalog list unit (offer + add-ons) when it is higher than `price`. */
+  listPrice?: number;
   basePrice?: number;
   /** Server line total; cleared on local quantity edits until the cart syncs. */
   itemTotal?: number;

@@ -29,6 +29,8 @@ export type OrderItem = {
   menuItemId?: string;
   name: string;
   price: number;
+  /** Catalog list unit when the kitchen set an offer. */
+  listPrice?: number;
   /** Server line total including modifiers. */
   itemTotal?: number;
   quantity: number;

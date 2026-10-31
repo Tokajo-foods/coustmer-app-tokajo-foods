@@ -7,7 +7,9 @@ import { OrderBillRows } from '@/components/order/OrderBillRows';
 import { RestaurantChatEntry } from '@/components/order/RestaurantChatEntry';
 import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_DARK, ORANGE_SOFT } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
-import { formatInr, formatLineTotal } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
+import { formatInr } from '@/lib/format/money';
+import { catalogPayOf } from '@/lib/restaurant/item-price';
 import { paymentMethodLabel } from '@/lib/order/payment-labels';
 import type { Order } from '@/lib/order/types';
 
@@ -72,7 +74,14 @@ export function TrackingOrderSummary({
                 <Text style={styles.qtyText}>{item.quantity}×</Text>
               </View>
               <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-              <Text style={styles.itemPrice}>{formatLineTotal(item.itemTotal)}</Text>
+              <DishPrice
+                {...catalogPayOf({
+                  price: item.itemTotal ?? item.price * item.quantity,
+                  listPrice:
+                    item.listPrice != null ? item.listPrice * item.quantity : undefined,
+                })}
+                size="sm"
+              />
             </View>
           </View>
         ))}

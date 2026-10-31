@@ -6,7 +6,9 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/constants/typography';
-import { formatInr, formatLineTotal } from '@/lib/format/money';
+import { DishPrice } from '@/components/restaurant/DishPrice';
+import { formatInr } from '@/lib/format/money';
+import { catalogPayOf } from '@/lib/restaurant/item-price';
 import { useRepeatOrder } from '@/lib/cart/hooks';
 import { useReorder } from '@/lib/order/hooks';
 import { ORDER_STATUS_LABELS, type Order } from '@/lib/order/types';
@@ -200,7 +202,14 @@ export function OrderCard({ order }: Props) {
                   {item.quantity} × {item.name}
                 </Text>
                 <View style={styles.priceWrap}>
-                  <Text style={styles.priceCurrent}>{formatLineTotal(item.itemTotal)}</Text>
+                  <DishPrice
+                    {...catalogPayOf({
+                      price: item.itemTotal ?? item.price * item.quantity,
+                      listPrice:
+                        item.listPrice != null ? item.listPrice * item.quantity : undefined,
+                    })}
+                    size="sm"
+                  />
                 </View>
               </View>
             );

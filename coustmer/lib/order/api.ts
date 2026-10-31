@@ -156,11 +156,13 @@ function mapOrderItem(raw: Record<string, unknown>) {
   const unit = Number(raw.price ?? raw.unitPrice ?? raw.basePrice ?? 0);
   const line = Number(raw.itemTotal ?? raw.lineTotal ?? 0);
   const price = unit > 0 ? unit : line > 0 ? line / quantity : 0;
+  const catalog = Number(raw.originalPrice ?? raw.listPrice ?? 0);
   return {
     id: String(raw._id ?? raw.id ?? raw.menuItemId ?? ''),
     menuItemId: String(raw.menuItemId ?? raw.itemId ?? raw._id ?? raw.id ?? ''),
     name: String(raw.name ?? raw.itemName ?? raw.title ?? 'Item'),
     price,
+    listPrice: catalog > price ? catalog : undefined,
     itemTotal: line > 0 ? line : undefined,
     quantity: Number(raw.quantity ?? raw.qty ?? 1),
     isVeg: raw.isVeg !== undefined ? Boolean(raw.isVeg) : undefined,

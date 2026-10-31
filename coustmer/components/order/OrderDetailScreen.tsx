@@ -36,10 +36,12 @@ import { OrderBillRows } from '@/components/order/OrderBillRows';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
 import { ParcelProofSection } from '@/components/order/ParcelProofSection';
 import { RetryOnlinePayment } from '@/components/payment/RetryOnlinePayment';
+import { DishPrice } from '@/components/restaurant/DishPrice';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { fonts } from '@/constants/typography';
 import { OrderTipCard } from '@/components/order/OrderTipCard';
-import { formatInr, formatLineTotal } from '@/lib/format/money';
+import { formatInr } from '@/lib/format/money';
+import { catalogPayOf } from '@/lib/restaurant/item-price';
 import {
   useCancelOrder,
   useCancelScheduledOrder,
@@ -596,9 +598,14 @@ export function OrderDetailScreen() {
                       <Text style={styles.itemMeta}>Qty {item.quantity}</Text>
                     </View>
                   </View>
-                  <Text style={[styles.itemPrice, isSelected && { color: '#DC2626' }]}>
-                    {formatLineTotal(item.itemTotal)}
-                  </Text>
+                  <DishPrice
+                    {...catalogPayOf({
+                      price: item.itemTotal ?? item.price * item.quantity,
+                      listPrice:
+                        item.listPrice != null ? item.listPrice * item.quantity : undefined,
+                    })}
+                    size="sm"
+                  />
                 </TouchableOpacity>
               </View>
             );
