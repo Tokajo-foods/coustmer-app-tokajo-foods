@@ -34,13 +34,7 @@ import { addressApi } from '@/lib/address/api';
 import { formatAddressLabel } from '@/lib/address/types';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
-import {
-  useAppConfig,
-  useCustomerProfile,
-  useDeals,
-  useHomeFeed,
-  useOffersFeed,
-} from '@/lib/customer/hooks';
+import { useAppConfig, useCustomerProfile, useHomeFeed } from '@/lib/customer/hooks';
 import { useFavoriteToggle } from '@/lib/customer/useFavoriteToggle';
 import {
   applyHomeFilters,
@@ -64,7 +58,6 @@ import {
   useInfiniteRestaurants,
   useNearbyMindCategories,
   useNearbyRestaurants,
-  useRestaurantCuisines,
 } from '@/lib/restaurant/hooks';
 import { homeFiltersToNearbyParams } from '@/lib/restaurant/nearby-params';
 import { useAuthStore } from '@/store/auth-store';
@@ -174,8 +167,6 @@ export default function HomeScreen() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _config = useAppConfig(); // fetch config on home-mount (splash already rendered)
   const home = useHomeFeed();
-  const deals = useDeals();
-  const offers = useOffersFeed();
   const profile = useCustomerProfile();
   const { favoriteIds, toggleFavorite } = useFavoriteToggle();
 
@@ -205,7 +196,6 @@ export default function HomeScreen() {
     [coords?.lat, coords?.lng, homeFilters]
   );
   const nearby = useNearbyRestaurants(nearbyParams);
-  const liveCuisines = useRestaurantCuisines();
   const mindCategories = useNearbyMindCategories(coords, {
     radiusKm: CUSTOMER_DISCOVERY_RADIUS_KM,
     restaurantLimit: 40,
@@ -335,22 +325,16 @@ export default function HomeScreen() {
   );
 
   const refreshing =
-    feed.isRefetching ||
     nearby.isRefetching ||
     home.isRefetching ||
-    deals.isRefetching ||
-    offers.isRefetching ||
-    liveCuisines.isRefetching ||
-    mindCategories.isRefetching;
+    mindCategories.isRefetching ||
+    (!hasPin && feed.isRefetching);
 
   const onRefresh = () => {
-    feed.refetch();
+    if (!hasPin) feed.refetch();
     nearby.refetch();
     home.refetch();
-    deals.refetch();
-    offers.refetch();
     profile.refetch();
-    liveCuisines.refetch();
     mindCategories.refetch();
   };
 
@@ -379,8 +363,9 @@ export default function HomeScreen() {
   const onOpenLocationPicker = useCallback(() => setPickerOpen(true), []);
 
   const onRetryFeed = useCallback(() => {
-    void feed.refetch();
-  }, [feed.refetch]);
+    if (hasPin) void nearby.refetch();
+    else void feed.refetch();
+  }, [feed, hasPin, nearby]);
 
   const feedErrorMessage = useMemo(() => {
     if (!feed.isError) return null;
@@ -549,13 +534,10 @@ export default function HomeScreen() {
     />
   );
 
-  const chromeBanners = useMemo(() => {
-    const fromOffers = Array.isArray(offers.data?.banners)
-      ? offers.data.banners
-      : [];
-    const fromFeed = Array.isArray(home.data?.banners) ? home.data.banners : [];
-    return fromOffers.length > 0 ? fromOffers : fromFeed;
-  }, [offers.data?.banners, home.data?.banners]);
+  const chromeBanners = useMemo(
+    () => (Array.isArray(home.data?.banners) ? home.data.banners : []),
+    [home.data?.banners],
+  );
 
   const filtersActive = countActiveHomeFilters(homeFilters) > 0;
 
