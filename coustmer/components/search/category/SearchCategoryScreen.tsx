@@ -9,7 +9,7 @@ import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
 import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { fonts } from '@/constants/typography';
 import { PREMIUM_LIST } from '@/lib/motion/premium';
-import { useSearchCategoryDishes } from '@/lib/search/hooks';
+import { useSearchCategoryDishes, useSearchScope } from '@/lib/search/hooks';
 import { openSearchDish } from '@/lib/search/open-search-dish';
 import type { SearchCategorySource, SearchDish } from '@/lib/search/types';
 
@@ -32,6 +32,7 @@ export function SearchCategoryScreen() {
   const source: SearchCategorySource | undefined =
     rawSource === 'cuisine' || rawSource === 'food_category' || rawSource === 'menu_section' ? rawSource : undefined;
 
+  const scope = useSearchScope();
   const query = useSearchCategoryDishes({ slug, name: name || undefined, source });
   const title = query.data?.category.name || name || slug.replace(/-/g, ' ');
   const dishes = query.data?.dishes ?? [];
@@ -59,7 +60,10 @@ export function SearchCategoryScreen() {
       </View>
       <View style={styles.hairline} />
 
-      {query.isLoading ? (
+      {!scope ? (
+        <SearchMessage kind="empty" title="Set your delivery location"
+          body="We show dishes from restaurants that deliver to your address." />
+      ) : query.isLoading ? (
         <ResultSkeleton rows={6} />
       ) : query.isError && !dishes.length ? (
         <SearchMessage kind="error" title="Couldn't load dishes"

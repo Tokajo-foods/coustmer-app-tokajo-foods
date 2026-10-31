@@ -45,11 +45,12 @@ export const TokajoHomeChrome = memo(function TokajoHomeChrome({
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Dishes are matched on name, menu section and admin food category; restaurant
+  // cuisine tags alone miss kitchens that only list the dish on their menu.
   const openCategory = (cat: TokajoCategory) => {
-    onFiltersChange({ ...filters, cuisine: cat.slug });
     router.push({
-      pathname: '/restaurants',
-      params: { cuisine: cat.slug, label: cat.label },
+      pathname: '/search-category',
+      params: { slug: cat.slug, name: cat.label, source: 'food_category' },
     });
   };
 
