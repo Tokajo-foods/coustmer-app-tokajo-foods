@@ -13,10 +13,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import type { EtaLabel } from '@/components/order/tracking/tracking-eta';
-import { TrackingPickupTimeline } from '@/components/order/tracking/TrackingPickupTimeline';
 import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_SOFT, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
-import { pickupReadyCopy } from '@/lib/order/pickup-ready-copy';
+import { pickupReadyCopy } from './pickup-ready-copy';
+import { TrackingPickupTimeline } from './TrackingPickupTimeline';
 import {
   PICKUP_TRACKING_STEPS,
   stepIndex,
