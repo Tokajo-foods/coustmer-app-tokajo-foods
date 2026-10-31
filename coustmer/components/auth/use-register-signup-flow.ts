@@ -5,6 +5,7 @@ import {
   mapRegisterApiError,
   type RegisterFieldKey,
 } from '@/components/auth/register-form-helpers';
+import { useRegisterEmailOtp } from '@/components/auth/use-register-email-otp';
 import { useFirebasePhoneOtp } from '@/components/auth/use-firebase-phone-otp';
 import { getAuthErrorCode } from '@/lib/auth/http';
 import { describePhoneAuthError, PHONE_REVERIFY_CODES } from '@/lib/auth/phone-auth-errors';
@@ -50,6 +51,7 @@ export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSucces
   });
   const registerWithPhone = useAuthStore((s) => s.registerWithPhone);
   const loginWithPhone = useAuthStore((s) => s.loginWithPhone);
+  const emailOtp = useRegisterEmailOtp();
 
   const [values, setValues] = useState<RegisterValues>(EMPTY_VALUES);
   const [errors, setErrors] = useState<Partial<Record<RegisterFieldKey, string | null>>>({});
@@ -60,6 +62,7 @@ export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSucces
   const setField = (key: RegisterFieldKey, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => (prev[key] ? { ...prev, [key]: null } : prev));
+    if (key === 'email') emailOtp.reset();
   };
 
   const finish = () => {
@@ -92,7 +95,7 @@ export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSucces
     const next = {
       firstName: validateName(values.firstName, 'First name'),
       lastName: validateOptionalName(values.lastName, 'Last name'),
-      email: validateEmail(values.email, false),
+      email: validateEmail(values.email, true),
       password: validatePassword(values.password),
       confirmPassword: validateConfirmPassword(values.password, values.confirmPassword),
     };
@@ -104,6 +107,10 @@ export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSucces
     setBanner(null);
     setAlreadyRegistered(false);
     if (!otp.phone || !validate()) return;
+    if (!emailOtp.verified) {
+      setBanner('Verify your email with the code we send before creating your account.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -152,11 +159,13 @@ export function useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSucces
   const changeNumber = () => {
     setBanner(null);
     setAlreadyRegistered(false);
+    emailOtp.reset();
     otp.changeNumber();
   };
 
   return {
     otp,
+    emailOtp,
     values,
     setField,
     errors,

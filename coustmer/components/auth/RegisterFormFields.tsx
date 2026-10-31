@@ -4,8 +4,10 @@ import { useState, type ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
+import { RegisterOtpSection } from '@/components/auth/RegisterOtpSection';
 import type { RegisterFieldKey, RegisterFocusField } from '@/components/auth/register-form-helpers';
 import { registerFormStyles as styles } from '@/components/auth/register-form-styles';
+import type { RegisterEmailOtp } from '@/components/auth/use-register-email-otp';
 import type { RegisterValues } from '@/components/auth/use-register-signup-flow';
 import { authTheme } from '@/constants/auth-theme';
 
@@ -14,6 +16,7 @@ type Props = {
   errors: Partial<Record<RegisterFieldKey, string | null>>;
   onChange: (field: RegisterFieldKey, value: string) => void;
   editable?: boolean;
+  emailOtp: RegisterEmailOtp;
 };
 
 type InputOpts = {
@@ -29,7 +32,7 @@ type InputOpts = {
 };
 
 /** Sign-up details collected after the phone is verified. */
-export function RegisterFormFields({ values, errors, onChange, editable = true }: Props) {
+export function RegisterFormFields({ values, errors, onChange, editable = true, emailOtp }: Props) {
   const [focusedField, setFocusedField] = useState<RegisterFocusField>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -108,12 +111,34 @@ export function RegisterFormFields({ values, errors, onChange, editable = true }
         </View>
       </View>
 
-      {renderInput('email', 'Email (optional)', {
+      {renderInput('email', 'Email', {
         icon: Mail,
         placeholder: 'you@gmail.com',
         keyboardType: 'email-address',
         autoComplete: 'email',
       })}
+
+      {emailOtp.banner ? (
+        <Text style={styles.errorText} numberOfLines={4}>
+          {emailOtp.banner}
+        </Text>
+      ) : null}
+      <RegisterOtpSection
+        channel="email"
+        verified={emailOtp.verified}
+        otpSent={emailOtp.otpSent}
+        otp={emailOtp.otp}
+        setOtp={emailOtp.setOtp}
+        otpError={emailOtp.otpError ?? errors.email ?? null}
+        focused={emailOtp.focused}
+        setFocused={emailOtp.setFocused}
+        isLoading={emailOtp.busyMode !== 'idle'}
+        busyMode={emailOtp.busyMode}
+        timerKey={emailOtp.timerKey}
+        onSend={() => void emailOtp.send(values.email)}
+        onVerify={() => void emailOtp.verify(values.email)}
+        onResend={() => void emailOtp.resend(values.email)}
+      />
 
       <Text style={styles.sectionLabel}>Security</Text>
       {renderInput('password', 'Password', {

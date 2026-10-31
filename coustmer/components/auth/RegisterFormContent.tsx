@@ -86,6 +86,7 @@ export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess 
                   errors={flow.errors}
                   onChange={flow.setField}
                   editable={!flow.submitting}
+                  emailOtp={flow.emailOtp}
                 />
                 <Pressable
                   style={[styles.submitBtn, flow.submitting && styles.submitBtnDisabled]}

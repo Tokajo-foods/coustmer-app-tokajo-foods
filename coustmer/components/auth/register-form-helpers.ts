@@ -30,6 +30,9 @@ export function mapRegisterApiError(error: unknown): {
     if (error.code === 'EMAIL_ALREADY_EXISTS') {
       return { fields: { email: describePhoneAuthError(error, error.message) } };
     }
+    if (error.code === 'EMAIL_NOT_VERIFIED') {
+      return { fields: { email: describePhoneAuthError(error, error.message) } };
+    }
     if (error.code?.includes('REFERRAL') || /referral/i.test(error.message)) {
       return { fields: { referralCode: error.message } };
     }

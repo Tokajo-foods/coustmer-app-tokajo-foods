@@ -48,6 +48,15 @@ export const authApi = {
     return ensureCustomerAuth(normalizeAuthResponse(data));
   },
 
+  /** Signup: verify email OTP without logging in (stamps Redis for register). */
+  confirmRegisterOtp: async (identifier: string, otp: string) => {
+    const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-register`, {
+      method: 'POST',
+      body: { identifier: identifier.trim().toLowerCase(), otp, role: 'customer' },
+    });
+    return normalizeMessageResponse(data);
+  },
+
   /** Email reset step 2: confirm the forgot_password code sent by `sendOtp`. */
   confirmForgotPasswordOtp: async (identifier: string, otp: string) => {
     const data = await apiRequest<unknown>(`${AUTH_BASE}/otp/confirm-forgot-password`, {

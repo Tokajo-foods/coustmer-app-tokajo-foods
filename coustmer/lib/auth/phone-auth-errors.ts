@@ -23,6 +23,8 @@ const CODE_MESSAGES: Record<string, string> = {
   SAME_CONTACT: 'That is already your phone number.',
   PHONE_IN_USE: 'This number is already registered with another account.',
   CONTACT_MISSING: 'Add an email or phone number to your account first.',
+  EMAIL_UNAVAILABLE: 'Email codes are not available right now. Try again later or contact support.',
+  EMAIL_NOT_VERIFIED: 'Verify your email with the code we send before creating your account.',
   EMAIL_OTP_REQUIRED: 'Enter the code sent to your email.',
   PHONE_OTP_REQUIRED: 'Verify the code sent to your phone.',
   INVALID_OTP: 'That email code is incorrect.',
