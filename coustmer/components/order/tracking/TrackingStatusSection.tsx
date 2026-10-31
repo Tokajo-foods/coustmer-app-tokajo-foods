@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import type { EtaLabel } from '@/components/order/tracking/tracking-eta';
+import { TrackingPickupTimeline } from '@/components/order/tracking/TrackingPickupTimeline';
 import { INK, INK_SOFT, LINE, MUTED, ORANGE, ORANGE_SOFT, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
 import { pickupReadyCopy } from '@/lib/order/pickup-ready-copy';
@@ -160,43 +161,45 @@ export function TrackingStatusSection({
         </View>
       ) : null}
 
-      <View style={styles.timeline}>
-        <View style={styles.timelineRail} onLayout={onRailLayout}>
-          <View style={styles.timelineTrack}>
-            <Animated.View style={[styles.timelineFill, fillStyle]} />
-          </View>
-          {!pickup ? (
+      {pickup ? (
+        <TrackingPickupTimeline phase={phase} activeIdx={activeIdx} />
+      ) : (
+        <View style={styles.timeline}>
+          <View style={styles.timelineRail} onLayout={onRailLayout}>
+            <View style={styles.timelineTrack}>
+              <Animated.View style={[styles.timelineFill, fillStyle]} />
+            </View>
             <Animated.View style={[styles.scooterWrap, scooterStyle]} pointerEvents="none">
               <Image source={{ uri: BIKE_IMAGE }} style={styles.scooterImage} contentFit="contain" />
               <View style={styles.scooterShadow} />
             </Animated.View>
-          ) : null}
-        </View>
-        <View style={styles.timelineSteps}>
-          {steps.map((s: { key: TrackingStep; label: string }, i) => {
-            const done = i <= activeIdx;
-            const current = i === activeIdx && phase.active;
-            const last = phase.completed && i === TRACKING_STEPS.length - 1;
-            return (
-              <View key={s.key} style={styles.timelineStep}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    done && styles.timelineDotDone,
-                    current && styles.timelineDotCurrent,
-                    last && styles.timelineDotDone,
-                  ]}
-                >
-                  {(done && !current) || last ? <Check color={WHITE} size={11} strokeWidth={3} /> : null}
+          </View>
+          <View style={styles.timelineSteps}>
+            {steps.map((s: { key: TrackingStep; label: string }, i) => {
+              const done = i <= activeIdx;
+              const current = i === activeIdx && phase.active;
+              const last = phase.completed && i === steps.length - 1;
+              return (
+                <View key={s.key} style={styles.timelineStep}>
+                  <View
+                    style={[
+                      styles.timelineDot,
+                      done && styles.timelineDotDone,
+                      current && styles.timelineDotCurrent,
+                      last && styles.timelineDotDone,
+                    ]}
+                  >
+                    {(done && !current) || last ? <Check color={WHITE} size={11} strokeWidth={3} /> : null}
+                  </View>
+                  <Text style={[styles.timelineLabel, done && styles.timelineLabelDone]}>
+                    {s.key === 'delivered' && phase.completed ? 'Completed' : s.label}
+                  </Text>
                 </View>
-                <Text style={[styles.timelineLabel, done && styles.timelineLabelDone]}>
-                  {s.key === 'delivered' && phase.completed ? (pickup ? 'Picked up' : 'Completed') : s.label}
-                </Text>
-              </View>
-            );
-          })}
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
