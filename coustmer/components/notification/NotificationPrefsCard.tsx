@@ -7,7 +7,12 @@ export function NotificationPrefsCard({ enabled }: { enabled: boolean }) {
   return (
     <View style={styles.prefCard}>
       <Text style={styles.prefTitle}>Notification preferences</Text>
-      <NotificationSettingsList enabled={enabled} embedded />
+      <NotificationSettingsList
+        enabled={enabled}
+        embedded
+        showDeviceLink={false}
+        showStatusBanner={false}
+      />
     </View>
   );
 }
