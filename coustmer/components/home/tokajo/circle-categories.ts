@@ -122,3 +122,14 @@ export const CIRCLE_CATEGORIES: CircleCategory[] = ORDER.map((row) => ({
 }));
 
 export const CATEGORY_PREVIEW_COUNT = 8;
+
+export function circleCategoryFor(slug: string, label?: string): CircleCategory | undefined {
+  const token = slug.trim().toLowerCase().replace(/-/g, '_');
+  const name = (label ?? '').trim().toLowerCase();
+  return CIRCLE_CATEGORIES.find(
+    (row) =>
+      row.slug === token ||
+      row.slug.replace(/_/g, '') === token.replace(/_/g, '') ||
+      row.label.toLowerCase() === name
+  );
+}

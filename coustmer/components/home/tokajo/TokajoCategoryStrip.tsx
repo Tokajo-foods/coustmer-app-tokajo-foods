@@ -7,7 +7,7 @@ import { Pressable } from '@/components/common/Pressable';
 import {
   CATEGORY_PREVIEW_COUNT,
   CIRCLE_CATEGORIES,
-  type CircleCategory,
+  circleCategoryFor,
 } from '@/components/home/tokajo/circle-categories';
 import { fonts } from '@/constants/typography';
 import { PREMIUM_HORIZONTAL_LIST } from '@/lib/motion/premium';
@@ -37,24 +37,31 @@ function CategoryTile({
   inGrid,
   onPress,
 }: {
-  cat: CircleCategory;
+  cat: TokajoCategory;
   active: boolean;
   inGrid?: boolean;
   onPress: () => void;
 }) {
+  const art = circleCategoryFor(cat.slug, cat.label);
+  const photo = art?.image ?? (cat.imageUrl ? { uri: cat.imageUrl } : null);
+  const initial = (cat.label || cat.slug || '?').slice(0, 1).toUpperCase();
   return (
     <Pressable style={[styles.item, inGrid && styles.itemGrid]} onPress={onPress}>
       <View style={styles.circle}>
-        <Image
-          source={cat.image}
-          style={[
-            styles.photo,
-            cat.slug === 'rolls' && styles.photoRolls,
-            cat.slug === 'burger' && styles.photoBurger,
-          ]}
-          contentFit="cover"
-          transition={120}
-        />
+        {photo ? (
+          <Image
+            source={photo}
+            style={[
+              styles.photo,
+              cat.slug === 'rolls' && styles.photoRolls,
+              (cat.slug === 'burger' || cat.slug === 'burgers') && styles.photoBurger,
+            ]}
+            contentFit="cover"
+            transition={120}
+          />
+        ) : (
+          <Text style={styles.initial}>{initial}</Text>
+        )}
       </View>
       <Text
         style={[styles.label, active && styles.labelActive]}
@@ -68,22 +75,26 @@ function CategoryTile({
 
 /** Circular food categories. Eight across, More expands the rest in place. */
 export function TokajoCategoryStrip({
+  categories,
   activeSlug,
   onSelectAll,
   onSelect,
   loading,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const visible = expanded
-    ? CIRCLE_CATEGORIES
-    : CIRCLE_CATEGORIES.slice(0, CATEGORY_PREVIEW_COUNT);
+  const live = categories.filter((row) => row.slug && row.label);
+  const rows: TokajoCategory[] =
+    live.length > 0
+      ? live
+      : CIRCLE_CATEGORIES.map((row) => ({ id: row.id, label: row.label, slug: row.slug }));
+  const visible = expanded ? rows : rows.slice(0, CATEGORY_PREVIEW_COUNT);
 
-  const open = (cat: CircleCategory) => {
+  const open = (cat: TokajoCategory) => {
     if (activeSlug === cat.slug) {
       onSelectAll();
       return;
     }
-    onSelect({ id: cat.id, label: cat.label, slug: cat.slug });
+    onSelect(cat);
   };
 
   const more = (
@@ -98,7 +109,7 @@ export function TokajoCategoryStrip({
     </Pressable>
   );
 
-  if (loading && CIRCLE_CATEGORIES.length === 0) {
+  if (loading && rows.length === 0) {
     return (
       <View style={styles.row}>
         {Array.from({ length: 6 }).map((_, i) => (
@@ -128,7 +139,7 @@ export function TokajoCategoryStrip({
             onPress={() => open(cat)}
           />
         ))}
-        {more}
+        {rows.length > CATEGORY_PREVIEW_COUNT ? more : null}
       </ScrollView>
     );
   }
@@ -147,7 +158,7 @@ export function TokajoCategoryStrip({
           onPress={() => open(cat)}
         />
       ))}
-      {more}
+      {rows.length > CATEGORY_PREVIEW_COUNT ? more : null}
     </ScrollView>
   );
 }
@@ -221,6 +232,11 @@ const styles = StyleSheet.create({
   labelActive: {
     color: ORANGE,
     fontFamily: fonts.uiBold,
+  },
+  initial: {
+    fontFamily: fonts.uiBold,
+    fontSize: 22,
+    color: ORANGE,
   },
   labelSkeleton: {
     width: 40,
