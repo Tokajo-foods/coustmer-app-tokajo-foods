@@ -29,11 +29,8 @@ export const asyncStoragePersister = createAsyncStoragePersister({
 /** Drop stale home-category caches that used to invent extra chips. */
 export function shouldPersistQuery(query: { queryKey: readonly unknown[] }): boolean {
   const key = query.queryKey;
-  if (
-    Array.isArray(key) &&
-    (key.includes('home-categories') || key.includes('mind-categories'))
-  ) {
-    return false;
-  }
+  if (!Array.isArray(key)) return true;
+  if (key[0] === 'cart') return false;
+  if (key.includes('home-categories') || key.includes('mind-categories')) return false;
   return true;
 }

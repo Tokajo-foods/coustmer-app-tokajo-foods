@@ -234,18 +234,19 @@ export function CartScreen() {
     savedLat: apiCart?.deliveryAddress?.lat,
     savedLng: apiCart?.deliveryAddress?.lng,
   };
-  const needsQuote = items.length > 0 && !isDeliveryFeeReady(feeInput);
+  const canPrice =
+    items.length > 0 &&
+    (normalizedDeliveryType === 'takeaway' || Boolean(billPin) || serverHasPin);
   const liveBill = useCartBill(
     billPin?.lat,
     billPin?.lng,
-    needsQuote,
+    canPrice,
     normalizedDeliveryType,
-    needsQuote && !billPin && serverHasPin
+    canPrice && !billPin && serverHasPin
   );
   const showFreshBill =
-    needsQuote &&
+    canPrice &&
     liveBill.data != null &&
-    !liveBill.isPlaceholderData &&
     liveBill.dataUpdatedAt >= remoteCart.dataUpdatedAt;
   const feeReady = isDeliveryFeeReady({ ...feeInput, freshBill: showFreshBill });
   const slots = useCartSlots({ enabled: isLoggedIn && items.length > 0 });
@@ -350,7 +351,7 @@ export function CartScreen() {
 
   const onRefresh = () => {
     void remoteCart.refetch();
-    if (needsQuote) void liveBill.refetch();
+    void liveBill.refetch();
   };
 
   const goBack = () => {
@@ -876,7 +877,7 @@ export function CartScreen() {
             couponCode={couponCode}
             fallbackTotal={displayTotal}
             hasDeliveryPin={Boolean(billPin) || normalizedDeliveryType === 'takeaway'}
-            billLoading={needsQuote && !priceReady && !liveBill.isError}
+            billLoading={canPrice && !priceReady && !liveBill.isError}
             billError={liveBill.isError}
             totalReady={priceReady}
           />
