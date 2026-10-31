@@ -90,6 +90,7 @@ export type ShareLink = {
 export type DropOtp = {
   otp: string;
   expiresAt?: string;
+  verified?: boolean;
 };
 
 export type City = {

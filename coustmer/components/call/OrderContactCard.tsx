@@ -18,6 +18,8 @@ type Props = {
   partner: DeliveryPartner | null;
   restaurantName: string;
   hideRider?: boolean;
+  /** When partner card shows call/chat, hide duplicate rider row here. */
+  omitRider?: boolean;
 };
 
 const NOT_READY: Record<CallRole, string> = {
@@ -27,7 +29,7 @@ const NOT_READY: Record<CallRole, string> = {
 };
 
 /** Rider and restaurant contacts on the track screen. Hidden once the order is closed. */
-export function OrderContactCard({ orderId, phase, partner, restaurantName, hideRider }: Props) {
+export function OrderContactCard({ orderId, phase, partner, restaurantName, hideRider, omitRider }: Props) {
   const router = useRouter();
   const calls = useOrderCalls(orderId, 'customer');
   const live = useCallStore((s) => (s.call?.orderId === orderId ? s.call : null));
@@ -63,17 +65,19 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
   const message = hint || calls.notice || calls.loadError;
   const micBlocked = Boolean(message && /microphone/i.test(message));
 
+  const showRider = !hideRider && !omitRider && partner;
+
   return (
     <View style={styles.card}>
       <View style={styles.head}>
-        <Text style={styles.title}>Contact</Text>
+        <Text style={styles.title}>{showRider ? 'Contact' : 'Contact restaurant'}</Text>
         <View style={styles.privacy}>
           <Lock color="#6B7280" size={11} />
           <Text style={styles.privacyText}>Your number stays private</Text>
         </View>
       </View>
 
-      {!hideRider && partner ? (
+      {showRider ? (
         <ContactCallRow
           role="rider"
           name={partner.name || 'Delivery partner'}
@@ -90,13 +94,19 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
           }
         />
       ) : null}
-      {!hideRider && partner ? <View style={styles.divider} /> : null}
+      {showRider ? <View style={styles.divider} /> : null}
       <ContactCallRow
         role="restaurant"
         name={restaurantName}
         caption="Restaurant"
         internet={netState('restaurant', restaurantRow)}
         onInternet={() => onInternet('restaurant', restaurantRow, restaurantName)}
+        onChat={() =>
+          router.push({
+            pathname: '/orders/[orderId]/restaurant-chat',
+            params: { orderId, restaurantName },
+          })
+        }
       />
 
       {message ? (

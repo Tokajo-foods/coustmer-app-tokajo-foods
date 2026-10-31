@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bike, CheckCircle2, Headset, Star } from 'lucide-react-native';
+import { Bike, CheckCircle2, Star } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { Alert, Share, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -12,8 +12,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { PartnerChatEntry } from '@/components/order/PartnerChatEntry';
 import { Pressable } from '@/components/common/Pressable';
+import { TrackingPartnerQuickActions } from '@/components/order/tracking/TrackingPartnerQuickActions';
 import { GREEN, INK, LINE, MUTED, ORANGE, RED, WHITE } from '@/components/order/tracking/tracking-theme';
 import { fonts } from '@/constants/typography';
 import { deliveryApi } from '@/lib/delivery/api';
@@ -143,13 +143,11 @@ export function TrackingPartnerCard({ orderId, phase, partner, onHelp }: Props) 
 
         {partner ? (
           <>
-            <View style={styles.partnerActions}>
-              <PartnerChatEntry orderId={orderId} partnerName={partner.name || 'Delivery partner'} />
-              <Pressable style={styles.helpBtn} onPress={onHelp}>
-                <Headset color={INK} size={16} strokeWidth={2.4} />
-                <Text style={styles.helpBtnText}>Help</Text>
-              </Pressable>
-            </View>
+            <TrackingPartnerQuickActions
+              orderId={orderId}
+              partnerName={partner.name || 'Delivery partner'}
+              onHelp={onHelp}
+            />
             <View style={styles.partnerActions}>
               <Pressable style={styles.softBtn} onPress={handleNudge}>
                 <Text style={styles.softBtnText}>{nudgePartner.isPending ? 'Sending…' : 'Where are you?'}</Text>
@@ -200,19 +198,6 @@ const styles = StyleSheet.create({
   partnerRatingText: { fontFamily: fonts.uiBold, fontSize: 11, color: '#92400E' },
   partnerVehicle: { flex: 1, fontFamily: fonts.uiMedium, fontSize: 12, color: MUTED, textTransform: 'capitalize' },
   partnerActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  helpBtn: {
-    flex: 1,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: WHITE,
-    borderWidth: 1,
-    borderColor: LINE,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  helpBtnText: { fontFamily: fonts.uiBold, fontSize: 13, color: INK },
   softBtn: {
     flex: 1,
     height: 40,

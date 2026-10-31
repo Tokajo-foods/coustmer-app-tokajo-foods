@@ -106,7 +106,11 @@ export const deliveryApi = {
       const r = asRecord(raw);
       const otp = String(r.otp ?? r.dropOtp ?? r.code ?? '');
       if (!otp) return null;
-      return { otp, expiresAt: (r.expiresAt as string) || undefined };
+      return {
+        otp,
+        expiresAt: (r.expiresAt as string) || undefined,
+        verified: r.verified === true,
+      };
     } catch {
       return null;
     }

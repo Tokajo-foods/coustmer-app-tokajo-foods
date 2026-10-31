@@ -47,15 +47,13 @@ export function TrackingOrderSummary({
       <View style={styles.section}>
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>Order summary</Text>
-          {pickup ? null : (
-            <Pressable
-              onPress={() => router.push({ pathname: '/orders/[orderId]', params: { orderId: order.id } })}
-              style={styles.detailsLink}
-            >
-              <Text style={styles.detailsLinkText}>Full details</Text>
-              <ChevronRight color={ORANGE} size={14} strokeWidth={2.5} />
-            </Pressable>
-          )}
+          <Pressable
+            onPress={() => router.push({ pathname: '/orders/[orderId]', params: { orderId: order.id } })}
+            style={styles.detailsLink}
+          >
+            <Text style={styles.detailsLinkText}>Full details</Text>
+            <ChevronRight color={ORANGE} size={14} strokeWidth={2.5} />
+          </Pressable>
         </View>
 
         <View style={styles.restChip}>

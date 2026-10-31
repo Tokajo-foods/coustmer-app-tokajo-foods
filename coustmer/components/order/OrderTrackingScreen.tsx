@@ -142,23 +142,25 @@ export function OrderTrackingScreen() {
             <TrackingPartnerCard orderId={id} phase={phase} partner={live.partner} onHelp={openHelp} />
           )}
 
+          {!pickup && otpEnabled ? (
+            <TrackingOtpCard
+              otp={otpQuery.data}
+              loading={otpQuery.isFetching && !otpQuery.data?.otp}
+              atDoor={phase.key === 'at_door'}
+              verified={otpQuery.data?.verified === true}
+            />
+          ) : null}
+
           <OrderContactCard
             orderId={id}
             phase={phase}
             partner={pickup ? null : live.partner}
             restaurantName={o.restaurantName || 'Restaurant'}
             hideRider={pickup}
+            omitRider={Boolean(live.partner)}
           />
 
           {!phase.active ? <TrackingCompletedActions orderId={id} orderStatus={live.orderStatus} /> : null}
-
-          {!pickup && otpEnabled ? (
-            <TrackingOtpCard
-              otp={otpQuery.data}
-              loading={otpQuery.isFetching && !otpQuery.data?.otp}
-              atDoor={phase.key === 'at_door'}
-            />
-          ) : null}
 
           {pickup ? null : (
             <ParcelProofSection pickupProofUrl={t?.pickupProofUrl} proofOfDelivery={t?.proofOfDelivery} />
