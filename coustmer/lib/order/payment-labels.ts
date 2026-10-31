@@ -8,11 +8,12 @@ export function paymentMethodLabel(
     upiId?: string;
     brand?: string;
     last4?: string;
-  }[]
+  }[],
+  isTakeaway = false,
 ): string {
   switch (method) {
     case 'cod':
-      return 'Pay on Delivery';
+      return isTakeaway ? 'Pay at counter' : 'Pay on Delivery';
     case 'paytm_upi':
       return 'Paytm UPI';
     case 'gpay':
@@ -39,10 +40,10 @@ export function paymentMethodLabel(
   }
 }
 
-export function paymentMethodHint(method: string): string {
+export function paymentMethodHint(method: string, isTakeaway = false): string {
   switch (method) {
     case 'cod':
-      return 'Cash or UPI at delivery';
+      return isTakeaway ? 'Pay at the restaurant counter' : 'Cash or UPI at delivery';
     case 'paytm_upi':
     case 'gpay':
     case 'phonepe':

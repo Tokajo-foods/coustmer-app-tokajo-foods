@@ -638,7 +638,7 @@ export function OrderDetailScreen() {
           </View>
           {data.paymentMethod ? (
             <Text style={styles.payNote}>
-              {paymentMethodLabel(data.paymentMethod)}
+              {paymentMethodLabel(data.paymentMethod, undefined, pickup)}
               {data.paymentStatus ? ` · ${data.paymentStatus.replace(/_/g, ' ')}` : ''}
             </Text>
           ) : null}

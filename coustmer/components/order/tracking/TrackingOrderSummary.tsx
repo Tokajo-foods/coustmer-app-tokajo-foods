@@ -96,7 +96,9 @@ export function TrackingOrderSummary({
             <Text style={styles.totalLabel}>{active && cod ? 'To pay' : 'Paid'}</Text>
             <Text style={styles.totalValue}>{formatInr(total)}</Text>
           </View>
-          {order.paymentMethod ? <Text style={styles.billPayNote}>{paymentMethodLabel(order.paymentMethod)}</Text> : null}
+          {order.paymentMethod ? (
+            <Text style={styles.billPayNote}>{paymentMethodLabel(order.paymentMethod, undefined, pickup)}</Text>
+          ) : null}
         </View>
       </View>
 

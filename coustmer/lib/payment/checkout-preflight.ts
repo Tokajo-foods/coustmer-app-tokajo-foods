@@ -45,12 +45,14 @@ async function codBlockMessage(ctx: Context): Promise<string | null> {
 }
 
 /** GET /payments/gateway/status — don't create an online order the gateway can't take. */
-async function gatewayBlockMessage(): Promise<string | null> {
+async function gatewayBlockMessage(isTakeaway: boolean): Promise<string | null> {
   try {
     const status = await paymentApi.getGatewayStatus();
     return status.configured
       ? null
-      : 'Online payment is unavailable right now. Choose Cash on delivery or try again in a few minutes.';
+      : isTakeaway
+        ? 'Online payment is unavailable right now. Choose Pay at counter or try again in a few minutes.'
+        : 'Online payment is unavailable right now. Choose Cash on delivery or try again in a few minutes.';
   } catch {
     return null; // initiate reports GATEWAY_UNAVAILABLE if it is really down
   }
@@ -69,6 +71,6 @@ export async function preflightCheckoutMethod(method: string, ctx: Context): Pro
     if (ctx.scheduled) return 'Scheduled orders are paid online or with wallet.';
     return codBlockMessage(ctx);
   }
-  if (needsOnlinePayment(method)) return gatewayBlockMessage();
+  if (needsOnlinePayment(method)) return gatewayBlockMessage(ctx.isTakeaway);
   return null;
 }

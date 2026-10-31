@@ -839,7 +839,11 @@ export function CartScreen() {
           >
             <View style={styles.paymentIconWrap}>
               {paymentMethod === 'cod' ? (
-                <Bike color={ORANGE} size={18} strokeWidth={2.3} />
+                normalizedDeliveryType === 'takeaway' ? (
+                  <Store color={ORANGE} size={18} strokeWidth={2.3} />
+                ) : (
+                  <Bike color={ORANGE} size={18} strokeWidth={2.3} />
+                )
               ) : paymentMethod === 'wallet' ? (
                 <Wallet color={ORANGE} size={18} strokeWidth={2.3} />
               ) : (
@@ -849,10 +853,10 @@ export function CartScreen() {
             <View style={styles.paymentBody}>
               <Text style={styles.paymentEyebrow}>Pay using</Text>
               <Text style={styles.paymentTitle} numberOfLines={1}>
-                {paymentMethodLabel(paymentMethod)}
+                {paymentMethodLabel(paymentMethod, normalizedDeliveryType === 'takeaway')}
               </Text>
               <Text style={styles.paymentHint} numberOfLines={1}>
-                {paymentMethodHint(paymentMethod)}
+                {paymentMethodHint(paymentMethod, normalizedDeliveryType === 'takeaway')}
               </Text>
             </View>
             <Text style={styles.paymentChangeText}>Change</Text>
@@ -949,6 +953,7 @@ export function CartScreen() {
           addressText={addressLine}
           wallet={wallet.data}
           allowCod={!scheduledFor}
+          isTakeaway={normalizedDeliveryType === 'takeaway'}
         />
 
         {/* Coupon Picker Sheet */}

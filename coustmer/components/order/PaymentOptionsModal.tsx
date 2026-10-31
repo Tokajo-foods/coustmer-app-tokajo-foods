@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Check, CreditCard, Truck, Wallet, X } from 'lucide-react-native';
+import { Check, CreditCard, Store, Truck, Wallet, X } from 'lucide-react-native';
 import { Alert, Modal, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +33,8 @@ type Props = {
   amountReady?: boolean;
   /** Scheduled orders are prepaid: cash on delivery is not offered. */
   allowCod?: boolean;
+  /** Takeaway cash is collected at the restaurant, not at the door. */
+  isTakeaway?: boolean;
 };
 
 const OPTIONS: Array<{
@@ -72,6 +74,7 @@ export function PaymentOptionsModal({
   walletShortfall,
   amountReady = true,
   allowCod = true,
+  isTakeaway = false,
 }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -122,18 +125,22 @@ export function PaymentOptionsModal({
 
           {(allowCod ? OPTIONS : OPTIONS.filter((option) => option.id !== 'cod')).map((option) => {
             const on = selected === option.id;
+            const takeawayCash = isTakeaway && option.id === 'cod';
             const hint = option.id === 'wallet' && wallet
               ? `Balance ${formatInr(wallet.balance)}`
-              : option.hint;
+              : takeawayCash
+                ? 'Pay at the restaurant when you collect'
+                : option.hint;
+            const Icon = takeawayCash ? Store : option.Icon;
             return (
               <Pressable
                 key={option.id}
                 style={[styles.row, on && styles.rowOn]}
                 onPress={() => choose(option.id)}
               >
-                <option.Icon color={on ? ORANGE : TEXT_SEC} size={18} strokeWidth={2.2} />
+                <Icon color={on ? ORANGE : TEXT_SEC} size={18} strokeWidth={2.2} />
                 <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{option.title}</Text>
+                  <Text style={styles.rowTitle}>{takeawayCash ? 'Pay at counter' : option.title}</Text>
                   <Text style={styles.rowHint}>{hint}</Text>
                 </View>
                 {on ? <Check color={ORANGE} size={16} strokeWidth={2.4} /> : null}

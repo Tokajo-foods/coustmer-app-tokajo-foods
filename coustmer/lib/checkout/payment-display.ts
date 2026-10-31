@@ -8,10 +8,10 @@ export function canonicalPayChoice(method: string): PayChoice {
   return 'online';
 }
 
-export function paymentMethodLabel(method: string): string {
+export function paymentMethodLabel(method: string, isTakeaway = false): string {
   switch (canonicalPayChoice(method)) {
     case 'cod':
-      return 'Cash on delivery';
+      return isTakeaway ? 'Pay at counter' : 'Cash on delivery';
     case 'wallet':
       return 'Wallet';
     case 'online':
@@ -19,10 +19,12 @@ export function paymentMethodLabel(method: string): string {
   }
 }
 
-export function paymentMethodHint(method: string): string {
+export function paymentMethodHint(method: string, isTakeaway = false): string {
   switch (canonicalPayChoice(method)) {
     case 'cod':
-      return 'Pay cash when the order arrives';
+      return isTakeaway
+        ? 'Pay at the restaurant when you collect'
+        : 'Pay cash when the order arrives';
     case 'wallet':
       return 'Pay the full bill from your Tokajo balance';
     case 'online':

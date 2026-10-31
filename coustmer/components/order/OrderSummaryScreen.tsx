@@ -260,7 +260,7 @@ export function OrderSummaryScreen() {
             </Text>
           </View>
           <Text style={styles.footerMethod} numberOfLines={1}>
-            {paymentMethodLabel(paymentMethod)}
+            {paymentMethodLabel(paymentMethod, isTakeaway)}
           </Text>
         </View>
         <SlideToConfirm
@@ -293,6 +293,7 @@ export function OrderSummaryScreen() {
         addressText={location?.formattedAddress || ''}
         wallet={wallet.data}
         allowCod={!scheduledFor}
+        isTakeaway={isTakeaway}
       />
 
       <OrderPlacementModal

@@ -91,7 +91,11 @@ export function OrderSummaryDetails(p: Props) {
         <View style={styles.paymentRow}>
           <View style={styles.paymentIconWrap}>
             {p.paymentMethod === 'cod' ? (
-              <Bike color={ORANGE} size={18} strokeWidth={2.3} />
+              p.isTakeaway ? (
+                <Store color={ORANGE} size={18} strokeWidth={2.3} />
+              ) : (
+                <Bike color={ORANGE} size={18} strokeWidth={2.3} />
+              )
             ) : p.paymentMethod === 'wallet' ? (
               <Wallet color={ORANGE} size={18} strokeWidth={2.3} />
             ) : (
@@ -101,10 +105,10 @@ export function OrderSummaryDetails(p: Props) {
           <View style={styles.paymentBody}>
             <Text style={styles.paymentEyebrow}>Pay using</Text>
             <Text style={styles.paymentTitle} numberOfLines={1}>
-              {paymentMethodLabel(p.paymentMethod)}
+              {paymentMethodLabel(p.paymentMethod, p.isTakeaway)}
             </Text>
             <Text style={styles.paymentHint} numberOfLines={1}>
-              {paymentMethodHint(p.paymentMethod)}
+              {paymentMethodHint(p.paymentMethod, p.isTakeaway)}
             </Text>
           </View>
           <Text style={styles.paymentChangeText}>Change</Text>
