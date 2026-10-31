@@ -123,13 +123,44 @@ export const CIRCLE_CATEGORIES: CircleCategory[] = ORDER.map((row) => ({
 
 export const CATEGORY_PREVIEW_COUNT = 8;
 
+function chipKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[-_]+/g, '')
+    .replace(/s$/, '');
+}
+
 export function circleCategoryFor(slug: string, label?: string): CircleCategory | undefined {
   const token = slug.trim().toLowerCase().replace(/-/g, '_');
   const name = (label ?? '').trim().toLowerCase();
   return CIRCLE_CATEGORIES.find(
     (row) =>
       row.slug === token ||
-      row.slug.replace(/_/g, '') === token.replace(/_/g, '') ||
+      chipKey(row.slug) === chipKey(token) ||
       row.label.toLowerCase() === name
   );
+}
+
+/** Full home row first; append kitchen Other types that are not already a circle chip. */
+export function mergeHomeCategoryChips(
+  extras: { id: string; label: string; slug: string; imageUrl?: string }[]
+): { id: string; label: string; slug: string; imageUrl?: string }[] {
+  const base = CIRCLE_CATEGORIES.map((row) => ({
+    id: row.id,
+    label: row.label,
+    slug: row.slug,
+  }));
+  const seen = new Set(base.flatMap((row) => [chipKey(row.slug), chipKey(row.label)]));
+  const more = extras.filter((row) => {
+    const slug = chipKey(row.slug);
+    const label = chipKey(row.label);
+    if (!slug && !label) return false;
+    if (seen.has(slug) || seen.has(label)) return false;
+    seen.add(slug);
+    seen.add(label);
+    return true;
+  });
+  return [...base, ...more];
 }

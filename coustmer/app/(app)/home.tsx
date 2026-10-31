@@ -17,6 +17,7 @@ import { TokajoFeedSections } from '@/components/home/tokajo/TokajoFeedSections'
 import { TokajoHomeChrome } from '@/components/home/tokajo/TokajoHomeChrome';
 import { TokajoRestaurantListCard } from '@/components/home/tokajo/TokajoRestaurantListCard';
 import type { TokajoCategory } from '@/components/home/tokajo/TokajoCategoryStrip';
+import { mergeHomeCategoryChips } from '@/components/home/tokajo/circle-categories';
 import { VegModeModal } from '@/components/home/VegModeModal';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import { InitialLocationSheet } from '@/components/location/InitialLocationSheet';
@@ -54,9 +55,7 @@ import {
 } from '@/lib/location/format';
 import { parseDeliveryAddress } from '@/lib/order/parse-address';
 import {
-  useHomeCategories,
   useInfiniteRestaurants,
-  useNearbyMindCategories,
   useNearbyRestaurants,
 } from '@/lib/restaurant/hooks';
 import { useNearbyFoodCategories } from '@/lib/restaurant/food-categories-hooks';
@@ -197,10 +196,6 @@ export default function HomeScreen() {
     [coords?.lat, coords?.lng, homeFilters]
   );
   const nearby = useNearbyRestaurants(nearbyParams);
-  const mindCategories = useNearbyMindCategories(coords, {
-    radiusKm: CUSTOMER_DISCOVERY_RADIUS_KM,
-    restaurantLimit: 40,
-  });
   const foodCategories = useNearbyFoodCategories(coords, {
     radiusKm: CUSTOMER_DISCOVERY_RADIUS_KM,
   });
@@ -241,37 +236,19 @@ export default function HomeScreen() {
     [baseRestaurants, homeFilters, nearbyParams, nearby.data?.restaurants]
   );
 
-  const homeCategories = useHomeCategories(baseRestaurants);
-
-  const mindCategoriesForHome = useMemo(() => {
-    // API already returns unique menu categories from nearby restaurants
-    // (not cuisine tags). Trust the server list as-is.
-    return mindCategories.data?.categories ?? [];
-  }, [mindCategories.data?.categories]);
-
-  /** Home chips — food categories kitchens assigned (including Other), then cuisine fallback. */
-  const tokajoCategories = useMemo<TokajoCategory[]>(() => {
-    const fromFood = (foodCategories.data ?? []).map((c) => ({
-      id: c.id,
-      label: c.name,
-      slug: c.slug,
-      imageUrl: c.imageUrl ?? undefined,
-    }));
-    if (fromFood.length > 0) return fromFood;
-    const fromMind = mindCategoriesForHome.map((c) => ({
-      id: c.id || c.slug || c.name,
-      label: c.name,
-      slug: c.slug || c.name,
-      imageUrl: c.imageUrl,
-    }));
-    if (fromMind.length > 0) return fromMind;
-    return (homeCategories.data ?? []).map((c) => ({
-      id: c.id || c.slug || c.label,
-      label: c.label,
-      slug: c.slug || c.label,
-      imageUrl: c.imageUrl,
-    }));
-  }, [foodCategories.data, mindCategoriesForHome, homeCategories.data]);
+  /** Full circle row, plus any new kitchen Other types nearby. */
+  const tokajoCategories = useMemo<TokajoCategory[]>(
+    () =>
+      mergeHomeCategoryChips(
+        (foodCategories.data ?? []).map((c) => ({
+          id: c.id,
+          label: c.name,
+          slug: c.slug,
+          imageUrl: c.imageUrl ?? undefined,
+        }))
+      ),
+    [foodCategories.data]
+  );
 
   /** Top rail: highest rated first (different order than feed / deals) */
   const topRestaurants = useMemo(() => {
@@ -338,7 +315,6 @@ export default function HomeScreen() {
   const refreshing =
     nearby.isRefetching ||
     home.isRefetching ||
-    mindCategories.isRefetching ||
     foodCategories.isRefetching ||
     (!hasPin && feed.isRefetching);
 
@@ -347,7 +323,6 @@ export default function HomeScreen() {
     nearby.refetch();
     home.refetch();
     profile.refetch();
-    mindCategories.refetch();
     foodCategories.refetch();
   };
 
@@ -571,7 +546,7 @@ export default function HomeScreen() {
           filters={homeFilters}
           onFiltersChange={onFiltersChange}
           categories={tokajoCategories}
-          categoriesLoading={foodCategories.isLoading || mindCategories.isLoading}
+          categoriesLoading={false}
           restaurants={baseRestaurants}
         />
 
@@ -602,7 +577,6 @@ export default function HomeScreen() {
       homeFilters,
       onFiltersChange,
       tokajoCategories,
-      mindCategories.isLoading,
       baseRestaurants,
       filtersActive,
       onClearFilters,
@@ -631,7 +605,7 @@ export default function HomeScreen() {
       filters={homeFilters}
       onFiltersChange={onFiltersChange}
       categories={tokajoCategories}
-      categoriesLoading={foodCategories.isLoading || mindCategories.isLoading}
+      categoriesLoading={false}
       restaurants={baseRestaurants}
     />
   );
