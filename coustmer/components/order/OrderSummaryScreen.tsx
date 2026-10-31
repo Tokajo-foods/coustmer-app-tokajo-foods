@@ -18,6 +18,7 @@ import { ORANGE, TEXT, styles } from '@/components/order/order-summary-styles';
 import { RazorpayCheckoutModal } from '@/components/payment/RazorpayCheckoutModal';
 import { paymentMethodLabel, type PayChoice } from '@/lib/checkout/payment-display';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
+import { isDeliveryFeeReady } from '@/lib/cart/delivery-fee-ready';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
 import { formatInr } from '@/lib/format/money';
 import { useCart, useCartBill } from '@/lib/cart/hooks';
@@ -76,7 +77,23 @@ export function OrderSummaryScreen() {
     liveBill: bill.data,
     serverCart: cartData,
     deliveryType: normalizedDeliveryType,
+    tip,
     paymentMethod,
+  });
+  const feeReady = isDeliveryFeeReady({
+    deliveryType: normalizedDeliveryType,
+    deliveryFee: cartData?.deliveryFee,
+    deliveryFeeBase: cartData?.deliveryFeeBase,
+    superFreeDelivery: cartData?.superFreeDelivery,
+    autoFreeDelivery: cartData?.autoFreeDelivery,
+    pinLat: billPin?.lat,
+    pinLng: billPin?.lng,
+    savedLat: cartData?.deliveryAddress?.lat,
+    savedLng: cartData?.deliveryAddress?.lng,
+    freshBill:
+      bill.data != null &&
+      !bill.isPlaceholderData &&
+      bill.dataUpdatedAt >= remoteCart.dataUpdatedAt,
   });
 
   const displayName =
@@ -105,6 +122,7 @@ export function OrderSummaryScreen() {
       await checkout.pay(checkout.unpaid);
       return;
     }
+    if (!feeReady) return;
     if (!restaurant?.id || items.length === 0) {
       Alert.alert('Cart empty', 'Add items before placing your order.');
       router.back();
@@ -221,8 +239,9 @@ export function OrderSummaryScreen() {
               couponCode={couponCode ?? billBreakdown.couponCode}
               fallbackTotal={payable}
               hasDeliveryPin={Boolean(billPin) || isTakeaway}
-              billLoading={bill.isLoading && !billBreakdown.billReady}
+              billLoading={!feeReady && bill.isLoading}
               billError={bill.isError}
+              totalReady={feeReady}
             />
           )}
         </View>
@@ -232,7 +251,9 @@ export function OrderSummaryScreen() {
         <View style={styles.footerTotalRow}>
           <View>
             <Text style={styles.footerTotalLabel}>To pay</Text>
-            <Text style={styles.footerTotalValue}>{formatInr(payable)}</Text>
+            <Text style={styles.footerTotalValue}>
+              {feeReady ? formatInr(payable) : 'Calculating…'}
+            </Text>
           </View>
           <Text style={styles.footerMethod} numberOfLines={1}>
             {paymentMethodLabel(paymentMethod)}
@@ -242,11 +263,13 @@ export function OrderSummaryScreen() {
           label={
             checkout.unpaid
               ? `Slide to pay · ${formatInr(checkout.unpaid.amount)}`
-              : `Slide to place order · ${formatInr(payable)}`
+              : feeReady
+                ? `Slide to place order · ${formatInr(payable)}`
+                : 'Calculating delivery fee…'
           }
           onConfirm={placeOrder}
           loading={paying || checkout.initiating}
-          disabled={items.length === 0 && !checkout.unpaid}
+          disabled={!checkout.unpaid && (items.length === 0 || !feeReady)}
           color={ORANGE}
         />
       </View>
@@ -258,6 +281,7 @@ export function OrderSummaryScreen() {
         onSelectMethod={(m) => void chooseMethod(m)}
         itemCount={itemCount}
         total={totalBeforeWallet}
+        amountReady={feeReady}
         walletShortfall={billBreakdown.walletShortfall}
         savings={billBreakdown.discount}
         restaurantName={restaurant?.name || ''}

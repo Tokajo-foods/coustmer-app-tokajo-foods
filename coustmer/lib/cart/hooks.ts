@@ -283,7 +283,7 @@ export function useSetCartSchedule() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (scheduledFor: string | null) => cartApi.setSchedule(scheduledFor),
-    onSuccess: (cart) => syncAndInvalidate(queryClient, cart),
+    onSuccess: (cart) => syncAndInvalidate(queryClient, cart, false),
   });
 }
 

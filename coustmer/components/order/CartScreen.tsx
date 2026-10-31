@@ -279,8 +279,10 @@ export function CartScreen() {
     liveBill: showFreshBill ? liveBill.data : undefined,
     serverCart: apiCart,
     deliveryType: normalizedDeliveryType,
+    tip,
     paymentMethod,
   });
+  const priceReady = feeReady || billBreakdown.billReady;
 
   const displayDiscount = billBreakdown.discount;
 
@@ -447,33 +449,32 @@ export function CartScreen() {
       });
   };
 
-  const handleScheduleSlot = (value: string | null) => {
+  const handleScheduleSlot = async (value: string | null) => {
     if (!isLoggedIn) {
       requireLogin('schedule your order');
-      return;
+      throw new Error('Sign in required');
     }
-    setSchedule
-      .mutateAsync(value)
-      .then((cart) => {
-        useCartStore.getState().setScheduledFor(cart.scheduledFor ?? value);
-      })
-      .catch((e) => {
-        Alert.alert(
-          'Could not schedule order',
-          e instanceof Error ? e.message : 'Please try again.'
-        );
-      });
+    const previous = useCartStore.getState().scheduledFor;
+    useCartStore.getState().setScheduledFor(value);
+    try {
+      const cart = await setSchedule.mutateAsync(value);
+      useCartStore.getState().setScheduledFor(cart.scheduledFor ?? value);
+    } catch (e) {
+      useCartStore.getState().setScheduledFor(previous);
+      throw e;
+    }
   };
 
-  const handleScheduleNow = () => handleScheduleSlot(null);
-  const handleSchedulePick = async (startIso: string) => {
-    if (!isLoggedIn) {
-      requireLogin('schedule your order');
-      return;
-    }
-    const cart = await setSchedule.mutateAsync(startIso);
-    useCartStore.getState().setScheduledFor(cart.scheduledFor ?? startIso);
+  const handleScheduleNow = () => {
+    void handleScheduleSlot(null).catch((e) => {
+      if (e instanceof Error && e.message === 'Sign in required') return;
+      Alert.alert(
+        'Could not update schedule',
+        e instanceof Error ? e.message : 'Please try again.'
+      );
+    });
   };
+  const handleSchedulePick = (startIso: string) => handleScheduleSlot(startIso);
 
   const handleClear = () => {
     setMenuOpen(false);
@@ -875,9 +876,9 @@ export function CartScreen() {
             couponCode={couponCode}
             fallbackTotal={displayTotal}
             hasDeliveryPin={Boolean(billPin) || normalizedDeliveryType === 'takeaway'}
-            billLoading={needsQuote && !feeReady && !liveBill.isError}
+            billLoading={needsQuote && !priceReady && !liveBill.isError}
             billError={liveBill.isError}
-            totalReady={feeReady}
+            totalReady={priceReady}
           />
         </ScrollView>
 
@@ -889,7 +890,7 @@ export function CartScreen() {
               router.push('/cart/summary' as import('expo-router').Href);
             }}
             disabled={
-              !feeReady ||
+              !priceReady ||
               voucherBusy ||
               Boolean(busyId) ||
               applyCoupon.isPending ||
@@ -899,7 +900,7 @@ export function CartScreen() {
           >
             <View>
               <Text style={styles.checkoutPrice} numberOfLines={1}>
-                {feeReady ? formatInr(displayTotal) : 'Calculating…'}
+                {priceReady ? formatInr(displayTotal) : 'Calculating…'}
               </Text>
               <Text style={styles.checkoutSub}>TOTAL</Text>
             </View>
@@ -959,7 +960,7 @@ export function CartScreen() {
           onSelectMethod={(m) => void selectPaymentMethod(m)}
           itemCount={itemCount}
           total={totalBeforeWallet}
-          amountReady={feeReady}
+          amountReady={priceReady}
           walletShortfall={billBreakdown.walletShortfall}
           savings={billBreakdown.discount}
           restaurantName={restaurant?.name || ''}
