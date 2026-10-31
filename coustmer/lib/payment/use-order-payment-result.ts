@@ -27,7 +27,12 @@ export function useOrderPaymentResult() {
   const [confirming, setConfirming] = useState(false);
 
   const confirm = useCallback(
-    async (orderId: string, paymentId: string, data: RazorpayResult): Promise<PaymentConfirmation> => {
+    async (
+      orderId: string,
+      paymentId: string,
+      data: RazorpayResult,
+      opts?: { navigate?: boolean },
+    ): Promise<PaymentConfirmation> => {
       setConfirming(true);
       const result = await confirmOrderPayment(
         () =>
@@ -45,10 +50,12 @@ export function useOrderPaymentResult() {
       void queryClient.invalidateQueries({ queryKey: ['order'] });
 
       if (result.kind === 'placed') {
-        router.replace({
-          pathname: '/orders/[orderId]/tracking',
-          params: { orderId, newOrder: 'true' },
-        });
+        if (opts?.navigate !== false) {
+          router.replace({
+            pathname: '/orders/[orderId]/tracking',
+            params: { orderId, newOrder: 'true' },
+          });
+        }
         return result;
       }
 

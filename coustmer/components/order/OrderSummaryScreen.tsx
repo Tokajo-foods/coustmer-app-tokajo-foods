@@ -120,7 +120,6 @@ export function OrderSummaryScreen() {
   const placeOrder = async () => {
     // Online order already created (server cart is cleared): pay that order instead of placing a duplicate.
     if (checkout.unpaid) {
-      setOrderPlacementPhase('placing');
       await checkout.pay(checkout.unpaid);
       return;
     }
@@ -137,10 +136,10 @@ export function OrderSummaryScreen() {
     }
 
     setPaying(true);
-    setOrderPlacementPhase('placing');
 
     try {
       const { method: mappedMethod } = resolveCheckoutMethod(paymentMethod);
+      const online = needsOnlinePayment(mappedMethod);
       const blocked = await preflightCheckoutMethod(mappedMethod, {
         amount: payable, restaurantId: restaurant.id, isTakeaway, lat: billPin?.lat, lng: billPin?.lng,
         scheduled: Boolean(scheduledFor),
@@ -153,6 +152,8 @@ export function OrderSummaryScreen() {
         ]);
         return;
       }
+
+      if (!online) setOrderPlacementPhase('placing');
 
       const order = await createOrder.mutateAsync(
         buildCheckoutOrder({
@@ -172,7 +173,7 @@ export function OrderSummaryScreen() {
 
       const amount = order.total ?? payable;
 
-      if (!needsOnlinePayment(mappedMethod)) {
+      if (!online) {
         setOrderPlacementPhase('placed');
         await new Promise((r) => setTimeout(r, 1200));
         router.replace({ pathname: '/orders/[orderId]/tracking', params: { orderId: order.id, newOrder: 'true' } });

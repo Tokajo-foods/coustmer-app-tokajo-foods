@@ -115,12 +115,10 @@ export function useCheckoutPayment({ customerName, contact, setPhase }: Options)
   /** Sheet closed without a success callback. A UPI app may still have paid — ask the server once. */
   const onNotPaid = useCallback(
     async (order: UnpaidOrder, reason?: string) => {
-      setPhase('placing');
       const status = await orderApi
         .getOrder(order.id)
         .then((o) => normalizeOrderStatus(o.status))
         .catch(() => '');
-      setPhase('none');
       void queryClient.invalidateQueries({ queryKey: ['order'] });
       if (LIVE.has(status)) {
         setUnpaid(null);
@@ -141,7 +139,7 @@ export function useCheckoutPayment({ customerName, contact, setPhase }: Options)
         { text: 'Retry payment', onPress: () => void pay(order) },
       ]);
     },
-    [goOrder, goTracking, pay, queryClient, setPhase]
+    [goOrder, goTracking, pay, queryClient]
   );
 
   const onResult = useCallback(
@@ -155,11 +153,19 @@ export function useCheckoutPayment({ customerName, contact, setPhase }: Options)
         return;
       }
       setPhase('placing');
-      const result = await confirm(order.id, paymentId, data);
+      const result = await confirm(order.id, paymentId, data, { navigate: false });
+      if (result.kind === 'placed') {
+        setPhase('placed');
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        setPhase('none');
+        setUnpaid(null);
+        goTracking(order.id);
+        return;
+      }
       setPhase('none');
-      if (result.kind === 'placed' || result.kind === 'refunded' || result.kind === 'pending') setUnpaid(null);
+      if (result.kind === 'refunded' || result.kind === 'pending') setUnpaid(null);
     },
-    [confirm, onNotPaid, session?.paymentId, setPhase, unpaid]
+    [confirm, goTracking, onNotPaid, session?.paymentId, setPhase, unpaid]
   );
 
   const close = useCallback(() => {
