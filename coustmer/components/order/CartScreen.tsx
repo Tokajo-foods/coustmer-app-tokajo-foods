@@ -7,7 +7,6 @@ import {
   Bike,
   ChevronRight,
   CreditCard,
-  MapPin,
   Minus,
   MoreVertical,
   Plus,
@@ -16,7 +15,7 @@ import {
   Tag,
   Wallet,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -52,6 +51,7 @@ import {
 import { syncCartItemQuantity } from '@/lib/order/add-to-cart';
 import { DeliveryPreferences } from '@/components/order/DeliveryPreferences';
 import { BillDetailsSection } from '@/components/order/BillDetailsSection';
+import { CartAddressCard } from '@/components/order/CartAddressCard';
 import { AutoFreeDeliveryBanner } from '@/components/order/AutoFreeDeliveryBanner';
 import { ScheduleOrderSection } from '@/components/order/ScheduleOrderSection';
 import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
@@ -271,6 +271,10 @@ export function CartScreen() {
   const [voucherBusy, setVoucherBusy] = useState(false);
   const [groupOrderOpen, setGroupOrderOpen] = useState(false);
   const [couponPickerOpen, setCouponPickerOpen] = useState(false);
+  const [rangeMessage, setRangeMessage] = useState<string | null>(null);
+  const onRangeMessage = useCallback((next: string | null) => {
+    setRangeMessage((current) => (current === next ? current : next));
+  }, []);
 
   const couponApplied = Boolean(couponCode);
 
@@ -662,18 +666,13 @@ export function CartScreen() {
             />
           }
         >
-          {/* Address */}
-          <View style={styles.addressCard}>
-            <View style={styles.addressIcon}>
-              <MapPin color={ORANGE} size={16} strokeWidth={2.4} />
-            </View>
-            <View style={styles.addressBody}>
-              <Text style={styles.addressEyebrow}>Deliver to {addressLabel}</Text>
-              <Text style={styles.addressLine} numberOfLines={1}>
-                {addressLine}
-              </Text>
-            </View>
-          </View>
+          <CartAddressCard
+            restaurantId={restaurant?.id}
+            delivery={normalizedDeliveryType === 'delivery'}
+            billError={liveBill.error instanceof Error ? liveBill.error.message : null}
+            billErrorAt={liveBill.errorUpdatedAt}
+            onRangeMessage={onRangeMessage}
+          />
 
           {/* Items */}
           <View style={styles.section}>
@@ -894,6 +893,7 @@ export function CartScreen() {
             }}
             disabled={
               !priceReady ||
+              Boolean(rangeMessage) ||
               voucherBusy ||
               Boolean(busyId) ||
               applyCoupon.isPending ||
@@ -1090,39 +1090,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     gap: 12,
-  },
-
-  addressCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: WHITE,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  addressIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFF7ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addressBody: {
-    flex: 1,
-  },
-  addressEyebrow: {
-    fontFamily: fonts.uiBold,
-    fontSize: 13,
-    color: TEXT,
-  },
-  addressLine: {
-    marginTop: 2,
-    fontFamily: fonts.ui,
-    fontSize: 12,
-    color: TEXT_SEC,
   },
 
   card: {
