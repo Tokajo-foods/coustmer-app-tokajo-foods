@@ -241,8 +241,10 @@ export function RestaurantDetailScreen() {
     const byCat = categories.map((cat) => ({
       ...cat,
       items: visibleItems.filter((item) => {
-        if (item.categoryId && item.categoryId === cat.id) return true;
-        if (item.categoryName && item.categoryName === cat.name) return true;
+        if (item.categoryId && String(item.categoryId) === String(cat.id)) return true;
+        const itemName = (item.categoryName ?? '').trim().toLowerCase();
+        const catName = (cat.name ?? '').trim().toLowerCase();
+        if (itemName && catName && itemName === catName) return true;
         return false;
       }),
     }));
