@@ -74,18 +74,20 @@ export function usePayment(paymentId: string) {
 }
 
 /** GET /payments/methods */
-export function usePaymentMethods() {
+export function usePaymentMethods(enabled = true) {
   return useQuery({
     queryKey: paymentKeys.methods(),
     queryFn: paymentApi.getMethods,
+    enabled,
   });
 }
 
 /** GET /payments/wallet */
-export function usePaymentWallet() {
+export function usePaymentWallet(enabled = true) {
   return useQuery({
     queryKey: paymentKeys.wallet(),
     queryFn: paymentApi.getWallet,
+    enabled,
   });
 }
 

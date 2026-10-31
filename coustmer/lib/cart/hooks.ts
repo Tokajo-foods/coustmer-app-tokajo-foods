@@ -35,10 +35,14 @@ export const cartKeys = {
 
 function syncAndInvalidate(
   queryClient: ReturnType<typeof useQueryClient>,
-  cart: Cart
+  cart: Cart,
+  refreshBill = true,
 ) {
   applyServerCartToStore(cart);
-  queryClient.invalidateQueries({ queryKey: cartKeys.all });
+  queryClient.setQueryData(cartKeys.current(), cart);
+  if (refreshBill) {
+    void queryClient.invalidateQueries({ queryKey: [...cartKeys.all, 'bill'] });
+  }
 }
 
 /** GET /cart */
@@ -117,8 +121,7 @@ export function useValidateCart() {
         applyServerCartToStore(result.cart);
         queryClient.setQueryData(cartKeys.current(), result.cart);
       }
-      // Refresh bill / prices after validate (even when valid)
-      queryClient.invalidateQueries({ queryKey: cartKeys.current() });
+      void queryClient.invalidateQueries({ queryKey: [...cartKeys.all, 'bill'] });
     },
   });
 }
@@ -160,7 +163,7 @@ export function useUpdateCartDeliveryAddress() {
   return useMutation({
     mutationFn: (payload: UpdateDeliveryAddressPayload) =>
       cartApi.updateDeliveryAddress(payload),
-    onSuccess: (cart) => syncAndInvalidate(queryClient, cart),
+    onSuccess: (cart) => syncAndInvalidate(queryClient, cart, false),
   });
 }
 
@@ -241,7 +244,6 @@ export function useCartBill(
       ),
     enabled: canFetch,
     staleTime: 15_000,
-    retry: 1,
     placeholderData: (prev) => prev,
   });
 }
@@ -262,7 +264,7 @@ export function useUpdateCartInstructions() {
   return useMutation({
     mutationFn: (payload: { cooking?: string; cutlery?: boolean; leaveAtDoor?: boolean }) =>
       cartApi.updateInstructions(payload),
-    onSuccess: (cart) => syncAndInvalidate(queryClient, cart),
+    onSuccess: (cart) => syncAndInvalidate(queryClient, cart, false),
   });
 }
 
@@ -273,8 +275,7 @@ export function useCartSlots(opts?: { date?: string; days?: number; enabled?: bo
     queryKey: cartKeys.slots(opts?.date, opts?.days),
     queryFn: () => cartApi.getSlots({ date: opts?.date, days: opts?.days ?? 4 }),
     enabled,
-    staleTime: 60_000,
-    refetchInterval: enabled ? 5 * 60_000 : false,
+    staleTime: 5 * 60_000,
   });
 }
 

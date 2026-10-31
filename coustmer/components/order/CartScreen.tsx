@@ -16,7 +16,7 @@ import {
   Tag,
   Wallet,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -48,9 +48,7 @@ import {
   useUpdateCartDeliveryAddress,
   useUpdateCartDeliveryType,
   useUpdateCartTip,
-  useValidateCart,
 } from '@/lib/cart/hooks';
-import { applyServerCartToStore } from '@/lib/cart/sync';
 import { syncCartItemQuantity } from '@/lib/order/add-to-cart';
 import { DeliveryPreferences } from '@/components/order/DeliveryPreferences';
 import { BillDetailsSection } from '@/components/order/BillDetailsSection';
@@ -209,8 +207,8 @@ export function CartScreen() {
   const setDeliveryTypeLocal = useCartStore((s) => s.setDeliveryType);
   const location = useDeliveryLocationStore((s) => s.location);
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
-  const paymentMethods = usePaymentMethods();
-  const wallet = usePaymentWallet();
+  const paymentMethods = usePaymentMethods(isLoggedIn);
+  const wallet = usePaymentWallet(isLoggedIn);
 
   const remoteCart = useCart();
   const apiCart = remoteCart.data;
@@ -231,12 +229,14 @@ export function CartScreen() {
   const normalizedDeliveryType =
     deliveryType === 'takeaway' ? ('takeaway' as const) : ('delivery' as const);
 
+  const serverHasPin =
+    apiCart?.deliveryAddress?.lat != null && apiCart?.deliveryAddress?.lng != null;
   const liveBill = useCartBill(
     billPin?.lat,
     billPin?.lng,
     Boolean(items.length),
     normalizedDeliveryType,
-    Boolean(items.length)
+    !billPin && serverHasPin
   );
   const slots = useCartSlots({ enabled: isLoggedIn && items.length > 0 });
   const setSchedule = useSetCartSchedule();
@@ -246,7 +246,6 @@ export function CartScreen() {
   const updateTip = useUpdateCartTip();
   const applyCoupon = useApplyCoupon();
   const removeCoupon = useRemoveCoupon();
-  const validateCart = useValidateCart();
   const saveCart = useSaveCart();
 
   const paymentMethod = useCartStore((s) => s.paymentMethod);
@@ -273,34 +272,6 @@ export function CartScreen() {
     deliveryType: normalizedDeliveryType,
     paymentMethod,
   });
-
-  // Validate cart on open so delivery fee is persisted on server (GET /cart/bill needs it).
-  useEffect(() => {
-    if (!isFocused || !items.length) return;
-    if (normalizedDeliveryType === 'takeaway') return;
-    if (!billPin) return;
-    if (liveBill.data?.billReady && (liveBill.data.deliveryFee > 0 || liveBill.data.superFreeDelivery)) {
-      return;
-    }
-
-    void validateCart
-      .mutateAsync({ dropLat: billPin.lat, dropLng: billPin.lng })
-      .then((result) => {
-        if (result.cart) applyServerCartToStore(result.cart);
-        void liveBill.refetch();
-      })
-      .catch(() => {
-        void remoteCart.refetch();
-        void liveBill.refetch();
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isFocused,
-    items.length,
-    billPin?.lat,
-    billPin?.lng,
-    normalizedDeliveryType,
-  ]);
 
   const displayDiscount = billBreakdown.discount;
 
@@ -329,12 +300,19 @@ export function CartScreen() {
     if (couponCode) setVoucherCode(couponCode);
   }, [couponCode]);
 
+  const sentAddressId = useRef<string | null>(null);
   useEffect(() => {
-    if (!isLoggedIn || !location?.savedAddressId) return;
+    if (!isFocused || !isLoggedIn || !location?.savedAddressId) return;
+    if (remoteCart.isLoading) return;
+    const wanted = location.savedAddressId;
+    if (apiCart?.deliveryAddress?.addressId === wanted) return;
+    if (sentAddressId.current === wanted) return;
+    sentAddressId.current = wanted;
 
     void updateAddress
-      .mutateAsync({ addressId: location.savedAddressId })
+      .mutateAsync({ addressId: wanted })
       .catch((e) => {
+        if (sentAddressId.current === wanted) sentAddressId.current = null;
         if (__DEV__) {
           console.warn(
             '[cart] PUT /cart/delivery-address failed',
@@ -343,7 +321,13 @@ export function CartScreen() {
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location?.savedAddressId, isLoggedIn]);
+  }, [
+    isFocused,
+    isLoggedIn,
+    location?.savedAddressId,
+    apiCart?.deliveryAddress?.addressId,
+    remoteCart.isLoading,
+  ]);
 
   // After placing an order the cart is cleared while tracking is open —
   // that must not call router.back() and yank the user off delivery tracking.
@@ -371,11 +355,8 @@ export function CartScreen() {
     try {
       const ok = await syncCartItemQuantity(itemId, quantity);
       if (!ok) {
-        // Helper already reverted + alerted; refresh from server for safety
         await Promise.all([remoteCart.refetch(), liveBill.refetch()]);
       } else {
-        // Reconcile server totals in background without blocking instant UI.
-        void remoteCart.refetch();
         void liveBill.refetch();
       }
     } finally {
@@ -405,7 +386,6 @@ export function CartScreen() {
         if (typeof cart.tip === 'number') {
           setTip(cart.tip);
         }
-        void liveBill.refetch();
       })
       .catch((e) => {
         setTip(previousTip);
@@ -434,8 +414,6 @@ export function CartScreen() {
     void updateDeliveryType
       .mutateAsync({ deliveryType: type, type })
       .then((cart) => {
-        // Hook already hydrates; refresh to lock bill/fees from server
-        void remoteCart.refetch();
         if (cart?.deliveryType) {
           setDeliveryTypeLocal(
             cart.deliveryType === 'takeaway' ||
