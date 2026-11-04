@@ -2,6 +2,7 @@ import { router, type Router } from 'expo-router';
 import { Alert } from 'react-native';
 
 import { ongoingOrderMessage } from '@/lib/order/ongoing-order';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import type { Order } from '@/lib/order/types';
 import { useActiveOrderStore } from '@/store/active-order-store';
 
@@ -18,7 +19,7 @@ export function alertOngoingOrderBlocks(order: Order, nav: Router = router): voi
 /** Returns true when a new cart / checkout action must be blocked. */
 export function blockIfOngoingOrder(nav: Router = router): boolean {
   const order = useActiveOrderStore.getState().order;
-  if (!order) return false;
+  if (!order || !orderIsTrackable(order)) return false;
   alertOngoingOrderBlocks(order, nav);
   return true;
 }

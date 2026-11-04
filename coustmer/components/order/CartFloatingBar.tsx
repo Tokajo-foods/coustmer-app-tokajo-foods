@@ -13,7 +13,7 @@ import {
   isHomePath,
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
-import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { useCartStore } from '@/store/cart-store';
 
 /** Extra scroll space a screen needs so its last row clears the cart pill. */
@@ -39,8 +39,7 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const hasCart = totalItems > 0;
   const { order: activeOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
   const onHome = isHomePath(pathname);
-  const trackOrder =
-    activeOrder && isOngoingOrderStatus(activeOrder.status) ? activeOrder : null;
+  const trackOrder = orderIsTrackable(activeOrder) ? activeOrder : null;
 
   useFocusEffect(
     useCallback(() => {

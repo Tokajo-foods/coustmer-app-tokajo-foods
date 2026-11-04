@@ -21,7 +21,7 @@ import { createIdempotencyKey } from '@/lib/order/idempotency';
 import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
 import { resolveEstimatedDeliveryAtIso } from '@/lib/order/estimated-delivery-at';
-import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 
 const ORDER_SERVICE = '/api/v1/order-service';
 const ORDERS_BASE = `${ORDER_SERVICE}/orders`;
@@ -578,9 +578,7 @@ export const orderApi = {
     const res = await request<unknown>(`${ORDERS_BASE}/active`);
     const list = extractList(res.data);
     const mapActive = (rows: Record<string, unknown>[]) =>
-      rows
-        .map(mapOrder)
-        .filter((o) => isOngoingOrderStatus(o.status));
+      rows.map(mapOrder).filter((o) => orderIsTrackable(o));
 
     if (list.length) return mapActive(list);
 
@@ -588,7 +586,7 @@ export const orderApi = {
     const single = asRecord(res.data);
     if (single._id || single.id || single.orderNumber) {
       const one = mapOrder(single);
-      return isOngoingOrderStatus(one.status) ? [one] : [];
+      return orderIsTrackable(one) ? [one] : [];
     }
 
     return mapActive(extractList(res));

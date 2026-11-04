@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { orderKeys } from '@/lib/order/hooks';
 import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { useActiveOrderStore } from '@/store/active-order-store';
 
 import type { Order } from '@/lib/order/types';
@@ -19,9 +20,10 @@ export function refreshActiveOrdersAfterTerminal(
   }
   queryClient.setQueryData<Order[]>(orderKeys.active(), (current) => {
     if (!current?.length) return [];
-    return current.filter(
-      (o) => (orderId ? o.id !== orderId : true) && isOngoingOrderStatus(o.status),
+    const next = current.filter(
+      (o) => (orderId ? o.id !== orderId : true) && orderIsTrackable(o),
     );
+    return next;
   });
   void queryClient.invalidateQueries({ queryKey: orderKeys.active() });
 }

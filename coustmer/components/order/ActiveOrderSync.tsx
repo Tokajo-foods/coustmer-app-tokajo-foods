@@ -2,19 +2,31 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
-import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
+import { orderKeys } from '@/lib/order/hooks';
 import { refreshActiveOrdersAfterTerminal } from '@/lib/order/refresh-active-orders';
 import { useSocketEvent } from '@/lib/socket/hooks';
+import { useAuthStore } from '@/store/auth-store';
 import { useActiveOrderStore } from '@/store/active-order-store';
 
 /** Keeps `useActiveOrderStore` aligned with GET /orders/active. */
 export function ActiveOrderSync() {
   const queryClient = useQueryClient();
-  const { order } = usePrimaryActiveOrder();
+  const loggedIn = Boolean(useAuthStore((s) => s.token));
+  const { order, refetch } = usePrimaryActiveOrder();
   const setOrder = useActiveOrderStore((s) => s.setOrder);
 
   useEffect(() => {
-    setOrder(order && isOngoingOrderStatus(order.status) ? order : null);
+    if (!loggedIn) {
+      setOrder(null);
+      queryClient.setQueryData(orderKeys.active(), []);
+      return;
+    }
+    void refetch();
+  }, [loggedIn, queryClient, refetch, setOrder]);
+
+  useEffect(() => {
+    setOrder(order && orderIsTrackable(order) ? order : null);
   }, [order, setOrder]);
 
   useSocketEvent('order:cancelled', (d) => {

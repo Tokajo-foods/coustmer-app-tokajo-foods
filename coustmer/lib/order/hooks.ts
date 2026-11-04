@@ -93,6 +93,9 @@ export function useActiveOrders(options?: { refetchInterval?: number; enabled?: 
     queryKey: orderKeys.active(),
     queryFn: orderApi.getActiveOrders,
     enabled,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     refetchInterval: enabled ? (options?.refetchInterval ?? 15_000) : false,
   });
 }
