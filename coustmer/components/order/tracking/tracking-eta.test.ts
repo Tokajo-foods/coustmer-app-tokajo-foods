@@ -72,6 +72,38 @@ describe('resolveEtaLabel', () => {
     assert.deepEqual(late, { value: 'Soon', unit: null });
   });
 
+  it('shows arriving estimate while waiting for restaurant accept', () => {
+    const phase = resolveTrackingPhase('placed', null);
+    const now = Date.parse('2026-01-01T10:05:00.000Z');
+    const label = resolveEtaLabel({
+      phase,
+      destination: null,
+      socketEta: null,
+      trackerEta: null,
+      orderArrival: {
+        status: 'placed',
+        createdAt: '2026-01-01T10:00:00.000Z',
+        promiseMinutes: 35,
+      },
+      now,
+    });
+    assert.deepEqual(label, { value: '38', unit: 'min' });
+  });
+
+  it('falls back before order details load', () => {
+    const phase = resolveTrackingPhase('placed', null);
+    const now = Date.parse('2026-01-01T10:00:00.000Z');
+    const label = resolveEtaLabel({
+      phase,
+      destination: null,
+      socketEta: null,
+      trackerEta: null,
+      now,
+    });
+    assert.ok(label?.value && label.unit === 'min');
+    assert.equal(Number(label.value), 48);
+  });
+
   it('hides the ETA at the door, during a return, and after completion', () => {
     for (const [order, trip] of [
       ['out_for_delivery', 'arrived_at_customer'],

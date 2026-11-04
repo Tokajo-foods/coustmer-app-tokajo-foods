@@ -16,6 +16,7 @@ import { orderKeys, useOrder } from '@/lib/order/hooks';
 import { refreshActiveOrdersAfterTerminal } from '@/lib/order/refresh-active-orders';
 import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { resolveTrackingPhase } from '@/lib/order/tracking-phase';
+import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
 import { isActiveOrderStatus } from '@/lib/order/types';
 import { useSocketConnection, useSocketEvent } from '@/lib/socket/hooks';
 import { usePartnerLocationSocket } from '@/lib/socket/partner-location';
@@ -181,6 +182,7 @@ export function useLiveOrderTracking(orderId: string) {
 
   const partner = !pickup && t?.partner && tripStatus && !NO_PARTNER_TRIP.has(tripStatus) ? t.partner : null;
   const destination = t?.destination ?? null;
+  const arrivalStatus = orderStatus ?? o?.status;
   const eta = resolveEtaLabel({
     phase,
     destination,
@@ -190,18 +192,24 @@ export function useLiveOrderTracking(orderId: string) {
         ? { seconds: t.etaSeconds, at: tracking.dataUpdatedAt }
         : null,
     trackerEtaAt: t?.etaAt,
-    orderArrival: o
-      ? {
-          status: o.status,
-          createdAt: o.createdAt,
-          promiseMinutes: o.promiseMinutes,
-          promisedReadyAt: o.promisedReadyAt,
-          estimatedPrepTime: o.estimatedPrepTime ?? null,
-          acceptedAt: o.acceptedAt,
-          readyAt: o.readyAt,
-          orderEstimateIso: o.estimatedDeliveryAt,
-        }
-      : undefined,
+    orderArrival:
+      arrivalStatus || o
+        ? {
+            status: arrivalStatus ?? o?.status ?? 'placed',
+            createdAt: o?.createdAt ?? o?.raw?.placedAt,
+            promiseMinutes: o?.promiseMinutes,
+            estimatedDeliveryTime:
+              o?.promiseMinutes ??
+              (typeof o?.raw?.estimatedDeliveryTime === 'number'
+                ? o.raw.estimatedDeliveryTime
+                : undefined),
+            promisedReadyAt: o?.promisedReadyAt,
+            estimatedPrepTime: o?.estimatedPrepTime ?? null,
+            acceptedAt: o?.acceptedAt,
+            readyAt: o?.readyAt,
+            orderEstimateIso: o?.estimatedDeliveryAt,
+          }
+        : undefined,
     now: etaClock,
   });
 

@@ -106,7 +106,9 @@ function resolvePickupPhase(orderStatus?: string | null): TrackingPhase {
   if (o === 'accepted' || o === 'confirmed' || o === 'partially_fulfilled') {
     return phase('confirmed', 'Order confirmed', 'The restaurant has accepted your takeaway order', 'placed', { showEta: true });
   }
-  return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed', { showEta: false });
+  return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed', {
+    showEta: true,
+  });
 }
 
 export function resolveTrackingPhase(
@@ -162,7 +164,9 @@ export function resolveTrackingPhase(
   if (o === 'accepted' || o === 'confirmed' || o === 'partially_fulfilled') {
     return phase('confirmed', 'Order confirmed', riderPickupHint(t, 'Restaurant has accepted your order'), 'placed');
   }
-  return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed');
+  return phase('placed', 'Order placed', 'Waiting for the restaurant to accept', 'placed', {
+    showEta: true,
+  });
 }
 
 export function stepIndex(

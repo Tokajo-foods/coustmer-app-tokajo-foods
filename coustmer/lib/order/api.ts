@@ -400,7 +400,8 @@ export function mapOrder(data: Record<string, unknown>): Order {
     acceptedAt: (data.acceptedAt as string) || undefined,
     preparingAt: (data.preparingAt as string) || (data.preparedAt as string) || undefined,
     readyAt: (data.readyAt as string) || undefined,
-    createdAt: (data.createdAt as string) || undefined,
+    createdAt:
+      (data.createdAt as string) || (data.placedAt as string) || undefined,
     updatedAt: (data.updatedAt as string) || undefined,
     cancelledAt: (data.cancelledAt as string) || undefined,
     cancelReason:

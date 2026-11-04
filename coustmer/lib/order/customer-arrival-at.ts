@@ -1,11 +1,22 @@
 /** Minutes after food is ready for pickup handover + ride to customer (no live GPS). */
 export const CUSTOMER_LAST_MILE_MINUTES = 12;
+/** Menu/checkout default when the order doc has no promise minutes yet. */
+export const DEFAULT_ARRIVAL_PROMISE_MINUTES = 40;
+/** Cushion on tracking while the kitchen has not accepted (`placed`). */
+export const RESTAURANT_ACCEPT_ETA_MINUTES = 8;
 
 function parseMs(v: unknown): number | null {
   if (v instanceof Date && Number.isFinite(v.getTime())) return v.getTime();
   if (typeof v === 'string' && v.trim()) {
     const ms = Date.parse(v);
     return Number.isFinite(ms) ? ms : null;
+  }
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    if (v > 1_000_000_000_000) return v;
+    if (v > 1_000_000_000) return v * 1000;
+  }
+  if (v && typeof v === 'object' && '$date' in (v as object)) {
+    return parseMs((v as { $date: unknown }).$date);
   }
   return null;
 }
@@ -78,8 +89,15 @@ export function customerArrivalAtMs(input: CustomerArrivalFields): number | null
   const candidates = [checkoutAt, kitchenArrival].filter(
     (v): v is number => v != null && Number.isFinite(v),
   );
-  if (!candidates.length) return null;
-  return Math.max(...candidates);
+
+  let totalMin = promiseMin ?? DEFAULT_ARRIVAL_PROMISE_MINUTES;
+  if (status === 'placed') {
+    totalMin += RESTAURANT_ACCEPT_ETA_MINUTES;
+  }
+  const baseMs = createdMs ?? now;
+  const fallbackAt = baseMs + totalMin * 60_000;
+  if (!candidates.length) return fallbackAt;
+  return Math.max(...candidates, fallbackAt);
 }
 
 export function customerArrivalAtIso(input: CustomerArrivalFields): string | undefined {

@@ -90,6 +90,13 @@ export function resolveEtaLabel(input: {
     if (riderLeg != null) return minutesLabel(riderLeg);
   }
 
+  if (phase.key === 'placed' || phase.key === 'confirmed') {
+    return orderArrivalLabel(
+      { status: phase.key === 'placed' ? 'placed' : 'accepted', nowMs: now },
+      now,
+    );
+  }
+
   return null;
 }
 
