@@ -26,27 +26,28 @@ export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess 
     <View style={{ flex: 1 }}>
       <KeyboardAwareScrollView
         enableOnAndroid
-        extraScrollHeight={24}
+        extraScrollHeight={12}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
         keyboardShouldPersistTaps="handled"
       >
         <LoginFormHeader
+          compact={!verified}
           title="Create account"
           subtitle={
             verified
               ? 'Almost done — tell us a little about you.'
-              : 'Start with your mobile number. We’ll verify it with a one-time code.'
+              : 'Enter your mobile number. We’ll text a 6-digit code to verify it.'
           }
         />
 
         {!verified ? (
           <>
             <PhoneOtpStep
+              compact
               otp={otp}
               onVerify={(code) => void flow.handleVerify(code)}
-              phoneTip="Your mobile number is your login. We’ll text a 6-digit code to verify it."
               verifyLabel="Verify number"
             />
             {otp.step === 'phone' && flow.numberTaken ? (

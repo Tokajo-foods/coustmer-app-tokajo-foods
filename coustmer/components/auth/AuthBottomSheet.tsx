@@ -20,7 +20,7 @@ import { type AuthSheetView } from '@/store/auth-sheet-store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.67;
-const AUTH_SHEET_HEIGHT_REGISTER = SCREEN_HEIGHT * 0.84;
+const AUTH_SHEET_HEIGHT_REGISTER = SCREEN_HEIGHT * 0.72;
 const SHEET_OFFSCREEN = SCREEN_HEIGHT;
 
 const OPEN_SPRING = { damping: 26, stiffness: 185, mass: 0.92 };
@@ -59,8 +59,8 @@ export function AuthBottomSheet({
   const backdropOpacity = useSharedValue(0);
   const sheetOpacity = useSharedValue(0);
   const activeSheetHeight = sheetHeightFor(view);
-  /** Sign-in is short (phone tab especially); hug the form instead of leaving blank sheet below it. */
-  const fitsContent = view === 'login';
+  /** Sign-in / phone signup steps are short — hug content instead of a tall empty sheet. */
+  const fitsContent = view === 'login' || view === 'register';
 
   const finishClose = useCallback(() => {
     setMounted(false);
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: authTheme.brandMuted,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   formWrap: {
     flex: 1,

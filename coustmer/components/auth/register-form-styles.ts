@@ -5,8 +5,7 @@ import { authTheme } from '@/constants/auth-theme';
 
 const extra = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 20,
-    flexGrow: 1,
+    paddingBottom: 12,
   },
   tipRow: {
     flexDirection: 'row',

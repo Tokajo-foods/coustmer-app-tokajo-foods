@@ -17,6 +17,8 @@ type Props = {
   onVerify: (code: string) => void;
   /** Backend call in flight after Firebase verify. */
   submitting?: boolean;
+  /** Hide the orange tip card (signup header already explains the step). */
+  compact?: boolean;
   phoneTip?: string;
   sendLabel?: string;
   verifyLabel?: string;
@@ -33,6 +35,7 @@ export function PhoneOtpStep({
   sendLabel = 'Send OTP',
   verifyLabel = 'Verify & continue',
   lockPhone = false,
+  compact = false,
 }: Props) {
   const busy = otp.sending || otp.verifying || submitting;
   const blocked = Boolean(otp.blockedReason);
@@ -54,12 +57,14 @@ export function PhoneOtpStep({
 
       {otp.step === 'phone' ? (
         <>
-          <View style={styles.tipRow}>
-            <View style={styles.tipIcon}>
-              <Smartphone color={authTheme.brand} size={16} strokeWidth={2.2} />
+          {!compact ? (
+            <View style={styles.tipRow}>
+              <View style={styles.tipIcon}>
+                <Smartphone color={authTheme.brand} size={16} strokeWidth={2.2} />
+              </View>
+              <Text style={styles.tipText}>{phoneTip}</Text>
             </View>
-            <Text style={styles.tipText}>{phoneTip}</Text>
-          </View>
+          ) : null}
           <PhoneNumberInput
             value={otp.phoneInput}
             onChangeText={otp.setPhoneInput}
@@ -68,7 +73,11 @@ export function PhoneOtpStep({
             editable={!busy && !lockPhone}
           />
           <Pressable
-            style={[styles.submitBtn, (busy || blocked) && styles.submitBtnDisabled]}
+            style={[
+              styles.submitBtn,
+              compact && styles.submitBtnCompact,
+              (busy || blocked) && styles.submitBtnDisabled,
+            ]}
             onPress={() => void otp.send()}
             disabled={busy || blocked}
             accessibilityRole="button"

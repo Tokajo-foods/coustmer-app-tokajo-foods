@@ -191,6 +191,10 @@ const extra = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.2,
   },
+  submitBtnCompact: {
+    marginTop: 2,
+    marginBottom: 8,
+  },
   successWrap: {
     alignItems: 'center',
     paddingTop: 20,
