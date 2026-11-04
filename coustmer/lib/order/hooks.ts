@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import { orderApi } from '@/lib/order/api';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import type {
   CancelOrderPayload,
   CreateOrderPayload,
@@ -163,6 +164,9 @@ export function useCreateOrder() {
   return useMutation({
     mutationFn: (payload: CreateOrderPayload) => orderApi.createOrder(payload),
     onSuccess: (order) => {
+      if (order?.id && orderIsTrackable(order)) {
+        queryClient.setQueryData(orderKeys.active(), [order]);
+      }
       invalidateOrderQueries(queryClient, order.id);
     },
   });

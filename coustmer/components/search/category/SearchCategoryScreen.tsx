@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { circleCategoryFor } from '@/components/home/tokajo/circle-categories';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
-import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { useSearchCategoryDishes, useSearchScope } from '@/lib/search/hooks';
 import { openSearchDish } from '@/lib/search/open-search-dish';
@@ -118,7 +117,6 @@ export function SearchCategoryScreen() {
         windowSize={7}
       />
       <CategoryTopBar title={title} scrollY={scrollY} topInset={insets.top} onBack={goBack} />
-      <CartFloatingBar />
     </View>
   );
 }

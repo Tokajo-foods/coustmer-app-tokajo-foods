@@ -11,6 +11,7 @@ import {
   APP_BOTTOM_NAV_HEIGHT,
   appBottomNavOffset,
   isAppTabRoot,
+  orderFloatingBarHidden,
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { openOrderTracking } from '@/lib/order/open-order-tracking';
@@ -39,16 +40,22 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const hasCart = totalItems > 0;
   const { liveOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
+  const barHidden = orderFloatingBarHidden(pathname);
   const onTabRoot = isAppTabRoot(pathname);
 
   useFocusEffect(
     useCallback(() => {
-      if (onTabRoot) void refetchActiveOrder();
-    }, [onTabRoot, refetchActiveOrder]),
+      if (!barHidden) void refetchActiveOrder();
+    }, [barHidden, refetchActiveOrder]),
   );
 
-  const mode: 'cart' | 'track' | null =
-    liveOrder && onTabRoot ? 'track' : hasCart ? 'cart' : null;
+  const mode: 'cart' | 'track' | null = barHidden
+    ? null
+    : liveOrder
+      ? 'track'
+      : hasCart
+        ? 'cart'
+        : null;
   const visible = mode !== null;
 
   const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;

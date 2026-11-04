@@ -90,6 +90,14 @@ function isOrderArrivalPath(pathname: string) {
   return /\/orders\/[^/]+\/(tracking|restaurant-chat)\/?$/.test(pathname);
 }
 
+/** Hide cart / track pill on checkout and live tracking (avoid duplicate CTAs). */
+export function orderFloatingBarHidden(pathname: string): boolean {
+  const path = (pathname.split('?')[0] ?? pathname).replace(/\/$/, '');
+  if (isCartPath(path)) return true;
+  if (isOrderArrivalPath(path)) return true;
+  return false;
+}
+
 function isFavoritesPath(pathname: string) {
   return pathname === '/favorites' || pathname.endsWith('/favorites');
 }

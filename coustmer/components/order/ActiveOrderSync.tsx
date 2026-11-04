@@ -1,10 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
-import { orderIsTrackable } from '@/lib/order/trackable-order';
-import { orderKeys } from '@/lib/order/hooks';
+import { useActiveOrders } from '@/lib/order/hooks';
+import {
+  pickPrimaryActiveOrder,
+  pickRecentLiveActiveOrder,
+} from '@/lib/order/ongoing-order';
 import { refreshActiveOrdersAfterTerminal } from '@/lib/order/refresh-active-orders';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { useSocketEvent } from '@/lib/socket/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useActiveOrderStore } from '@/store/active-order-store';
@@ -13,22 +16,24 @@ import { useActiveOrderStore } from '@/store/active-order-store';
 export function ActiveOrderSync() {
   const queryClient = useQueryClient();
   const loggedIn = Boolean(useAuthStore((s) => s.token));
-  const { order, refetch } = usePrimaryActiveOrder();
+  const query = useActiveOrders({ enabled: loggedIn, refetchInterval: 20_000 });
   const setOrder = useActiveOrderStore((s) => s.setOrder);
 
   useEffect(() => {
     if (!loggedIn) {
       setOrder(null);
-      queryClient.setQueryData(orderKeys.active(), []);
       return;
     }
-    queryClient.removeQueries({ queryKey: orderKeys.active() });
-    void refetch();
-  }, [loggedIn, queryClient, refetch, setOrder]);
+    void query.refetch();
+  }, [loggedIn, query.refetch, setOrder]);
 
   useEffect(() => {
-    setOrder(order && orderIsTrackable(order) ? order : null);
-  }, [order, setOrder]);
+    if (!loggedIn) return;
+    const live = pickRecentLiveActiveOrder(query.data);
+    const primary = pickPrimaryActiveOrder(query.data);
+    const next = live ?? (primary && orderIsTrackable(primary) ? primary : null);
+    setOrder(next);
+  }, [loggedIn, query.data, setOrder]);
 
   useSocketEvent('order:cancelled', (d) => {
     refreshActiveOrdersAfterTerminal(queryClient, d.orderId, 'cancelled');

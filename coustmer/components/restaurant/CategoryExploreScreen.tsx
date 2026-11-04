@@ -21,7 +21,6 @@ import { EmptyView, ErrorView } from '@/components/common/StateViews';
 import { DishPrice } from '@/components/restaurant/DishPrice';
 import { VegBadge } from '@/components/restaurant/MenuBadges';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
-import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { fonts } from '@/constants/typography';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
@@ -206,7 +205,6 @@ export function CategoryExploreScreen() {
         />
       )}
 
-      <CartFloatingBar />
     </SafeAreaView>
   );
 }

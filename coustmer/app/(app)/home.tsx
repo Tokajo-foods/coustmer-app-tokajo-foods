@@ -23,10 +23,7 @@ import { VegModeModal } from '@/components/home/VegModeModal';
 import { DeliveryLocationPicker } from '@/components/location/DeliveryLocationPicker';
 import { InitialLocationSheet } from '@/components/location/InitialLocationSheet';
 import { APP_BOTTOM_NAV_INSET } from '@/components/navigation/AppBottomNav';
-import {
-  CART_FLOATING_BAR_CLEARANCE,
-  CartFloatingBar,
-} from '@/components/order/CartFloatingBar';
+import { CART_FLOATING_BAR_CLEARANCE } from '@/components/order/CartFloatingBar';
 import { useCartStore } from '@/store/cart-store';
 import { authTheme } from '@/constants/auth-theme';
 import { fonts } from '@/constants/typography';
@@ -711,7 +708,6 @@ export default function HomeScreen() {
         onApply={onVegApply}
       />
 
-      <CartFloatingBar />
     </View>
   );
 }

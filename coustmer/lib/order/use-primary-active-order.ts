@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useActiveOrders } from '@/lib/order/hooks';
 import {
@@ -17,30 +17,14 @@ export function usePrimaryActiveOrder() {
     enabled: loggedIn,
     refetchInterval: loggedIn ? 20_000 : false,
   });
-  /** Avoid showing track from persisted cache until fresh GET /orders/active completes. */
-  const [sessionReady, setSessionReady] = useState(false);
 
-  useEffect(() => {
-    if (!loggedIn) {
-      setSessionReady(false);
-      return;
-    }
-    let cancelled = false;
-    setSessionReady(false);
-    void query.refetch().finally(() => {
-      if (!cancelled) setSessionReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [loggedIn, query.refetch]);
-
-  const list =
-    loggedIn && sessionReady
-      ? query.data
-      : loggedIn && storeOrder
-        ? [storeOrder]
-        : undefined;
+  const list = useMemo(() => {
+    if (!loggedIn) return undefined;
+    const fromApi = query.data ?? [];
+    if (fromApi.length) return fromApi;
+    if (query.isFetching && storeOrder) return [storeOrder];
+    return fromApi;
+  }, [loggedIn, query.data, query.isFetching, storeOrder]);
 
   const order = pickPrimaryActiveOrder(list);
   const trackable = order && orderIsTrackable(order) ? order : null;
@@ -49,7 +33,7 @@ export function usePrimaryActiveOrder() {
   return {
     order: trackable,
     liveOrder,
-    isLoading: loggedIn && (!sessionReady || query.isLoading),
+    isLoading: loggedIn && query.isLoading && !list?.length,
     refetch: query.refetch,
   };
 }

@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView, LoadingView } from '@/components/common/StateViews';
-import { CartFloatingBar } from '@/components/order/CartFloatingBar';
 import { MenuItemDetailSheet } from '@/components/restaurant/MenuItemDetailSheet';
 import { RestaurantShareSheet } from '@/components/restaurant/RestaurantShareSheet';
 import { RestaurantCategoryRail } from '@/components/restaurant/detail/RestaurantCategoryRail';
@@ -293,9 +292,6 @@ export function RestaurantDetailScreen() {
         />
       ) : null}
 
-      <CartFloatingBar />
-
-      <RestaurantShareSheet
         visible={shareOpen}
         restaurant={id ? { id, slug: r.slug, name: restaurantName } : null}
         onClose={() => setShareOpen(false)}
