@@ -51,13 +51,17 @@ import { syncCartItemQuantity } from '@/lib/order/add-to-cart';
 import { DeliveryPreferences } from '@/components/order/DeliveryPreferences';
 import { BillDetailsSection } from '@/components/order/BillDetailsSection';
 import { CartAddressCard } from '@/components/order/CartAddressCard';
+import { CartCheckoutBlockModal } from '@/components/order/CartCheckoutBlockModal';
 import { AutoFreeDeliveryBanner } from '@/components/order/AutoFreeDeliveryBanner';
 import { ScheduleOrderSection } from '@/components/order/ScheduleOrderSection';
 import { CartSuggestionsFromStore } from '@/components/order/CartSuggestions';
 import { CouponPickerSheet } from '@/components/order/CouponPickerSheet';
 import { PaymentOptionsModal } from '@/components/order/PaymentOptionsModal';
 import { syncCheckoutWallet } from '@/lib/cart/ensure-wallet-checkout';
-import { alertOngoingOrderBlocks } from '@/lib/order/ongoing-order-alert';
+import {
+  resolveCartCheckoutBlock,
+  type CartCheckoutBlock,
+} from '@/lib/cart/cart-checkout-gate';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { isDeliveryFeeReady } from '@/lib/cart/delivery-fee-ready';
 import { useCheckoutTotals } from '@/lib/cart/use-checkout-totals';
@@ -65,6 +69,7 @@ import { DishPrice } from '@/components/restaurant/DishPrice';
 import { formatInr } from '@/lib/format/money';
 import { catalogPayOf } from '@/lib/restaurant/item-price';
 import { resolveMenuItemImage } from '@/lib/restaurant/menu-item-images';
+import { useRestaurant } from '@/lib/restaurant/hooks';
 import { usePaymentWallet } from '@/lib/payment/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
@@ -86,6 +91,12 @@ const TEXT_SEC = '#64748B';
 const TEXT_MUTED = '#94A3B8';
 const BORDER = '#E5E7EB';
 const GREEN = '#16A34A';
+
+function billErrorFields(error: unknown): { message: string | null; code: string | null } {
+  if (!(error instanceof Error)) return { message: null, code: null };
+  const e = error as Error & { code?: string };
+  return { message: e.message || null, code: e.code ?? null };
+}
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -203,16 +214,12 @@ export function CartScreen() {
   const token = useAuthStore((s) => s.token);
   const isLoggedIn = Boolean(token);
   const { order: activeOrder } = usePrimaryActiveOrder();
-
-  const goOrderSummary = useCallback(() => {
-    if (activeOrder) {
-      alertOngoingOrderBlocks(activeOrder, router);
-      return;
-    }
-    router.push('/cart/summary' as import('expo-router').Href);
-  }, [activeOrder, router]);
-
   const restaurant = useCartStore((s) => s.restaurant);
+  const outletQuery = useRestaurant(restaurant?.id ?? '');
+
+  const [checkoutBlock, setCheckoutBlock] = useState<CartCheckoutBlock | null>(null);
+  const [addressPickerBump, setAddressPickerBump] = useState(0);
+
   const items = useCartStore((s) => s.items);
   const couponCode = useCartStore((s) => s.couponCode);
   const deliveryType = useCartStore((s) => s.deliveryType);
@@ -310,6 +317,36 @@ export function CartScreen() {
     paymentMethod,
   });
   const priceReady = feeReady || billBreakdown.billReady;
+
+  const goOrderSummary = useCallback(() => {
+    const billErr = billErrorFields(liveBill.error);
+    const block = resolveCartCheckoutBlock({
+      itemCount: items.length,
+      deliveryType: normalizedDeliveryType,
+      rangeMessage,
+      billPin,
+      outlet: outletQuery.data,
+      priceReady,
+      billErrorMessage: billErr.message,
+      billErrorCode: billErr.code,
+      activeOrder,
+    });
+    if (block) {
+      setCheckoutBlock(block);
+      return;
+    }
+    router.push('/cart/summary' as import('expo-router').Href);
+  }, [
+    activeOrder,
+    billPin,
+    items.length,
+    liveBill.error,
+    normalizedDeliveryType,
+    outletQuery.data,
+    priceReady,
+    rangeMessage,
+    router,
+  ]);
 
   const displayDiscount = billBreakdown.discount;
 
@@ -685,6 +722,7 @@ export function CartScreen() {
             billError={liveBill.error instanceof Error ? liveBill.error.message : null}
             billErrorAt={liveBill.errorUpdatedAt}
             onRangeMessage={onRangeMessage}
+            openPickerRequest={addressPickerBump}
           />
 
           {/* Items */}
@@ -904,8 +942,7 @@ export function CartScreen() {
             style={styles.checkoutBtn}
             onPress={goOrderSummary}
             disabled={
-              !priceReady ||
-              Boolean(rangeMessage) ||
+              items.length === 0 ||
               voucherBusy ||
               Boolean(busyId) ||
               applyCoupon.isPending ||
@@ -957,6 +994,15 @@ export function CartScreen() {
             </View>
           </Pressable>
         </Modal>
+
+        <CartCheckoutBlockModal
+          block={checkoutBlock}
+          onClose={() => setCheckoutBlock(null)}
+          onChangeAddress={() => {
+            setCheckoutBlock(null);
+            setAddressPickerBump((n) => n + 1);
+          }}
+        />
 
         <PaymentOptionsModal
           visible={paymentModalOpen}

@@ -21,6 +21,8 @@ type Props = {
   /** When the bill query last failed. Older than the latest Change is ignored. */
   billErrorAt?: number;
   onRangeMessage: (message: string | null) => void;
+  /** Increment to open the location picker from checkout block modal. */
+  openPickerRequest?: number;
 };
 
 export function CartAddressCard({
@@ -29,6 +31,7 @@ export function CartAddressCard({
   billError,
   billErrorAt = 0,
   onRangeMessage,
+  openPickerRequest = 0,
 }: Props) {
   const location = useDeliveryLocationStore((s) => s.location);
   const setLocation = useDeliveryLocationStore((s) => s.setLocation);
@@ -49,6 +52,25 @@ export function CartAddressCard({
   useEffect(() => {
     onRangeMessage(delivery ? message : null);
   }, [delivery, message, onRangeMessage]);
+
+  useEffect(() => {
+    if (!delivery || !location) return;
+    if (!outlet.data) return;
+    const blocked = outsideRestaurantRange(outlet.data, location);
+    setMessage(blocked);
+  }, [
+    delivery,
+    location?.lat,
+    location?.lng,
+    outlet.data?.lat,
+    outlet.data?.lng,
+    outlet.data?.maxDeliveryRadius,
+  ]);
+
+  useEffect(() => {
+    if (!openPickerRequest) return;
+    setOpen(true);
+  }, [openPickerRequest]);
 
   const confirm = (result: DeliveryLocationResult) => {
     setOpen(false);
