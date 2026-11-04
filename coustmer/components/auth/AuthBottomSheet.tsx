@@ -59,8 +59,8 @@ export function AuthBottomSheet({
   const backdropOpacity = useSharedValue(0);
   const sheetOpacity = useSharedValue(0);
   const activeSheetHeight = sheetHeightFor(view);
-  /** Sign-in / phone signup steps are short — hug content instead of a tall empty sheet. */
-  const fitsContent = view === 'login' || view === 'register';
+  /** Sign-in phone/password steps are short — hug content. Sign-up uses fixed height + scroll. */
+  const fitsContent = view === 'login';
 
   const finishClose = useCallback(() => {
     setMounted(false);

@@ -23,10 +23,11 @@ export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess 
   const verified = otp.step === 'verified' && Boolean(otp.phone);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, minHeight: 1 }}>
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={12}
+        style={{ flexGrow: 1 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
