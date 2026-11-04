@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
+import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
 import { refreshActiveOrdersAfterTerminal } from '@/lib/order/refresh-active-orders';
 import { useSocketEvent } from '@/lib/socket/hooks';
 import { useActiveOrderStore } from '@/store/active-order-store';
@@ -13,7 +14,7 @@ export function ActiveOrderSync() {
   const setOrder = useActiveOrderStore((s) => s.setOrder);
 
   useEffect(() => {
-    setOrder(order);
+    setOrder(order && isOngoingOrderStatus(order.status) ? order : null);
   }, [order, setOrder]);
 
   useSocketEvent('order:cancelled', (d) => {

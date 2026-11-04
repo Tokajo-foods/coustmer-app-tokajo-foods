@@ -1,5 +1,5 @@
 import { useActiveOrders } from '@/lib/order/hooks';
-import { pickPrimaryActiveOrder } from '@/lib/order/ongoing-order';
+import { pickPrimaryActiveOrder, isOngoingOrderStatus } from '@/lib/order/ongoing-order';
 import { useAuthStore } from '@/store/auth-store';
 
 /** Live in-flight order for one-order-at-a-time UX (track pill, checkout guard). */
@@ -10,8 +10,10 @@ export function usePrimaryActiveOrder() {
     refetchInterval: loggedIn ? 20_000 : false,
   });
   const order = loggedIn ? pickPrimaryActiveOrder(query.data) : null;
+  const trackable =
+    order && isOngoingOrderStatus(order.status) ? order : null;
   return {
-    order,
+    order: trackable,
     isLoading: loggedIn && query.isLoading,
     refetch: query.refetch,
   };

@@ -1,7 +1,8 @@
 import { Pressable } from '@/components/common/Pressable';
-import React, { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { ChevronRight, MapPin } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, Animated, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,6 +13,7 @@ import {
   isHomePath,
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
+import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
 import { useCartStore } from '@/store/cart-store';
 
 /** Extra scroll space a screen needs so its last row clears the cart pill. */
@@ -35,11 +37,19 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const restaurant = useCartStore((s) => s.restaurant);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const hasCart = totalItems > 0;
-  const { order: activeOrder } = usePrimaryActiveOrder();
+  const { order: activeOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
   const onHome = isHomePath(pathname);
+  const trackOrder =
+    activeOrder && isOngoingOrderStatus(activeOrder.status) ? activeOrder : null;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (onHome) void refetchActiveOrder();
+    }, [onHome, refetchActiveOrder]),
+  );
 
   const mode: 'cart' | 'track' | null =
-    activeOrder && onHome ? 'track' : hasCart ? 'cart' : null;
+    trackOrder && onHome ? 'track' : hasCart ? 'cart' : null;
   const visible = mode !== null;
 
   const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
@@ -65,10 +75,10 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   if (!visible) return null;
 
   const onPress = () => {
-    if (mode === 'track' && activeOrder) {
+    if (mode === 'track' && trackOrder) {
       router.push({
         pathname: '/orders/[orderId]/tracking',
-        params: { orderId: activeOrder.id },
+        params: { orderId: trackOrder.id },
       });
       return;
     }
@@ -78,13 +88,13 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const title = mode === 'track' ? 'Track order' : 'View Cart';
   const subtitle =
     mode === 'track'
-      ? activeOrder?.restaurantName || 'On the way'
+      ? trackOrder?.restaurantName || 'On the way'
       : `${totalItems} item${totalItems > 1 ? 's' : ''}`;
 
   const imageUri =
     mode === 'track'
-      ? (activeOrder?.raw?.restaurantImage as string | undefined) ||
-        (activeOrder?.raw?.restaurantLogo as string | undefined)
+      ? (trackOrder?.raw?.restaurantImage as string | undefined) ||
+        (trackOrder?.raw?.restaurantLogo as string | undefined)
       : items[0]?.imageUrl || restaurant?.imageUrl;
 
   return (

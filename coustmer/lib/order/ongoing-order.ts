@@ -1,32 +1,10 @@
 import type { Order } from '@/lib/order/types';
+import { isActiveOrderStatus } from '@/lib/order/types';
 
-/** Matches order-service `ACTIVE_STATUSES` (+ common aliases). */
-const ONGOING = new Set([
-  'pending_payment',
-  'placed',
-  'accepted',
-  'confirmed',
-  'preparing',
-  'ready',
-  'out_for_delivery',
-]);
-
-const TERMINAL = new Set([
-  'delivered',
-  'cancelled',
-  'rejected',
-  'payment_failed',
-  'partially_fulfilled',
-  'returned',
-]);
-
+/** True while the customer should see track / one-order-at-a-time guards. */
 export function isOngoingOrderStatus(status: string | undefined | null): boolean {
-  const s = String(status ?? '')
-    .trim()
-    .toLowerCase();
-  if (!s || TERMINAL.has(s)) return false;
-  if (ONGOING.has(s)) return true;
-  return !TERMINAL.has(s) && s !== 'scheduled';
+  if (!status) return false;
+  return isActiveOrderStatus(status);
 }
 
 export function pickPrimaryActiveOrder(orders: Order[] | undefined): Order | null {

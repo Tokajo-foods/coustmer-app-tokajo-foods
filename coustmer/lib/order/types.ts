@@ -281,6 +281,8 @@ export function isActiveOrderStatus(status?: string) {
     'failed',
     'payment_failed',
     'rejected',
+    'partially_fulfilled',
+    'returned',
     'scheduled',
   ].includes(s);
 }
