@@ -132,6 +132,9 @@ export type Order = {
   estimatedDeliveryAt?: string;
   /** Checkout promise (minutes) when the API only sends estimatedDeliveryTime. */
   promiseMinutes?: number;
+  /** Upper bound of listing range (e.g. 40 in "30–40 mins"). */
+  promiseMaxMinutes?: number;
+  deliveryTimeLabel?: string;
   /** Kitchen promised ready clock (ISO). */
   promisedReadyAt?: string;
   /** Minutes the restaurant set for prep. */

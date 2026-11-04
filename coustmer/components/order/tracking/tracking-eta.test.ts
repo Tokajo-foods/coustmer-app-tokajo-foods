@@ -84,10 +84,11 @@ describe('resolveEtaLabel', () => {
         status: 'placed',
         createdAt: '2026-01-01T10:00:00.000Z',
         promiseMinutes: 35,
+        promiseMaxMinutes: 40,
       },
       now,
     });
-    assert.deepEqual(label, { value: '38', unit: 'min' });
+    assert.deepEqual(label, { value: '35', unit: 'min' });
   });
 
   it('falls back before order details load', () => {
@@ -101,7 +102,7 @@ describe('resolveEtaLabel', () => {
       now,
     });
     assert.ok(label?.value && label.unit === 'min');
-    assert.equal(Number(label.value), 48);
+    assert.equal(Number(label.value), 28);
   });
 
   it('hides the ETA at the door, during a return, and after completion', () => {

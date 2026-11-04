@@ -198,6 +198,7 @@ export function useLiveOrderTracking(orderId: string) {
             status: arrivalStatus ?? o?.status ?? 'placed',
             createdAt: o?.createdAt ?? o?.raw?.placedAt,
             promiseMinutes: o?.promiseMinutes,
+            promiseMaxMinutes: o?.promiseMaxMinutes,
             estimatedDeliveryTime:
               o?.promiseMinutes ??
               (typeof o?.raw?.estimatedDeliveryTime === 'number'

@@ -387,6 +387,11 @@ export function mapOrder(data: Record<string, unknown>): Order {
       data.estimatedDeliveryTime < 720
         ? Math.round(data.estimatedDeliveryTime)
         : undefined),
+    promiseMaxMinutes: pickNum(data.promiseMaxMinutes),
+    deliveryTimeLabel:
+      typeof data.deliveryTimeLabel === 'string' && data.deliveryTimeLabel.trim()
+        ? data.deliveryTimeLabel.trim()
+        : undefined,
     promisedReadyAt:
       (data.promisedReadyAt as string) ||
       (data.promisedAt as string) ||

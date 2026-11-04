@@ -1,5 +1,6 @@
 import type { TrackingPhase } from '@/lib/order/tracking-phase';
 import {
+  checkoutCommitmentMinutes,
   customerArrivalSecondsRemaining,
   type CustomerArrivalFields,
 } from '@/lib/order/customer-arrival-at';
@@ -91,10 +92,11 @@ export function resolveEtaLabel(input: {
   }
 
   if (phase.key === 'placed' || phase.key === 'confirmed') {
-    return orderArrivalLabel(
-      { status: phase.key === 'placed' ? 'placed' : 'accepted', nowMs: now },
-      now,
-    );
+    const mins = checkoutCommitmentMinutes({
+      status: phase.key === 'placed' ? 'placed' : 'accepted',
+      nowMs: now,
+    });
+    return { value: String(Math.max(1, mins)), unit: 'min' };
   }
 
   return null;

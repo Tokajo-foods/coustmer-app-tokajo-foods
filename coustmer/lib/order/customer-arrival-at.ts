@@ -1,9 +1,13 @@
+/**
+ * Customer delivery countdown — same commitment as cart checkout / restaurant listing range.
+ * Matches restaurant-service DELIVERY_ETA (prep + travel + buffer, ±5 min label).
+ */
 /** Minutes after food is ready for pickup handover + ride to customer (no live GPS). */
 export const CUSTOMER_LAST_MILE_MINUTES = 12;
-/** Menu/checkout default when the order doc has no promise minutes yet. */
-export const DEFAULT_ARRIVAL_PROMISE_MINUTES = 40;
-/** Cushion on tracking while the kitchen has not accepted (`placed`). */
-export const RESTAURANT_ACCEPT_ETA_MINUTES = 8;
+/** Same as restaurant-service DELIVERY_ETA.RANGE_PAD_MINUTES — banner "30–40" → max 40. */
+export const LISTING_ETA_RANGE_PAD_MINUTES = 5;
+/** When no order promise is stored: fallback prep 20 + buffer 3 + range pad 5. */
+export const LISTING_PROMISE_MAX_MINUTES = 28;
 
 function parseMs(v: unknown): number | null {
   if (v instanceof Date && Number.isFinite(v.getTime())) return v.getTime();
@@ -26,6 +30,9 @@ export type CustomerArrivalFields = {
   createdAt?: unknown;
   estimatedDeliveryTime?: unknown;
   promiseMinutes?: number;
+  promiseMaxMinutes?: number;
+  /** Frozen at place-order from checkout quote (preferred anchor). */
+  estimatedDeliveryAt?: unknown;
   promisedReadyAt?: unknown;
   estimatedPrepTime?: number | null;
   acceptedAt?: unknown;
@@ -33,28 +40,39 @@ export type CustomerArrivalFields = {
   nowMs?: number;
 };
 
-/** Wall-clock customer arrival for tracking (kitchen prep, delays, checkout promise). */
-export function customerArrivalAtMs(input: CustomerArrivalFields): number | null {
-  const now = input.nowMs ?? Date.now();
-  const status = String(input.status ?? '').trim().toLowerCase();
-
-  let checkoutAt: number | null = null;
-  const createdMs = parseMs(input.createdAt);
-  const promiseMin =
-    typeof input.promiseMinutes === 'number' && input.promiseMinutes > 0 && input.promiseMinutes < 720
-      ? input.promiseMinutes
-      : null;
-  const rawPromise = input.estimatedDeliveryTime;
-  if (typeof rawPromise === 'number' && Number.isFinite(rawPromise)) {
-    if (rawPromise > 1_000_000_000_000) {
-      checkoutAt = rawPromise;
-    } else if (rawPromise > 0 && rawPromise < 720 && createdMs != null) {
-      checkoutAt = createdMs + rawPromise * 60_000;
+function pickMinutes(...values: unknown[]): number | null {
+  for (const v of values) {
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 720) return Math.round(v);
+    if (typeof v === 'string' && v.trim()) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0 && n < 720) return Math.round(n);
     }
-  } else if (promiseMin != null && createdMs != null) {
-    checkoutAt = createdMs + promiseMin * 60_000;
   }
+  return null;
+}
 
+/** Minutes promised to the customer at checkout (upper bound of listing range when available). */
+export function checkoutCommitmentMinutes(input: CustomerArrivalFields): number {
+  const max = pickMinutes(input.promiseMaxMinutes);
+  if (max != null) return max;
+  const mid = pickMinutes(input.promiseMinutes, input.estimatedDeliveryTime);
+  if (mid != null) return mid;
+  return LISTING_PROMISE_MAX_MINUTES;
+}
+
+function checkoutWallMs(input: CustomerArrivalFields): number | null {
+  const frozen = parseMs(input.estimatedDeliveryAt);
+  if (frozen != null) return frozen;
+  const createdMs = parseMs(input.createdAt);
+  if (createdMs == null) return null;
+  return createdMs + checkoutCommitmentMinutes(input) * 60_000;
+}
+
+function kitchenAdjustedArrivalMs(
+  input: CustomerArrivalFields,
+  now: number,
+  status: string,
+): number | null {
   let foodReadyMs = parseMs(input.promisedReadyAt);
   if (foodReadyMs == null) {
     const acceptedMs = parseMs(input.acceptedAt);
@@ -63,41 +81,49 @@ export function customerArrivalAtMs(input: CustomerArrivalFields): number | null
       foodReadyMs = acceptedMs + prep * 60_000;
     }
   }
+  if (foodReadyMs == null) return null;
 
-  let kitchenArrival: number | null = null;
-  if (foodReadyMs != null) {
-    kitchenArrival = foodReadyMs + CUSTOMER_LAST_MILE_MINUTES * 60_000;
-  }
-
+  let arrival = foodReadyMs + CUSTOMER_LAST_MILE_MINUTES * 60_000;
   if (
-    foodReadyMs != null
-    && now > foodReadyMs
+    now > foodReadyMs
     && (status === 'accepted' || status === 'preparing')
   ) {
-    kitchenArrival = Math.max(kitchenArrival ?? 0, now + CUSTOMER_LAST_MILE_MINUTES * 60_000);
+    arrival = Math.max(arrival, now + CUSTOMER_LAST_MILE_MINUTES * 60_000);
   }
 
   if (status === 'ready') {
     const readyWall = parseMs(input.readyAt) ?? foodReadyMs;
     if (readyWall != null) {
-      kitchenArrival = Math.max(kitchenArrival ?? 0, Math.max(readyWall, now) + CUSTOMER_LAST_MILE_MINUTES * 60_000);
+      arrival = Math.max(arrival, Math.max(readyWall, now) + CUSTOMER_LAST_MILE_MINUTES * 60_000);
     } else {
-      kitchenArrival = Math.max(kitchenArrival ?? 0, now + CUSTOMER_LAST_MILE_MINUTES * 60_000);
+      arrival = Math.max(arrival, now + CUSTOMER_LAST_MILE_MINUTES * 60_000);
     }
   }
+  return arrival;
+}
 
-  const candidates = [checkoutAt, kitchenArrival].filter(
-    (v): v is number => v != null && Number.isFinite(v),
-  );
+/** Wall-clock customer arrival for tracking (checkout promise, then kitchen / rider adjustments). */
+export function customerArrivalAtMs(input: CustomerArrivalFields): number | null {
+  const now = input.nowMs ?? Date.now();
+  const status = String(input.status ?? '').trim().toLowerCase();
+  const checkoutAt = checkoutWallMs(input);
 
-  let totalMin = promiseMin ?? DEFAULT_ARRIVAL_PROMISE_MINUTES;
-  if (status === 'placed') {
-    totalMin += RESTAURANT_ACCEPT_ETA_MINUTES;
+  const awaitingKitchen =
+    status === 'placed'
+    || status === 'pending_payment'
+    || status === 'pending'
+    || ((status === 'accepted' || status === 'confirmed') && !parseMs(input.promisedReadyAt));
+
+  if (awaitingKitchen) {
+    if (checkoutAt != null) return checkoutAt;
+    return now + checkoutCommitmentMinutes(input) * 60_000;
   }
-  const baseMs = createdMs ?? now;
-  const fallbackAt = baseMs + totalMin * 60_000;
-  if (!candidates.length) return fallbackAt;
-  return Math.max(...candidates, fallbackAt);
+
+  const kitchenAt = kitchenAdjustedArrivalMs(input, now, status);
+  if (checkoutAt != null && kitchenAt != null) return Math.max(checkoutAt, kitchenAt);
+  if (kitchenAt != null) return kitchenAt;
+  if (checkoutAt != null) return checkoutAt;
+  return now + checkoutCommitmentMinutes(input) * 60_000;
 }
 
 export function customerArrivalAtIso(input: CustomerArrivalFields): string | undefined {
@@ -124,7 +150,7 @@ function isoIfValid(v: unknown): string | undefined {
 
 /**
  * Map order-service fields to a delivery ETA instant for the customer app.
- * Prefers kitchen-adjusted arrival over a stale checkout-only ISO.
+ * Prefers kitchen-adjusted arrival over a stale checkout-only ISO when prep slips.
  */
 export function resolveEstimatedDeliveryAtIso(data: Record<string, unknown>): string | undefined {
   const promiseMinutes = pickNum(
@@ -136,12 +162,15 @@ export function resolveEstimatedDeliveryAtIso(data: Record<string, unknown>): st
       ? data.estimatedDeliveryTime
       : undefined,
   );
+  const promiseMaxMinutes = pickNum(data.promiseMaxMinutes);
 
   const dynamic = customerArrivalAtIso({
     status: String(data.status ?? ''),
     createdAt: data.createdAt ?? data.placedAt,
     estimatedDeliveryTime: data.estimatedDeliveryTime,
     promiseMinutes,
+    promiseMaxMinutes,
+    estimatedDeliveryAt: data.estimatedDeliveryAt ?? data.deliveryEtaAt,
     promisedReadyAt: data.promisedReadyAt ?? data.promisedAt,
     estimatedPrepTime: pickNum(data.estimatedPrepTime, data.prepMinutes, data.prepTime) ?? null,
     acceptedAt: data.acceptedAt,
@@ -157,34 +186,17 @@ export function resolveEstimatedDeliveryAtIso(data: Record<string, unknown>): st
     }
   }
   if (dynamic) return dynamic;
-
   if (fromApi) return fromApi;
 
   const etaIso = isoIfValid(data.eta);
   if (etaIso) return etaIso;
-
-  const raw = data.estimatedDeliveryTime;
-  if (raw instanceof Date && Number.isFinite(raw.getTime())) {
-    return raw.toISOString();
-  }
-  if (typeof raw === 'string') {
-    const asIso = isoIfValid(raw);
-    if (asIso) return asIso;
-  }
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
-    if (raw > 1_000_000_000_000) return new Date(raw).toISOString();
-    if (raw > 0 && raw < 720 && promiseMinutes == null) {
-      const createdAt = data.createdAt ?? data.placedAt;
-      const base = parseMs(createdAt);
-      if (base != null) return new Date(base + raw * 60_000).toISOString();
-    }
-  }
 
   if (promiseMinutes != null && promiseMinutes > 0) {
     return customerArrivalAtIso({
       status: String(data.status ?? ''),
       createdAt: data.createdAt ?? data.placedAt,
       promiseMinutes,
+      promiseMaxMinutes,
     });
   }
 
