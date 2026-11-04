@@ -142,6 +142,7 @@ export function restaurantDutyLabel(r: Restaurant): string | null {
 
 export function restaurantIsClosed(r: Restaurant): boolean {
   if (restaurantDutyLabel(r)) return true;
+  if (r.isOnline === true) return false;
   return (
     r.isOpen === false || r.isOpenNow === false || r.isOnline === false
   );

@@ -23,11 +23,16 @@ export function restaurantDetailMeta(input: {
   const count = positive(reviewStats?.total) ?? positive(histogram?.totalRatings) ?? restaurantRatingCount(r) ?? null;
 
   const dutyLabel = restaurantDutyLabel(r);
-  // Hours API ignores pause/offline. Duty on the restaurant card wins.
+  const accepting = !dutyLabel && r.isOnline === true;
   const timingsOpen = dutyLabel ? false : timings?.isOpenNow;
   const dtoOpen = dutyLabel ? false : r.isOpenNow ?? r.isOpen ?? r.isOnline;
-  const openNow =
-    typeof timingsOpen === 'boolean' ? timingsOpen : typeof dtoOpen === 'boolean' ? dtoOpen : undefined;
+  const openNow = accepting
+    ? true
+    : typeof timingsOpen === 'boolean'
+      ? timingsOpen
+      : typeof dtoOpen === 'boolean'
+        ? dtoOpen
+        : undefined;
 
   const hygieneScore =
     typeof hygiene?.hygieneScore === 'number' ? hygiene.hygieneScore
@@ -43,7 +48,7 @@ export function restaurantDetailMeta(input: {
     openStatusLoading: input.timingsLoading && openNow === undefined,
     kitchenClosed: openNow === false,
     kitchenOpen: openNow === true,
-    nextOpenLabel: formatNextOpenAt(timings?.nextOpenAt || r.nextOpenAt),
+    nextOpenLabel: accepting ? null : formatNextOpenAt(timings?.nextOpenAt || r.nextOpenAt),
     hygieneScore,
     showHygieneScore,
     fssai,
