@@ -1,5 +1,6 @@
 import type { Order } from '@/lib/order/types';
 import { normalizeOrderStatus } from '@/lib/order/types';
+import { isValidOrderRouteId, resolveOrderRouteId } from '@/lib/order/order-route-id';
 
 /** Same set as order-service ACTIVE_STATUSES (+ confirmed / pending aliases). */
 const TRACKABLE_STATUSES = new Set([
@@ -27,7 +28,8 @@ export function isTrackableOrderStatus(status?: string | null): boolean {
 
 /** Home track pill + GET /orders/active — strict, never guess from unknown statuses. */
 export function orderIsTrackable(order: Order | null | undefined): boolean {
-  if (!order?.id) return false;
+  if (!order) return false;
+  if (!isValidOrderRouteId(resolveOrderRouteId(order))) return false;
   if (hasTerminalTimestamp(order)) return false;
   return isTrackableOrderStatus(order.status);
 }

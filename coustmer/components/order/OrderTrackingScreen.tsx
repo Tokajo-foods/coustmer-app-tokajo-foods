@@ -23,6 +23,7 @@ import { resolveTrackingPins } from '@/lib/delivery/tracking-pins';
 import { orderApi } from '@/lib/order/api';
 import { orderKeys } from '@/lib/order/hooks';
 import { normalizeOrderIdParam } from '@/lib/order/order-route-id';
+import { orderTrackingHref } from '@/lib/order/order-tracking-path';
 import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { useCartStore } from '@/store/cart-store';
@@ -91,10 +92,7 @@ export function OrderTrackingScreen() {
         queryClient.setQueryData(orderKeys.detail(hit.id), hit);
         queryClient.setQueryData(orderKeys.active(), active);
         if (hit.id !== id) {
-          router.replace({
-            pathname: '/orders/[orderId]/tracking',
-            params: { orderId: hit.id },
-          });
+          router.replace(orderTrackingHref(hit.id));
           return;
         }
         await refetchAll();

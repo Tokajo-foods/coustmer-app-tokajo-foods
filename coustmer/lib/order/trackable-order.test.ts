@@ -4,7 +4,7 @@ import { orderIsTrackable, isTrackableOrderStatus } from './trackable-order';
 import type { Order } from './types';
 
 describe('orderIsTrackable', () => {
-  const base = { id: '1', status: 'preparing', items: [] } as Order;
+  const base = { id: '674a1b2c3d4e5f6789012345', status: 'preparing', items: [] } as Order;
 
   it('rejects delivered and cancelled statuses', () => {
     assert.equal(orderIsTrackable({ ...base, status: 'delivered' }), false);
