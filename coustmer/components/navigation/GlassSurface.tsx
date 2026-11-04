@@ -21,17 +21,30 @@ type Props = {
   radius: number;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
+  /** Lighter frosted fill — used on the floating bottom tab bar. */
+  translucent?: boolean;
 };
 
-export function GlassSurface({ radius, style, children }: Props) {
+export function GlassSurface({ radius, style, children, translucent = false }: Props) {
   const hasBlur = NativeBlur != null;
+  const fillOpacity = translucent ? (hasBlur ? 0.38 : 0.78) : hasBlur ? 0.55 : 0.9;
+  const gradient = translucent
+    ? (['rgba(255,255,255,0.38)', 'rgba(255,255,255,0.02)', 'rgba(255,255,255,0.12)'] as const)
+    : (['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.18)'] as const);
+  const blurIntensity = translucent
+    ? Platform.OS === 'ios'
+      ? 68
+      : 44
+    : Platform.OS === 'ios'
+      ? 75
+      : 50;
 
   return (
     <View style={[styles.shadow, { borderRadius: radius }, style]}>
       <View style={[styles.clip, { borderRadius: radius }]}>
         {NativeBlur ? (
           <NativeBlur
-            intensity={Platform.OS === 'ios' ? 75 : 50}
+            intensity={blurIntensity}
             tint={Platform.OS === 'ios' ? 'systemUltraThinMaterialLight' : 'light'}
             experimentalBlurMethod="dimezisBlurView"
             style={StyleSheet.absoluteFill}
@@ -41,12 +54,12 @@ export function GlassSurface({ radius, style, children }: Props) {
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: hasBlur ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.9)' },
+            { backgroundColor: `rgba(255,255,255,${fillOpacity})` },
           ]}
         />
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.18)']}
+          colors={[...gradient]}
           locations={[0, 0.55, 1]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
@@ -54,7 +67,11 @@ export function GlassSurface({ radius, style, children }: Props) {
         />
         <View
           pointerEvents="none"
-          style={[styles.rim, { borderRadius: radius }]}
+          style={[
+            styles.rim,
+            { borderRadius: radius },
+            translucent && styles.rimTranslucent,
+          ]}
         />
         {children}
       </View>
@@ -85,5 +102,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.7)',
     borderBottomColor: 'rgba(255,255,255,0.25)',
+  },
+  rimTranslucent: {
+    borderColor: 'rgba(255,255,255,0.55)',
+    borderBottomColor: 'rgba(255,255,255,0.18)',
   },
 });

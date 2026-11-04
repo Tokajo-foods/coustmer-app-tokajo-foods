@@ -210,7 +210,7 @@ export function AppBottomNav() {
         { paddingBottom: appBottomNavOffset(insets.bottom) },
       ]}
     >
-      <GlassSurface radius={BAR_RADIUS}>
+      <GlassSurface radius={BAR_RADIUS} translucent>
         <View style={styles.row} onLayout={onRowLayout}>
           <ActiveIndicator index={activeIndex} tabWidth={tabWidth} />
           {TABS.map((tab, i) => (
