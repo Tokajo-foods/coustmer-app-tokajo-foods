@@ -1,10 +1,10 @@
 import { Pressable } from '@/components/common/Pressable';
-import { Mail, Phone, type LucideIcon } from 'lucide-react-native';
+import { Lock, MessageSquareText, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { authTheme } from '@/constants/auth-theme';
 
-export type LoginModePref = 'email' | 'phone';
+export type LoginModePref = 'otp' | 'password';
 
 type Props = {
   value: LoginModePref;
@@ -12,8 +12,8 @@ type Props = {
 };
 
 const TABS: { mode: LoginModePref; label: string; Icon: LucideIcon }[] = [
-  { mode: 'phone', label: 'Phone + password', Icon: Phone },
-  { mode: 'email', label: 'Email + password', Icon: Mail },
+  { mode: 'otp', label: 'Phone OTP', Icon: MessageSquareText },
+  { mode: 'password', label: 'Password', Icon: Lock },
 ];
 
 export function LoginModeTabs({ value, onChange }: Props) {
