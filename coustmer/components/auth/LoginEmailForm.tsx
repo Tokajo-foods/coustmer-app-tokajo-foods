@@ -46,7 +46,7 @@ export function LoginEmailForm({ onForgotPassword, onLoginSuccess }: Props) {
       onLoginSuccess?.();
       router.replace('/home');
     } catch (error) {
-      setBanner(error instanceof Error ? error.message : 'Login failed');
+      setBanner(describePhoneAuthError(error, 'Login failed. Try again.'));
     }
   };
 

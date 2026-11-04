@@ -13,6 +13,7 @@ import {
   LOGIN_IDENTIFIER_PLACEHOLDER,
 } from '@/lib/auth/auth-form-copy';
 import { useAuthStore } from '@/store/auth-store';
+import { describePhoneAuthError } from '@/lib/auth/phone-auth-errors';
 import {
   detectLoginIdentifierMode,
   isValidIndianPhone,
@@ -83,7 +84,9 @@ export function LoginPasswordSection({ onForgotPassword, onLoginSuccess }: Props
       onLoginSuccess?.();
       router.replace('/home');
     } catch (error) {
-      setBanner(error instanceof Error ? error.message : 'Login failed');
+      setBanner(
+        describePhoneAuthError(error, 'Login failed. Check your email or mobile and password.'),
+      );
     }
   };
 

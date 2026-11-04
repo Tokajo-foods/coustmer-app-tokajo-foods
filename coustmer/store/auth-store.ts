@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { authApi, SESSION_AUTH_TOKEN } from '@/lib/auth/api';
+import { authApi, AuthApiError, SESSION_AUTH_TOKEN } from '@/lib/auth/api';
 import { signOutFirebase } from '@/lib/auth/firebase-phone';
 import { phoneAuthApi } from '@/lib/auth/phone-auth-api';
 import {
@@ -117,6 +117,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await authApi.login(payload);
       await get().setSession(response.token, response.user);
     } catch (error) {
+      if (error instanceof AuthApiError) throw error;
       throw new Error(getApiErrorMessage(error, 'Login failed'));
     } finally {
       set({ isLoading: false });

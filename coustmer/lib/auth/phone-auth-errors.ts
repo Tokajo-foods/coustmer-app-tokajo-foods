@@ -28,6 +28,10 @@ const CODE_MESSAGES: Record<string, string> = {
   EMAIL_OTP_REQUIRED: 'Enter the code sent to your email.',
   PHONE_OTP_REQUIRED: 'Verify the code sent to your phone.',
   INVALID_OTP: 'That email code is incorrect.',
+  INVALID_CREDENTIALS:
+    'Email or mobile and password did not match. Check spelling, try Phone OTP sign-in, or reset your password.',
+  PASSWORD_NOT_SET:
+    'This account has no password yet. Use the Phone OTP tab to sign in, or Forgot password to set one.',
   OTP_EXPIRED: 'The email code expired. Request a new one.',
   OTP_ATTEMPTS_EXCEEDED: 'Too many wrong codes. Request a new email code.',
   OTP_RATE_LIMITED: 'Too many codes requested. Please wait before trying again.',
