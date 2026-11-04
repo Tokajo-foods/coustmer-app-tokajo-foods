@@ -10,6 +10,7 @@ import { registerFormStyles as styles } from '@/components/auth/register-form-st
 import type { RegisterEmailOtp } from '@/components/auth/use-register-email-otp';
 import type { RegisterValues } from '@/components/auth/use-register-signup-flow';
 import { authTheme } from '@/constants/auth-theme';
+import { AUTH_EMAIL_PLACEHOLDER } from '@/lib/auth/auth-form-copy';
 
 type Props = {
   values: RegisterValues;
@@ -111,9 +112,9 @@ export function RegisterFormFields({ values, errors, onChange, editable = true, 
         </View>
       </View>
 
-      {renderInput('email', 'Email', {
+      {renderInput('email', 'Email address', {
         icon: Mail,
-        placeholder: 'you@gmail.com',
+        placeholder: AUTH_EMAIL_PLACEHOLDER,
         keyboardType: 'email-address',
         autoComplete: 'email',
       })}

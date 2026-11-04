@@ -12,8 +12,8 @@ type Props = {
 };
 
 const TABS: { mode: LoginModePref; label: string; Icon: LucideIcon }[] = [
-  { mode: 'phone', label: 'Phone OTP', Icon: Phone },
-  { mode: 'email', label: 'Email', Icon: Mail },
+  { mode: 'phone', label: 'Phone + password', Icon: Phone },
+  { mode: 'email', label: 'Email + password', Icon: Mail },
 ];
 
 export function LoginModeTabs({ value, onChange }: Props) {

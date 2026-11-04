@@ -17,9 +17,19 @@ export { AuthApiError, getAuthErrorCode, SESSION_AUTH_TOKEN } from '@/lib/auth/h
 
 export const authApi = {
   login: async (payload: LoginPayload) => {
+    const body: Record<string, string> = {
+      password: payload.password,
+      role: 'customer',
+    };
+    if (payload.email?.trim()) {
+      body.email = payload.email.trim().toLowerCase();
+    }
+    if (payload.phone?.trim()) {
+      body.phone = payload.phone.trim();
+    }
     const data = await apiRequest<unknown>(`${AUTH_BASE}/login`, {
       method: 'POST',
-      body: payload,
+      body,
     });
     return ensureCustomerAuth(normalizeAuthResponse(data));
   },

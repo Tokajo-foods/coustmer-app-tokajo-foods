@@ -8,6 +8,7 @@ import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { AuthRememberSwitch } from '@/components/auth/AuthRememberSwitch';
 import { loginFormStyles as styles } from '@/components/auth/login-form-styles';
 import { authTheme } from '@/constants/auth-theme';
+import { AUTH_EMAIL_PLACEHOLDER } from '@/lib/auth/auth-form-copy';
 import { useAuthStore } from '@/store/auth-store';
 import { validateEmail, validateLoginPassword } from '@/utils/validation';
 
@@ -66,14 +67,14 @@ export function LoginEmailForm({ onForgotPassword, onLoginSuccess }: Props) {
       {banner ? <AuthMessageBanner message={banner} type="error" /> : null}
 
       <View style={styles.fieldWrap}>
-        <Text style={styles.fieldLabel}>Email</Text>
+        <Text style={styles.fieldLabel}>Email address</Text>
         <View style={inputStyle('email', Boolean(errors.email))}>
           <View style={[styles.iconCircle, focusedField === 'email' && styles.iconCircleFocused]}>
             <Mail color={iconColor('email', Boolean(errors.email))} size={18} strokeWidth={2} />
           </View>
           <TextInput
             style={styles.input}
-            placeholder="you@gmail.com"
+            placeholder={AUTH_EMAIL_PLACEHOLDER}
             placeholderTextColor={authTheme.textDim}
             value={email}
             onChangeText={(text) => {

@@ -3,18 +3,17 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { LoginEmailForm } from '@/components/auth/LoginEmailForm';
+import { LOGIN_EMAIL_SUBTITLE, LOGIN_PHONE_SUBTITLE } from '@/lib/auth/auth-form-copy';
 import { LoginFormHeader } from '@/components/auth/LoginFormHeader';
+import { LoginEmailForm } from '@/components/auth/LoginEmailForm';
 import { LoginModeTabs, type LoginModePref } from '@/components/auth/LoginModeTabs';
+import { LoginPhonePasswordForm } from '@/components/auth/LoginPhonePasswordForm';
 import { loginFormStyles } from '@/components/auth/login-form-styles';
-import { PhoneLoginPanel } from '@/components/auth/PhoneLoginPanel';
 
 type Props = {
   onSignUp?: () => void;
   onForgotPassword?: () => void;
   onLoginSuccess?: () => void;
-  /** Phone verified but no account yet → sign-up carrying that number. */
-  onCreateAccount?: (phone: string) => void;
   initialMode?: LoginModePref;
   initialPhone?: string;
 };
@@ -23,7 +22,6 @@ export function LoginFormContent({
   onSignUp,
   onForgotPassword,
   onLoginSuccess,
-  onCreateAccount,
   initialMode,
   initialPhone,
 }: Props) {
@@ -47,21 +45,17 @@ export function LoginFormContent({
         keyboardShouldPersistTaps="handled"
       >
         <LoginFormHeader
-          title={isPhone ? 'Sign in with phone' : 'Welcome back'}
-          subtitle={
-            isPhone
-              ? 'Verify your mobile number with a one-time code.'
-              : 'Sign in with your email and password.'
-          }
+          title={isPhone ? 'Sign in with phone' : 'Sign in with email'}
+          subtitle={isPhone ? LOGIN_PHONE_SUBTITLE : LOGIN_EMAIL_SUBTITLE}
         />
 
         <LoginModeTabs value={pref} onChange={setPref} />
 
         {isPhone ? (
-          <PhoneLoginPanel
+          <LoginPhonePasswordForm
             initialPhone={initialPhone}
+            onForgotPassword={handleForgotPassword}
             onLoginSuccess={onLoginSuccess}
-            onCreateAccount={onCreateAccount}
           />
         ) : (
           <LoginEmailForm onForgotPassword={handleForgotPassword} onLoginSuccess={onLoginSuccess} />

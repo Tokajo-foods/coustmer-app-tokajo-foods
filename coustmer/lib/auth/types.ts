@@ -17,8 +17,9 @@ export type AuthResponse = {
 };
 
 export type LoginPayload = {
-  email: string;
   password: string;
+  email?: string;
+  phone?: string;
 };
 
 export type OtpPurpose = 'login' | 'register' | 'verification' | 'forgot_password';
