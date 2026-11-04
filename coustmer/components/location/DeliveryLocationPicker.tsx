@@ -42,6 +42,7 @@ import type { AddressSuggestion } from '@/lib/address/api';
 import { useSavedAddresses } from '@/lib/address/hooks';
 import {
   formatAddressLabel,
+  savedAddressTagLabel,
   type SavedAddress,
 } from '@/lib/address/types';
 import {
