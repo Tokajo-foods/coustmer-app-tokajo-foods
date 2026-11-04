@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { resolveTrackingPhase } from '../../../lib/order/tracking-phase';
+import { customerArrivalSecondsRemaining } from '../../../lib/order/customer-arrival-at';
 import { formatDistance, resolveEtaLabel } from './tracking-eta';
 
 const NOW = 1_800_000_000_000;
@@ -25,21 +26,47 @@ describe('resolveEtaLabel', () => {
       destination: 'restaurant',
       socketEta: { seconds: 120, at: NOW },
       trackerEta: { seconds: 120, at: NOW },
-      orderEstimateIso: new Date(NOW + 25 * 60_000).toISOString(),
+      orderArrival: {
+        status: 'preparing',
+        createdAt: new Date(NOW - 10 * 60_000).toISOString(),
+        promiseMinutes: 40,
+        orderEstimateIso: new Date(NOW + 25 * 60_000).toISOString(),
+      },
       now: NOW,
     });
     assert.deepEqual(label, { value: '25', unit: 'min' });
   });
 
-  it('never guesses: no server number means no ETA, a passed estimate means soon', () => {
+  it('extends arrival when kitchen prep runs late', () => {
     const phase = resolveTrackingPhase('preparing', null);
-    assert.equal(resolveEtaLabel({ phase, destination: null, socketEta: null, trackerEta: null, now: NOW }), null);
+    const promisedReadyAt = new Date(NOW - 5 * 60_000).toISOString();
+    const sec = customerArrivalSecondsRemaining(
+      { status: 'preparing', promisedReadyAt },
+      NOW,
+    );
+    assert.ok(sec != null && sec >= 12 * 60 - 30);
+    const label = resolveEtaLabel({
+      phase,
+      destination: null,
+      socketEta: null,
+      trackerEta: null,
+      orderArrival: { status: 'preparing', promisedReadyAt },
+      now: NOW,
+    });
+    assert.deepEqual(label, { value: '12', unit: 'min' });
+  });
+
+  it('shows soon when the estimate is in the past', () => {
+    const phase = resolveTrackingPhase('preparing', null);
     const late = resolveEtaLabel({
       phase,
       destination: null,
       socketEta: null,
       trackerEta: null,
-      orderEstimateIso: new Date(NOW - 60_000).toISOString(),
+      orderArrival: {
+        status: 'preparing',
+        orderEstimateIso: new Date(NOW - 60_000).toISOString(),
+      },
       now: NOW,
     });
     assert.deepEqual(late, { value: 'Soon', unit: null });

@@ -149,7 +149,7 @@ export function useLiveOrderTracking(orderId: string) {
 
   useEffect(() => {
     if (!phase.active || !phase.showEta) return;
-    const id = setInterval(() => setEtaClock(Date.now()), 15_000);
+    const id = setInterval(() => setEtaClock(Date.now()), 10_000);
     return () => clearInterval(id);
   }, [phase.active, phase.showEta]);
 
@@ -185,7 +185,18 @@ export function useLiveOrderTracking(orderId: string) {
         ? { seconds: t.etaSeconds, at: tracking.dataUpdatedAt }
         : null,
     trackerEtaAt: t?.etaAt,
-    orderEstimateIso: o?.estimatedDeliveryAt,
+    orderArrival: o
+      ? {
+          status: o.status,
+          createdAt: o.createdAt,
+          promiseMinutes: o.promiseMinutes,
+          promisedReadyAt: o.promisedReadyAt,
+          estimatedPrepTime: o.estimatedPrepTime ?? null,
+          acceptedAt: o.acceptedAt,
+          readyAt: o.readyAt,
+          orderEstimateIso: o.estimatedDeliveryAt,
+        }
+      : undefined,
     now: etaClock,
   });
 

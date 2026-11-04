@@ -19,4 +19,14 @@ describe('resolveEstimatedDeliveryAtIso', () => {
     });
     assert.equal(iso, '2026-01-01T11:00:00.000Z');
   });
+
+  it('extends checkout ETA when kitchen sets a later promisedReadyAt', () => {
+    const iso = resolveEstimatedDeliveryAtIso({
+      status: 'preparing',
+      createdAt: '2026-01-01T10:00:00.000Z',
+      estimatedDeliveryTime: 30,
+      promisedReadyAt: '2026-01-01T10:40:00.000Z',
+    });
+    assert.equal(iso, '2026-01-01T10:52:00.000Z');
+  });
 });
