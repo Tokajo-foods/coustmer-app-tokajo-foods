@@ -1,14 +1,13 @@
 import { useRouter } from 'expo-router';
 import { Clock, Flame, MapPin, Sparkles, Trophy } from 'lucide-react-native';
 import { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { FilteredHomeResults } from '@/components/home/FilteredHomeResults';
 import { ErrorView } from '@/components/common/StateViews';
 import { TokajoDishRail } from '@/components/home/tokajo/TokajoDishRail';
 import { TokajoRestaurantRail } from '@/components/home/tokajo/TokajoRestaurantRail';
 import { TokajoSectionHeader } from '@/components/home/tokajo/TokajoSectionHeader';
-import { fonts } from '@/constants/typography';
 import type { HomeFeed } from '@/lib/customer/types';
 import { DISCOVERY_MIN_RESTAURANTS } from '@/lib/home/use-home-dish-rails';
 import { mapHomeCardToRestaurant } from '@/lib/home/feed-mappers';
@@ -143,18 +142,6 @@ export const TokajoFeedSections = memo(function TokajoFeedSections(props: Props)
         </View>
       ) : null}
 
-      {!railsBusy &&
-      !listLoading &&
-      trending.length === 0 &&
-      topRestaurants.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>
-            No restaurants near you yet. Pull to refresh or change your delivery
-            address.
-          </Text>
-        </View>
-      ) : null}
-
       {topRestaurants.length > 0 || listLoading ? (
         <View style={styles.restaurantsHeader}>
           <TokajoSectionHeader
@@ -196,21 +183,5 @@ const styles = StyleSheet.create({
   errorWrap: {
     paddingHorizontal: 16,
     marginBottom: 8,
-  },
-  emptyCard: {
-    marginHorizontal: 16,
-    marginTop: 4,
-    padding: 24,
-    borderRadius: 16,
-    backgroundColor: '#FFF7ED',
-    borderWidth: 1,
-    borderColor: '#FFEDD5',
-  },
-  emptyText: {
-    fontFamily: fonts.uiSemi,
-    fontSize: 13,
-    color: '#EA580C',
-    textAlign: 'center',
-    lineHeight: 19,
   },
 });
