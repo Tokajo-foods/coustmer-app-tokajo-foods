@@ -13,6 +13,7 @@ import {
   trackingMapVisible,
 } from '@/lib/delivery/rider-fix';
 import { orderKeys, useOrder } from '@/lib/order/hooks';
+import { refreshActiveOrdersAfterTerminal } from '@/lib/order/refresh-active-orders';
 import { isPickupOrder } from '@/lib/order/is-pickup-order';
 import { resolveTrackingPhase } from '@/lib/order/tracking-phase';
 import { isActiveOrderStatus } from '@/lib/order/types';
@@ -98,13 +99,17 @@ export function useLiveOrderTracking(orderId: string) {
         ...(typeof d.delayMinutes === 'number' ? { delayMinutes: d.delayMinutes } : {}),
       };
     });
+    if (!isOngoingOrderStatus(d.status)) {
+      refreshActiveOrdersAfterTerminal(queryClient, orderId, d.status);
+    }
     refetchAll();
-  }, [orderId]);
+  }, [orderId, queryClient]);
   useSocketEvent('order:cancelled', (d) => {
     if (d.orderId !== orderId) return;
     setOrderPush({ status: 'cancelled', at: Date.now() });
+    refreshActiveOrdersAfterTerminal(queryClient, orderId, 'cancelled');
     void refetchOrder();
-  }, [orderId]);
+  }, [orderId, queryClient]);
   useSocketEvent('delivery:assigned', (d) => {
     if (d.orderId === orderId) refetchTracking();
   }, [orderId]);

@@ -21,6 +21,7 @@ import { createIdempotencyKey } from '@/lib/order/idempotency';
 import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
 import { resolveEstimatedDeliveryAtIso } from '@/lib/order/estimated-delivery-at';
+import { isOngoingOrderStatus } from '@/lib/order/ongoing-order';
 
 const ORDER_SERVICE = '/api/v1/order-service';
 const ORDERS_BASE = `${ORDER_SERVICE}/orders`;
@@ -576,15 +577,21 @@ export const orderApi = {
   getActiveOrders: async (): Promise<Order[]> => {
     const res = await request<unknown>(`${ORDERS_BASE}/active`);
     const list = extractList(res.data);
-    if (list.length) return list.map(mapOrder);
+    const mapActive = (rows: Record<string, unknown>[]) =>
+      rows
+        .map(mapOrder)
+        .filter((o) => isOngoingOrderStatus(o.status));
+
+    if (list.length) return mapActive(list);
 
     // Backend may return a single active order object in `data`
     const single = asRecord(res.data);
     if (single._id || single.id || single.orderNumber) {
-      return [mapOrder(single)];
+      const one = mapOrder(single);
+      return isOngoingOrderStatus(one.status) ? [one] : [];
     }
 
-    return extractList(res).map(mapOrder);
+    return mapActive(extractList(res));
   },
 
   /** GET /orders/scheduled */

@@ -8,12 +8,8 @@ import { useActiveOrderStore } from '@/store/active-order-store';
 export function alertOngoingOrderBlocks(order: Order, nav: Router = router): void {
   Alert.alert('Order in progress', ongoingOrderMessage(order), [
     {
-      text: 'Track order',
-      onPress: () =>
-        nav.push({
-          pathname: '/orders/[orderId]/tracking',
-          params: { orderId: order.id },
-        }),
+      text: 'Go to home',
+      onPress: () => nav.replace('/home'),
     },
     { text: 'OK', style: 'cancel' },
   ]);

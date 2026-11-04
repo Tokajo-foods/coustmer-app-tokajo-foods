@@ -339,13 +339,6 @@ export function OrderDetailScreen() {
     ]);
   };
 
-  const openTracking = () => {
-    router.push({
-      pathname: '/orders/[orderId]/tracking',
-      params: { orderId: data.id },
-    });
-  };
-
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -723,12 +716,7 @@ export function OrderDetailScreen() {
           { paddingBottom: Math.max(insets.bottom, 14) },
         ]}
       >
-        {isActive ? (
-          <Pressable style={styles.primaryBtn} onPress={openTracking}>
-            <Truck color={WHITE} size={18} strokeWidth={2.4} />
-            <Text style={styles.primaryBtnText}>Track order</Text>
-          </Pressable>
-        ) : completed ? (
+        {completed ? (
           <View style={styles.actionRow}>
             {hasReviewed ? (
               <View style={styles.reviewedBtn}>

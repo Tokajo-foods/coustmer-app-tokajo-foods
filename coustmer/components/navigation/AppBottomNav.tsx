@@ -108,6 +108,12 @@ export function isAppTabRoot(pathname: string): boolean {
   );
 }
 
+/** Home feed — only screen that shows the floating “Track order” pill. */
+export function isHomePath(pathname: string): boolean {
+  const path = (pathname.split('?')[0] ?? pathname).replace(/\/$/, '');
+  return path === '/home' || path.endsWith('/home');
+}
+
 const SPRING = { damping: 18, stiffness: 240, mass: 0.6 };
 
 function TabButton({

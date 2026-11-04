@@ -9,6 +9,7 @@ import {
   APP_BOTTOM_NAV_HEIGHT,
   appBottomNavOffset,
   isAppTabRoot,
+  isHomePath,
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { useCartStore } from '@/store/cart-store';
@@ -35,12 +36,10 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const hasCart = totalItems > 0;
   const { order: activeOrder } = usePrimaryActiveOrder();
+  const onHome = isHomePath(pathname);
 
-  const mode: 'cart' | 'track' | null = activeOrder
-    ? 'track'
-    : hasCart
-      ? 'cart'
-      : null;
+  const mode: 'cart' | 'track' | null =
+    activeOrder && onHome ? 'track' : hasCart ? 'cart' : null;
   const visible = mode !== null;
 
   const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;

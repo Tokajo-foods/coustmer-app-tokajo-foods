@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,6 +38,14 @@ export function OrderTrackingScreen() {
   const clearCart = useCartStore((s) => s.clearCart);
   const live = useLiveOrderTracking(id);
   const { order, o, t, phase, pickup } = live;
+  const leftAfterCancelRef = useRef(false);
+
+  useEffect(() => {
+    if (leftAfterCancelRef.current) return;
+    if (!phase.cancelled && live.orderStatus !== 'cancelled') return;
+    leftAfterCancelRef.current = true;
+    router.replace('/home');
+  }, [phase.cancelled, live.orderStatus, router]);
   const otpEnabled = !pickup && phase.active && Boolean(t?.deliveryId) && !phase.rto;
   const otpQuery = useDropOtp(id, otpEnabled);
 

@@ -1,7 +1,7 @@
 import { Pressable } from '@/components/common/Pressable';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronDown, ChevronUp, MapPinned, Truck } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Truck } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
@@ -74,18 +74,9 @@ export function OrderCard({ order }: Props) {
     ? 'Delivered'
     : ORDER_STATUS_LABELS[order.status] ?? order.status;
 
-  const openTracking = () => {
-    router.push({
-      pathname: '/orders/[orderId]/tracking',
-      params: { orderId: order.id },
-    });
-  };
-
   const openDetail = () => {
     router.push({
-      pathname: isActive
-        ? '/orders/[orderId]/tracking'
-        : '/orders/[orderId]',
+      pathname: '/orders/[orderId]',
       params: { orderId: order.id },
     });
   };
@@ -226,12 +217,7 @@ export function OrderCard({ order }: Props) {
         <Text style={styles.summaryTotal}>Total: {formatInr(total)}</Text>
       </View>
 
-      {isActive ? (
-        <Pressable style={styles.trackBtn} onPress={openTracking}>
-          <MapPinned color="#FFFFFF" size={18} strokeWidth={2.3} />
-          <Text style={styles.trackBtnText}>Track order</Text>
-        </Pressable>
-      ) : canReorder ? (
+      {canReorder ? (
         <Pressable style={styles.orderAgainBtn} onPress={handleReorder}>
           <Truck color={BRAND_ORANGE} size={20} strokeWidth={2} />
           <Text style={styles.orderAgainText}>Order Again</Text>
