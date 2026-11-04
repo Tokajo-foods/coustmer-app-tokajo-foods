@@ -14,6 +14,8 @@ const DEFAULT_COOLDOWN_SECONDS = 30;
 
 type Props = {
   channel: 'email' | 'phone';
+  /** Shown after a successful send (email channel). */
+  sentNotice?: string | null;
   verified: boolean;
   otpSent: boolean;
   otp: string;
@@ -34,6 +36,7 @@ type Props = {
 
 export function RegisterOtpSection({
   channel,
+  sentNotice,
   verified,
   otpSent,
   otp,
@@ -74,13 +77,21 @@ export function RegisterOtpSection({
 
   if (!otpSent) {
     return (
-      <Pressable
-        style={[styles.otpSendBtn, isLoading && styles.submitBtnDisabled]}
-        onPress={onSend}
-        disabled={isLoading}
-      >
-        <Text style={styles.otpSendBtnText}>{sendLabel}</Text>
-      </Pressable>
+      <View style={styles.otpSendWrap}>
+        {otpError ? (
+          <Text style={styles.errorText} numberOfLines={4}>
+            {otpError}
+          </Text>
+        ) : null}
+        <Pressable
+          style={[styles.otpSendBtn, isLoading && styles.submitBtnDisabled]}
+          onPress={onSend}
+          disabled={isLoading}
+          haptic
+        >
+          <Text style={styles.otpSendBtnText}>{sendLabel}</Text>
+        </Pressable>
+      </View>
     );
   }
 
@@ -90,6 +101,11 @@ export function RegisterOtpSection({
 
   return (
     <View style={styles.otpInlineCard}>
+      {sentNotice ? (
+        <Text style={styles.otpSentNotice} numberOfLines={3}>
+          {sentNotice}
+        </Text>
+      ) : null}
       <Text style={styles.otpInlineLabel}>
         {channel === 'email' ? 'Email verification code' : 'Phone verification code'}
       </Text>

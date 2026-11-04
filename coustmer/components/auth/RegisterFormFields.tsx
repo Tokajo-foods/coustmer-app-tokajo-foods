@@ -125,6 +125,7 @@ export function RegisterFormFields({ values, errors, onChange, editable = true, 
       ) : null}
       <RegisterOtpSection
         channel="email"
+        sentNotice={emailOtp.sentNotice}
         verified={emailOtp.verified}
         otpSent={emailOtp.otpSent}
         otp={emailOtp.otp}

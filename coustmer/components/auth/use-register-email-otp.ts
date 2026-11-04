@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Keyboard } from 'react-native';
 
 import { authApi } from '@/lib/auth/api';
 import { AuthApiError } from '@/lib/auth/http';
@@ -14,6 +15,7 @@ export function useRegisterEmailOtp() {
   const [otp, setOtpRaw] = useState('');
   const [otpError, setOtpError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [sentNotice, setSentNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<RegisterEmailOtpBusy>('idle');
   const [timerKey, setTimerKey] = useState(0);
   const [focused, setFocused] = useState(false);
@@ -24,6 +26,7 @@ export function useRegisterEmailOtp() {
     setOtpRaw('');
     setOtpError(null);
     setBanner(null);
+    setSentNotice(null);
     setBusy('idle');
     setTimerKey((k) => k + 1);
   }, []);
@@ -41,12 +44,15 @@ export function useRegisterEmailOtp() {
       return false;
     }
     setBanner(null);
+    setSentNotice(null);
     setOtpError(null);
     setBusy(resend ? 'resending' : 'sending');
     try {
       await authApi.sendOtp({ emailOrPhone: email, purpose: 'register' });
+      Keyboard.dismiss();
       setOtpSent(true);
       setOtpRaw('');
+      setSentNotice(`Code sent to ${email}. Check your inbox and spam folder.`);
       setTimerKey((k) => k + 1);
       return true;
     } catch (error) {
@@ -90,6 +96,7 @@ export function useRegisterEmailOtp() {
     setOtp,
     otpError,
     banner,
+    sentNotice,
     busy,
     busyMode: busy,
     timerKey,

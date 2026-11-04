@@ -228,10 +228,13 @@ const extra = StyleSheet.create({
     color: authTheme.brand,
     fontWeight: '800',
   },
-  otpSendBtn: {
-    alignSelf: 'flex-start',
+  otpSendWrap: {
     marginTop: -4,
     marginBottom: 14,
+    gap: 8,
+  },
+  otpSendBtn: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 20,
@@ -257,6 +260,13 @@ const extra = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: authTheme.textMuted,
+    marginBottom: 10,
+  },
+  otpSentNotice: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: authTheme.success,
     marginBottom: 10,
   },
   otpVerifiedRow: {
