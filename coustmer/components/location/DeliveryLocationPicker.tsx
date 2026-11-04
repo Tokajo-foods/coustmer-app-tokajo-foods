@@ -210,6 +210,11 @@ export function DeliveryLocationPicker({
   const didAutoDetectMapRef = useRef(false);
   /** User already chose a search result — do not snap the pin back to GPS. */
   const userPlacedPinRef = useRef(false);
+  const pendingMapCenterRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
+    null,
+  );
+  const pinRef = useRef(DEFAULT);
+  const mapReadyRef = useRef(false);
   const locationEnabledRef = useRef(false);
 
   const startPoint = useMemo(() => initial ?? DEFAULT, [initial?.lat, initial?.lng]);
@@ -241,12 +246,12 @@ export function DeliveryLocationPicker({
   );
 
   detectedRef.current = detectedAddress;
+  pinRef.current = pin;
+  mapReadyRef.current = mapReady;
 
-  const sendToMap = useCallback((lat: number, lng: number, zoom = 17) => {
-    if (!webRef.current) return;
-    // Map fires "move" while animating — keep Confirm address stable during that window.
+  const injectMapCenter = useCallback((lat: number, lng: number, zoom: number) => {
+    if (!webRef.current) return false;
     suppressMoveUntil.current = Date.now() + 700;
-    // Android WebView often drops RN postMessage — call setMapView via injectJS
     webRef.current.injectJavaScript(`
       (function() {
         try {
@@ -260,7 +265,28 @@ export function DeliveryLocationPicker({
       })();
       true;
     `);
+    return true;
   }, []);
+
+  const flushPendingMapCenter = useCallback(() => {
+    const pending = pendingMapCenterRef.current;
+    if (!pending || !webRef.current || !mapReadyRef.current) return;
+    if (injectMapCenter(pending.lat, pending.lng, pending.zoom)) {
+      pendingMapCenterRef.current = null;
+    }
+  }, [injectMapCenter]);
+
+  const sendToMap = useCallback((lat: number, lng: number, zoom = 17) => {
+    const safeLat = normalizeLat(lat);
+    const safeLng = normalizeLng(lng);
+    pendingMapCenterRef.current = { lat: safeLat, lng: safeLng, zoom };
+    if (mapReadyRef.current) {
+      flushPendingMapCenter();
+    }
+    setTimeout(() => {
+      if (mapReadyRef.current) flushPendingMapCenter();
+    }, 350);
+  }, [flushPendingMapCenter]);
 
   const reverseLookup = useCallback((lat: number, lng: number) => {
     if (reverseTimer.current) clearTimeout(reverseTimer.current);
@@ -443,6 +469,7 @@ export function DeliveryLocationPicker({
     sourceRef.current = 'search';
     didAutoDetectMapRef.current = false;
     userPlacedPinRef.current = false;
+    pendingMapCenterRef.current = null;
 
     void syncLocationToggle({ detectIfOn: autoDetectOnOpen });
     // Intentionally only re-init when the sheet opens — not when startPoint identity changes.
@@ -467,18 +494,21 @@ export function DeliveryLocationPicker({
 
   useEffect(() => {
     if (!visible || viewMode !== 'map' || !mapReady) return;
+    flushPendingMapCenter();
     if (autoDetectOnOpen && locationEnabled && !userPlacedPinRef.current) {
       if (didAutoDetectMapRef.current) return;
       didAutoDetectMapRef.current = true;
       void detectCurrentLocation();
       return;
     }
+    if (userPlacedPinRef.current) {
+      return;
+    }
     if (initial) {
-      sendToMap(initial.lat, initial.lng);
+      sendToMap(initial.lat, initial.lng, 17);
       reverseLookup(initial.lat, initial.lng);
     }
-    // Use lat/lng primitives — object identity of `initial` was re-running this and flickering Confirm.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial lat/lng snapshotted above
   }, [
     visible,
     viewMode,
@@ -490,6 +520,7 @@ export function DeliveryLocationPicker({
     detectCurrentLocation,
     sendToMap,
     reverseLookup,
+    flushPendingMapCenter,
   ]);
 
   useEffect(() => {
@@ -584,6 +615,7 @@ export function DeliveryLocationPicker({
       if (msg.type === 'ready') {
         setMapReady(true);
         setMapsError(null);
+        setTimeout(() => flushPendingMapCenter(), 0);
         return;
       }
 
@@ -722,6 +754,28 @@ export function DeliveryLocationPicker({
     }
   };
 
+  const finishSearchSelection = useCallback(
+    (applied: {
+      lat: number;
+      lng: number;
+      formattedAddress: string;
+      source: 'gps' | 'search';
+    }) => {
+      if (pinOnly) {
+        setViewMode('map');
+        return;
+      }
+      onConfirm({
+        lat: applied.lat,
+        lng: applied.lng,
+        formattedAddress: applied.formattedAddress,
+        label: shortAddressLabel(applied.formattedAddress, applied.source),
+        source: applied.source,
+      });
+    },
+    [onConfirm, pinOnly],
+  );
+
   const pickSuggestion = async (item: AddressSuggestion) => {
     Keyboard.dismiss();
     setSuggestions([]);
@@ -743,8 +797,8 @@ export function DeliveryLocationPicker({
         Number.isFinite(lng)
       ) {
         userPlacedPinRef.current = true;
-        await applyCoords(lat, lng, 'search', item.description);
-        setViewMode('map');
+        const applied = await applyCoords(lat, lng, 'search', item.description);
+        finishSearchSelection(applied);
         return;
       }
 
@@ -754,14 +808,14 @@ export function DeliveryLocationPicker({
         address: item.description,
       });
       userPlacedPinRef.current = true;
-      await applyCoords(
+      const applied = await applyCoords(
         geo.lat,
         geo.lng,
         'search',
-        geo.formattedAddress ?? item.description
+        geo.formattedAddress ?? item.description,
       );
       if (geo.formattedAddress) setSearch(geo.formattedAddress);
-      setViewMode('map');
+      finishSearchSelection(applied);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to open this place on the map'));
     } finally {
@@ -783,13 +837,14 @@ export function DeliveryLocationPicker({
         // If a suggestion is already selected text, geocode it via Places New / fallbacks
         const geo = await geocodeAddress({ address: query });
         userPlacedPinRef.current = true;
-        await applyCoords(
+        const applied = await applyCoords(
           geo.lat,
           geo.lng,
           'search',
-          geo.formattedAddress ?? query
+          geo.formattedAddress ?? query,
         );
         if (geo.formattedAddress) setSearch(geo.formattedAddress);
+        finishSearchSelection(applied);
       } catch (err) {
         setSearchError(getApiErrorMessage(err, 'No results for that address'));
       } finally {
@@ -964,7 +1019,7 @@ export function DeliveryLocationPicker({
                   <Pressable
                     key={`${item.placeId ?? item.description}-${index}`}
                     onPress={() => {
-                      void pickSuggestion(item).then(() => setViewMode('map'));
+                      void pickSuggestion(item);
                     }}
                     style={[
                       styles.suggestionRow,
