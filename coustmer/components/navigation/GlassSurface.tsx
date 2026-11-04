@@ -27,14 +27,14 @@ type Props = {
 
 export function GlassSurface({ radius, style, children, translucent = false }: Props) {
   const hasBlur = NativeBlur != null;
-  const fillOpacity = translucent ? (hasBlur ? 0.38 : 0.78) : hasBlur ? 0.55 : 0.9;
+  const fillOpacity = translucent ? (hasBlur ? 0.22 : 0.58) : hasBlur ? 0.55 : 0.9;
   const gradient = translucent
-    ? (['rgba(255,255,255,0.38)', 'rgba(255,255,255,0.02)', 'rgba(255,255,255,0.12)'] as const)
+    ? (['rgba(255,255,255,0.22)', 'rgba(255,255,255,0)', 'rgba(255,255,255,0.06)'] as const)
     : (['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.18)'] as const);
   const blurIntensity = translucent
     ? Platform.OS === 'ios'
-      ? 68
-      : 44
+      ? 72
+      : 52
     : Platform.OS === 'ios'
       ? 75
       : 50;
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.25)',
   },
   rimTranslucent: {
-    borderColor: 'rgba(255,255,255,0.55)',
-    borderBottomColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderBottomColor: 'rgba(255,255,255,0.12)',
   },
 });
