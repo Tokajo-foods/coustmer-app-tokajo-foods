@@ -1,5 +1,15 @@
 /** Provider-neutral copy for auth forms (any email domain, not Gmail-only). */
 export const AUTH_EMAIL_PLACEHOLDER = 'you@example.com';
 
-export const LOGIN_PHONE_SUBTITLE = 'Sign in with your mobile number and password.';
-export const LOGIN_EMAIL_SUBTITLE = 'Sign in with your email address and password.';
+export const LOGIN_IDENTIFIER_PLACEHOLDER = 'Email or mobile number';
+
+export const LOGIN_SCREEN_TITLE = 'Sign in';
+export const LOGIN_SCREEN_SUBTITLE =
+  'Sign in with a phone OTP, or use your email or mobile number with your password.';
+
+export const LOGIN_OTP_SECTION_TITLE = 'Sign in with OTP';
+export const LOGIN_OTP_SECTION_HINT = 'We text a 6-digit code to your mobile — no password needed.';
+
+export const LOGIN_PASSWORD_SECTION_TITLE = 'Sign in with password';
+export const LOGIN_PASSWORD_SECTION_HINT =
+  'Use the email or mobile number on your account and your password.';

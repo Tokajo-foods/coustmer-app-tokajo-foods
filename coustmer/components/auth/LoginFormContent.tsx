@@ -1,20 +1,25 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { LOGIN_EMAIL_SUBTITLE, LOGIN_PHONE_SUBTITLE } from '@/lib/auth/auth-form-copy';
 import { LoginFormHeader } from '@/components/auth/LoginFormHeader';
-import { LoginEmailForm } from '@/components/auth/LoginEmailForm';
-import { LoginModeTabs, type LoginModePref } from '@/components/auth/LoginModeTabs';
-import { LoginPhonePasswordForm } from '@/components/auth/LoginPhonePasswordForm';
+import { LoginPasswordSection } from '@/components/auth/LoginPasswordSection';
+import { PhoneLoginPanel } from '@/components/auth/PhoneLoginPanel';
 import { loginFormStyles } from '@/components/auth/login-form-styles';
+import {
+  LOGIN_OTP_SECTION_HINT,
+  LOGIN_OTP_SECTION_TITLE,
+  LOGIN_PASSWORD_SECTION_HINT,
+  LOGIN_PASSWORD_SECTION_TITLE,
+  LOGIN_SCREEN_SUBTITLE,
+  LOGIN_SCREEN_TITLE,
+} from '@/lib/auth/auth-form-copy';
 
 type Props = {
   onSignUp?: () => void;
   onForgotPassword?: () => void;
   onLoginSuccess?: () => void;
-  initialMode?: LoginModePref;
+  onCreateAccount?: (phone: string) => void;
   initialPhone?: string;
 };
 
@@ -22,12 +27,10 @@ export function LoginFormContent({
   onSignUp,
   onForgotPassword,
   onLoginSuccess,
-  initialMode,
+  onCreateAccount,
   initialPhone,
 }: Props) {
   const router = useRouter();
-  const [pref, setPref] = useState<LoginModePref>(initialMode ?? 'phone');
-  const isPhone = pref === 'phone';
 
   const handleForgotPassword = () =>
     onForgotPassword ? onForgotPassword() : router.push('/(auth)/forgot-password');
@@ -44,22 +47,24 @@ export function LoginFormContent({
         bounces={false}
         keyboardShouldPersistTaps="handled"
       >
-        <LoginFormHeader
-          title={isPhone ? 'Sign in with phone' : 'Sign in with email'}
-          subtitle={isPhone ? LOGIN_PHONE_SUBTITLE : LOGIN_EMAIL_SUBTITLE}
+        <LoginFormHeader title={LOGIN_SCREEN_TITLE} subtitle={LOGIN_SCREEN_SUBTITLE} />
+
+        <Text style={styles.authSectionLabel}>{LOGIN_OTP_SECTION_TITLE}</Text>
+        <Text style={styles.authSectionHint}>{LOGIN_OTP_SECTION_HINT}</Text>
+        <PhoneLoginPanel
+          initialPhone={initialPhone}
+          onLoginSuccess={onLoginSuccess}
+          onCreateAccount={onCreateAccount}
         />
 
-        <LoginModeTabs value={pref} onChange={setPref} />
+        <View style={styles.authSectionDivider} />
 
-        {isPhone ? (
-          <LoginPhonePasswordForm
-            initialPhone={initialPhone}
-            onForgotPassword={handleForgotPassword}
-            onLoginSuccess={onLoginSuccess}
-          />
-        ) : (
-          <LoginEmailForm onForgotPassword={handleForgotPassword} onLoginSuccess={onLoginSuccess} />
-        )}
+        <Text style={styles.authSectionLabel}>{LOGIN_PASSWORD_SECTION_TITLE}</Text>
+        <Text style={styles.authSectionHint}>{LOGIN_PASSWORD_SECTION_HINT}</Text>
+        <LoginPasswordSection
+          onForgotPassword={handleForgotPassword}
+          onLoginSuccess={onLoginSuccess}
+        />
 
         <View style={styles.bottomLinks}>
           <Text style={styles.signupText}>

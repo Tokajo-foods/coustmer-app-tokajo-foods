@@ -174,4 +174,24 @@ export const loginFormStyles = StyleSheet.create({
     color: authTheme.brand,
     fontWeight: '800',
   },
+  authSectionLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: authTheme.text,
+    marginTop: 4,
+    marginBottom: 4,
+    letterSpacing: -0.1,
+  },
+  authSectionHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: authTheme.textMuted,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  authSectionDivider: {
+    height: 1,
+    backgroundColor: authTheme.cardBorder,
+    marginVertical: 18,
+  },
 });

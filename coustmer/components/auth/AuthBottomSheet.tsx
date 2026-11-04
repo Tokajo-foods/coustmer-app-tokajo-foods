@@ -194,6 +194,7 @@ export function AuthBottomSheet({
               animateClose(() => router.push('/(auth)/forgot-password'));
             }}
             onSignUp={() => changeViewWithSlide('register')}
+            onCreateAccount={(phone) => changeViewWithSlide('register', { registerPhone: phone })}
             onLoginSuccess={onClose}
           />
         );
