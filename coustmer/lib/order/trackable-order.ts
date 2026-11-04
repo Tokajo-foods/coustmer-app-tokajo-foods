@@ -2,10 +2,8 @@ import type { Order } from '@/lib/order/types';
 import { normalizeOrderStatus } from '@/lib/order/types';
 import { isValidOrderRouteId, resolveOrderRouteId } from '@/lib/order/order-route-id';
 
-/** Same set as order-service ACTIVE_STATUSES (+ confirmed / pending aliases). */
-const TRACKABLE_STATUSES = new Set([
-  'pending',
-  'pending_payment',
+/** Kitchen + delivery — home “Track order” and live map (not unpaid checkout). */
+const LIVE_TRACK_STATUSES = new Set([
   'placed',
   'accepted',
   'confirmed',
@@ -23,10 +21,29 @@ function hasTerminalTimestamp(order: Pick<Order, 'cancelledAt' | 'deliveredAt' |
 
 export function isTrackableOrderStatus(status?: string | null): boolean {
   if (!status) return false;
-  return TRACKABLE_STATUSES.has(normalizeOrderStatus(status));
+  const s = normalizeOrderStatus(status);
+  if (LIVE_TRACK_STATUSES.has(s)) return true;
+  return s === 'pending_payment' || s === 'pending';
 }
 
-/** Home track pill + GET /orders/active — strict, never guess from unknown statuses. */
+export function orderIsLiveTrackable(order: Order | null | undefined): boolean {
+  if (!order) return false;
+  if (!isValidOrderRouteId(resolveOrderRouteId(order))) return false;
+  if (hasTerminalTimestamp(order)) return false;
+  return LIVE_TRACK_STATUSES.has(normalizeOrderStatus(order.status));
+}
+
+/** Unpaid online checkout — show “Complete payment”, not live tracking. */
+export function orderAwaitingOnlinePayment(order: Order | null | undefined): boolean {
+  if (!order || !isValidOrderRouteId(resolveOrderRouteId(order))) return false;
+  if (hasTerminalTimestamp(order)) return false;
+  const s = normalizeOrderStatus(order.status);
+  if (s !== 'pending_payment' && s !== 'pending') return false;
+  const method = String(order.paymentMethod ?? order.raw?.paymentMethod ?? '').toLowerCase();
+  return method !== 'cod';
+}
+
+/** GET /orders/active filter — includes payment-pending for checkout guards. */
 export function orderIsTrackable(order: Order | null | undefined): boolean {
   if (!order) return false;
   if (!isValidOrderRouteId(resolveOrderRouteId(order))) return false;

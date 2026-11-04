@@ -23,8 +23,12 @@ import { resolveTrackingPins } from '@/lib/delivery/tracking-pins';
 import { orderApi } from '@/lib/order/api';
 import { orderKeys } from '@/lib/order/hooks';
 import { normalizeOrderIdParam } from '@/lib/order/order-route-id';
-import { orderTrackingHref } from '@/lib/order/order-tracking-path';
-import { orderIsTrackable } from '@/lib/order/trackable-order';
+import { orderDetailHref, orderTrackingHref } from '@/lib/order/order-tracking-path';
+import { pickPrimaryActiveOrder } from '@/lib/order/ongoing-order';
+import {
+  orderAwaitingOnlinePayment,
+  orderIsLiveTrackable,
+} from '@/lib/order/trackable-order';
 import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { useCartStore } from '@/store/cart-store';
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,6 +59,14 @@ export function OrderTrackingScreen() {
     leftAfterCancelRef.current = true;
     router.replace('/home');
   }, [phase.cancelled, live.orderStatus, router]);
+
+  useEffect(() => {
+    if (!o || order.isLoading) return;
+    if (orderAwaitingOnlinePayment(o)) {
+      router.replace(orderDetailHref(o.id));
+    }
+  }, [o, order.isLoading, router]);
+
   const otpEnabled = !pickup && phase.active && Boolean(t?.deliveryId) && !phase.rto;
   const otpQuery = useDropOtp(id, otpEnabled);
 
@@ -86,9 +98,14 @@ export function OrderTrackingScreen() {
         const active = await orderApi.getActiveOrders();
         if (cancelled) return;
         const hit =
-          (id ? active.find((row) => row.id === id && orderIsTrackable(row)) : null)
-          ?? active.find((row) => orderIsTrackable(row));
+          (id ? active.find((row) => row.id === id && orderIsLiveTrackable(row)) : null)
+          ?? pickPrimaryActiveOrder(active);
         if (!hit?.id) return;
+        if (orderAwaitingOnlinePayment(hit) && !orderIsLiveTrackable(hit)) {
+          router.replace(orderDetailHref(hit.id));
+          return;
+        }
+        if (!orderIsLiveTrackable(hit)) return;
         queryClient.setQueryData(orderKeys.detail(hit.id), hit);
         queryClient.setQueryData(orderKeys.active(), active);
         if (hit.id !== id) {

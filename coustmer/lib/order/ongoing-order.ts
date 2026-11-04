@@ -1,6 +1,6 @@
 import type { Order } from '@/lib/order/types';
 import { isActiveOrderStatus } from '@/lib/order/types';
-import { orderIsTrackable } from '@/lib/order/trackable-order';
+import { orderIsLiveTrackable, orderIsTrackable } from '@/lib/order/trackable-order';
 
 /** True while the customer should see track / one-order-at-a-time guards. */
 export function isOngoingOrderStatus(status: string | undefined | null): boolean {
@@ -10,8 +10,9 @@ export function isOngoingOrderStatus(status: string | undefined | null): boolean
 
 export function pickPrimaryActiveOrder(orders: Order[] | undefined): Order | null {
   if (!orders?.length) return null;
-  const hit = orders.find((o) => orderIsTrackable(o));
-  return hit ?? null;
+  const live = orders.find((o) => orderIsLiveTrackable(o));
+  if (live) return live;
+  return orders.find((o) => orderIsTrackable(o)) ?? null;
 }
 
 export function ongoingOrderMessage(order: Pick<Order, 'orderNumber' | 'restaurantName'>): string {

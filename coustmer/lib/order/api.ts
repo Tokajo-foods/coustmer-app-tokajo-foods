@@ -21,7 +21,7 @@ import { createIdempotencyKey } from '@/lib/order/idempotency';
 import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
 import { resolveEstimatedDeliveryAtIso } from '@/lib/order/estimated-delivery-at';
-import { orderIsTrackable } from '@/lib/order/trackable-order';
+import { orderIsLiveTrackable, orderIsTrackable } from '@/lib/order/trackable-order';
 
 const ORDER_SERVICE = '/api/v1/order-service';
 const ORDERS_BASE = `${ORDER_SERVICE}/orders`;
@@ -586,7 +586,14 @@ export const orderApi = {
     const mapActive = (rows: Record<string, unknown>[]) =>
       rows.map(mapOrder).filter((o) => orderIsTrackable(o));
 
-    if (list.length) return mapActive(list);
+    const sortLiveFirst = (orders: Order[]) =>
+      [...orders].sort((a, b) => {
+        const aLive = orderIsLiveTrackable(a) ? 0 : 1;
+        const bLive = orderIsLiveTrackable(b) ? 0 : 1;
+        return aLive - bLive;
+      });
+
+    if (list.length) return sortLiveFirst(mapActive(list));
 
     // Backend may return a single active order object in `data`
     const single = asRecord(res.data);
@@ -595,7 +602,7 @@ export const orderApi = {
       return orderIsTrackable(one) ? [one] : [];
     }
 
-    return mapActive(extractList(res));
+    return sortLiveFirst(mapActive(extractList(res)));
   },
 
   /** GET /orders/scheduled */

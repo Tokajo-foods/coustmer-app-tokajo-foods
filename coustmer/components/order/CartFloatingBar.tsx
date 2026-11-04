@@ -15,7 +15,13 @@ import {
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { openOrderTracking } from '@/lib/order/open-order-tracking';
-import { orderIsTrackable } from '@/lib/order/trackable-order';
+import { orderDetailHref } from '@/lib/order/order-tracking-path';
+import {
+  orderAwaitingOnlinePayment,
+  orderIsLiveTrackable,
+  orderIsTrackable,
+} from '@/lib/order/trackable-order';
+import { resolveOrderRouteId } from '@/lib/order/order-route-id';
 import { useCartStore } from '@/store/cart-store';
 
 /** Extra scroll space a screen needs so its last row clears the cart pill. */
@@ -43,6 +49,8 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const { order: activeOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
   const onHome = isHomePath(pathname);
   const trackOrder = orderIsTrackable(activeOrder) ? activeOrder : null;
+  const liveTrack = trackOrder && orderIsLiveTrackable(trackOrder) ? trackOrder : null;
+  const paymentDue = trackOrder && orderAwaitingOnlinePayment(trackOrder) ? trackOrder : null;
 
   useFocusEffect(
     useCallback(() => {
@@ -77,19 +85,30 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   if (!visible) return null;
 
   const onPress = () => {
-    if (mode === 'track' && trackOrder) {
-      void openOrderTracking(router, queryClient, trackOrder).then((ok) => {
+    if (mode === 'track' && liveTrack) {
+      void openOrderTracking(router, queryClient, liveTrack).then((ok) => {
         if (!ok) void refetchActiveOrder();
       });
+      return;
+    }
+    if (mode === 'track' && paymentDue) {
+      const oid = resolveOrderRouteId(paymentDue);
+      if (oid) router.push(orderDetailHref(oid));
       return;
     }
     router.push('/cart');
   };
 
-  const title = mode === 'track' ? 'Track order' : 'View Cart';
+  const title =
+    mode === 'track'
+      ? paymentDue && !liveTrack
+        ? 'Complete payment'
+        : 'Track order'
+      : 'View Cart';
   const subtitle =
     mode === 'track'
-      ? trackOrder?.restaurantName || 'On the way'
+      ? trackOrder?.restaurantName ||
+        (paymentDue && !liveTrack ? 'Finish checkout' : 'On the way')
       : `${totalItems} item${totalItems > 1 ? 's' : ''}`;
 
   const imageUri =

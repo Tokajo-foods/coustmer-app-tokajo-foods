@@ -6,3 +6,7 @@ export function orderTrackingHref(orderId: string, opts?: { newOrder?: boolean }
   const q = opts?.newOrder ? '?newOrder=true' : '';
   return `/orders/${id}/tracking${q}` as Href;
 }
+
+export function orderDetailHref(orderId: string): Href {
+  return `/orders/${encodeURIComponent(orderId.trim())}` as Href;
+}
