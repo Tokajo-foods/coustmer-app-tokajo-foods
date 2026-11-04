@@ -41,7 +41,7 @@ export function SavedAddressesScreen() {
   const setDefault = useSetDefaultAddress();
 
   const applyAsDelivery = (address: SavedAddress) => {
-    const displayLabel = formatAddressLabel(address.label) || 'Saved';
+    const displayLabel = formatAddressLabel(address);
     setDeliveryLocation({
       label: displayLabel,
       formattedAddress: address.formattedAddress,
@@ -155,7 +155,7 @@ export function SavedAddressesScreen() {
                 <View style={styles.cardTop}>
                   <View style={styles.labelPill}>
                     <Text style={styles.labelText}>
-                      {formatAddressLabel(item.label)}
+                      {formatAddressLabel(item)}
                     </Text>
                   </View>
                   {item.isDefault ? (
@@ -170,7 +170,11 @@ export function SavedAddressesScreen() {
                 </View>
 
                 <Text style={styles.address} numberOfLines={3}>
-                  {item.formattedAddress}
+                  {item.formattedAddress ||
+                    [item.street, item.area, item.city, item.pincode]
+                      .filter(Boolean)
+                      .join(', ') ||
+                    'Address on map'}
                 </Text>
                 {item.city || item.pincode ? (
                   <Text style={styles.meta}>

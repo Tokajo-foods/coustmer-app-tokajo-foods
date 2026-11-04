@@ -25,7 +25,7 @@ import {
   useSavedAddress,
   useUpdateAddress,
 } from '@/lib/address/hooks';
-import type { AddressLabel } from '@/lib/address/types';
+import type { AddressLabel, CreateAddressPayload } from '@/lib/address/types';
 import {
   ADDRESS_LABEL_OPTIONS,
   formatAddressLabel,
@@ -130,8 +130,10 @@ export function AddressEditorScreen({ mode = 'create' }: Props) {
       lng,
     });
 
-    const payload = {
+    const payload: CreateAddressPayload = {
       label: toAddressLabelEnum(label),
+      customLabel:
+        label === 'other' && customLabel.trim() ? customLabel.trim() : undefined,
       formattedAddress: formattedAddress.trim(),
       street: parsed.street,
       area: parsed.area,
@@ -152,7 +154,7 @@ export function AddressEditorScreen({ mode = 'create' }: Props) {
         : await create.mutateAsync(payload);
 
       setDeliveryLocation({
-        label: formatAddressLabel(saved.label) || displayLabel,
+        label: formatAddressLabel(saved) || displayLabel,
         formattedAddress: saved.formattedAddress || formattedAddress.trim(),
         city: normalizeCityName(
           saved.city || extractCityFromAddress(saved.formattedAddress)

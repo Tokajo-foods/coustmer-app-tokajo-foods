@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +33,7 @@ import { fonts } from '@/constants/typography';
 import { HOME_FEED_LIST } from '@/lib/motion/premium';
 import { setFeedScrolling } from '@/lib/motion/scroll-activity';
 import { addressApi } from '@/lib/address/api';
+import { addressKeys } from '@/lib/address/hooks';
 import { formatAddressLabel } from '@/lib/address/types';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
@@ -86,6 +88,7 @@ const ORANGE = '#F97316';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const hasCart = useCartStore((s) => s.items.length > 0 && !!s.restaurant);
   const user = useAuthStore((s) => s.user);
@@ -451,10 +454,11 @@ export default function HomeScreen() {
         setAsDefault: true,
       })
       .then((saved) => {
+        void queryClient.invalidateQueries({ queryKey: addressKeys.list() });
         setDeliveryLocation({
           label:
             payload.displayLabel ||
-            formatAddressLabel(saved.label) ||
+            formatAddressLabel(saved) ||
             'Home',
           formattedAddress:
             saved.formattedAddress || applied.formattedAddress,

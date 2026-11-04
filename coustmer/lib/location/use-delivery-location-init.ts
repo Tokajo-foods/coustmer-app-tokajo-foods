@@ -81,7 +81,7 @@ export function useDeliveryLocationInit() {
         if (current) return;
 
         setLocation({
-          label: formatAddressLabel(preferred.label) || 'Home',
+          label: formatAddressLabel(preferred),
           formattedAddress: preferred.formattedAddress ?? '',
           city: normalizeCityName(
             extractCityFromAddress(preferred.formattedAddress ?? '') ||

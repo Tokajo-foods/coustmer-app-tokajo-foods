@@ -47,6 +47,7 @@ export type CreateAddressPayload = {
   lng: number;
   contactName?: string;
   contactPhone?: string;
+  setAsDefault?: boolean;
 };
 
 export type UpdateAddressPayload = Partial<CreateAddressPayload>;

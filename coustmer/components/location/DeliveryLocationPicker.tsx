@@ -1125,7 +1125,7 @@ export function DeliveryLocationPicker({
                     </View>
                   ) : (
                     (savedAddresses.data ?? []).map((address, index, arr) => {
-                      const title = formatAddressLabel(address.label);
+                      const title = formatAddressLabel(address);
                       const selected =
                         activeSavedId === address.id ||
                         (!activeSavedId && address.isDefault && index === 0);
@@ -1157,7 +1157,11 @@ export function DeliveryLocationPicker({
                               ) : null}
                             </View>
                             <Text style={styles.savedAddress}>
-                              {address.formattedAddress}
+                              {address.formattedAddress ||
+                                [address.street, address.area, address.city]
+                                  .filter(Boolean)
+                                  .join(', ') ||
+                                'Saved pin'}
                             </Text>
                           </View>
 

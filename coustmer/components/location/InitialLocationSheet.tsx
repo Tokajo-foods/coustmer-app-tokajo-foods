@@ -139,11 +139,16 @@ export function InitialLocationSheet({
     setLocation({
       lat: saved.lat,
       lng: saved.lng,
-      formattedAddress: saved.formattedAddress,
+      formattedAddress:
+        saved.formattedAddress ||
+        [saved.street, saved.area, saved.city, saved.pincode]
+          .filter(Boolean)
+          .join(', ') ||
+        'Saved address',
       city: normalizeCityName(
         saved.city || extractCityFromAddress(saved.formattedAddress)
       ),
-      label: formatAddressLabel(saved.label) || 'Home',
+      label: formatAddressLabel(saved),
       source: 'saved',
       savedAddressId: saved.id,
       updatedAt: Date.now(),

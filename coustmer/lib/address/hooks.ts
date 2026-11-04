@@ -6,6 +6,7 @@ import {
 
 import { addressApi } from './api';
 import type { CreateAddressPayload, UpdateAddressPayload } from './types';
+import { useAuthStore } from '@/store/auth-store';
 
 export const addressKeys = {
   all: ['address'] as const,
@@ -16,11 +17,15 @@ export const addressKeys = {
     [...addressKeys.all, 'serviceability', lat, lng] as const,
 };
 
-/** GET /addresses — saved address list */
-export function useSavedAddresses() {
+/** GET /addresses — saved address list (logged-in only) */
+export function useSavedAddresses(options?: { enabled?: boolean }) {
+  const token = useAuthStore((s) => s.token);
+  const enabled = (options?.enabled ?? true) && Boolean(token);
   return useQuery({
     queryKey: addressKeys.list(),
     queryFn: addressApi.listAddresses,
+    enabled,
+    staleTime: 30_000,
   });
 }
 
