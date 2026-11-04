@@ -9,6 +9,7 @@ import { AuthRememberSwitch } from '@/components/auth/AuthRememberSwitch';
 import { loginFormStyles as styles } from '@/components/auth/login-form-styles';
 import { authTheme } from '@/constants/auth-theme';
 import { AUTH_EMAIL_PLACEHOLDER } from '@/lib/auth/auth-form-copy';
+import { describePhoneAuthError } from '@/lib/auth/phone-auth-errors';
 import { useAuthStore } from '@/store/auth-store';
 import { validateEmail, validateLoginPassword } from '@/utils/validation';
 
