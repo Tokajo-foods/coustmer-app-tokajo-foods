@@ -83,7 +83,11 @@ const TABS: Tab[] = [
 ];
 
 function isCartPath(pathname: string) {
-  return pathname === '/cart' || pathname.endsWith('/cart');
+  const path = (pathname.split('?')[0] ?? pathname).replace(/\/$/, '');
+  if (path === '/cart' || path.endsWith('/cart')) return true;
+  // Order summary, saved carts, shared cart links — already in checkout flow
+  if (path.startsWith('/cart/')) return true;
+  return false;
 }
 
 function isOrderArrivalPath(pathname: string) {
