@@ -12,6 +12,10 @@ $env:GRADLE_USER_HOME = "C:\gcache"
 $env:PATH = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
 if (-not $env:EXPO_PUBLIC_API_URL) { $env:EXPO_PUBLIC_API_URL = "https://api.tokajofoods.com" }
 $android = Join-Path $ProjectRoot "android"
+$props = Join-Path $android "keystore.properties"
+if (-not (Test-Path $props)) {
+  Write-Error "Missing android/keystore.properties — see signing/keystore.properties.example and create upload keystore first."
+}
 Push-Location $android
 try {
   .\gradlew.bat bundleRelease --no-daemon -g C:\gcache
