@@ -1,5 +1,6 @@
 import { Pressable } from '@/components/common/Pressable';
 import { ArrowRight } from 'lucide-react-native';
+import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -15,19 +16,30 @@ type Props = {
   initialPhone?: string;
   onSignIn?: () => void;
   onRegisterSuccess?: () => void;
+  /** True after mobile OTP — parent expands the bottom sheet for the rest of signup. */
+  onDetailsPhaseChange?: (detailsOpen: boolean) => void;
 };
 
-export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess }: Props) {
+export function RegisterFormContent({
+  initialPhone,
+  onSignIn,
+  onRegisterSuccess,
+  onDetailsPhaseChange,
+}: Props) {
   const flow = useRegisterSignupFlow({ initialPhone, onSignIn, onRegisterSuccess });
   const { otp } = flow;
   const verified = otp.step === 'verified' && Boolean(otp.phone);
 
+  useEffect(() => {
+    onDetailsPhaseChange?.(verified);
+  }, [verified, onDetailsPhaseChange]);
+
   return (
-    <View style={{ flex: 1, minHeight: 1 }}>
+    <View style={verified ? { flex: 1, minHeight: 1 } : { flexShrink: 1 }}>
       <KeyboardAwareScrollView
         enableOnAndroid
         extraScrollHeight={12}
-        style={{ flexGrow: 1 }}
+        style={verified ? { flex: 1 } : { flexGrow: 0 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -109,7 +121,7 @@ export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess 
           </>
         )}
 
-        <View style={styles.bottomLinks}>
+        <View style={[styles.bottomLinks, !verified && styles.bottomLinksCompact]}>
           <Text style={styles.signupText}>
             Already have an account?{' '}
             <Text style={styles.signupLink} onPress={flow.handleSignIn}>
@@ -118,7 +130,7 @@ export function RegisterFormContent({ initialPhone, onSignIn, onRegisterSuccess 
           </Text>
         </View>
 
-        <Text style={styles.terms}>
+        <Text style={[styles.terms, !verified && styles.termsCompact]}>
           By signing up, you agree to our <Text style={styles.termsLink}>Terms</Text> &{' '}
           <Text style={styles.termsLink}>Privacy Policy</Text>
         </Text>

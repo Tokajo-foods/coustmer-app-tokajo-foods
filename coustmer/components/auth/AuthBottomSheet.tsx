@@ -20,7 +20,7 @@ import { type AuthSheetView } from '@/store/auth-sheet-store';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const AUTH_SHEET_HEIGHT = SCREEN_HEIGHT * 0.67;
-const AUTH_SHEET_HEIGHT_REGISTER = SCREEN_HEIGHT * 0.72;
+const AUTH_SHEET_HEIGHT_REGISTER = SCREEN_HEIGHT * 0.78;
 const SHEET_OFFSCREEN = SCREEN_HEIGHT;
 
 const OPEN_SPRING = { damping: 26, stiffness: 185, mass: 0.92 };
@@ -52,6 +52,7 @@ export function AuthBottomSheet({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(false);
+  const [registerDetailsOpen, setRegisterDetailsOpen] = useState(false);
   const prevViewRef = useRef<AuthSheetView | null>(null);
   const hasOpenedRef = useRef(false);
 
@@ -59,8 +60,13 @@ export function AuthBottomSheet({
   const backdropOpacity = useSharedValue(0);
   const sheetOpacity = useSharedValue(0);
   const activeSheetHeight = sheetHeightFor(view);
-  /** Sign-in phone/password steps are short — hug content. Sign-up uses fixed height + scroll. */
-  const fitsContent = view === 'login';
+  /** Phone signup step is short; full form needs a tall scrollable sheet. */
+  const fitsContent =
+    view === 'login' || (view === 'register' && !registerDetailsOpen);
+
+  useEffect(() => {
+    if (view !== 'register') setRegisterDetailsOpen(false);
+  }, [view]);
 
   const finishClose = useCallback(() => {
     setMounted(false);
@@ -183,6 +189,7 @@ export function AuthBottomSheet({
             initialPhone={registerPhone}
             onSignIn={() => changeViewWithSlide('login')}
             onRegisterSuccess={onClose}
+            onDetailsPhaseChange={setRegisterDetailsOpen}
           />
         );
       case 'forgot-password':

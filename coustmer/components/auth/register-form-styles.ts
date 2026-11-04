@@ -82,6 +82,13 @@ const extra = StyleSheet.create({
     marginTop: 14,
     fontWeight: '500',
   },
+  termsCompact: {
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  bottomLinksCompact: {
+    marginTop: 4,
+  },
   termsLink: {
     color: authTheme.brand,
     fontWeight: '700',
