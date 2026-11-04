@@ -89,21 +89,36 @@ export function toAddressLabelEnum(val: string | undefined | null): AddressLabel
   return 'other';
 }
 
+/** Chip / header title only (Home, Work, custom other name). */
+export function savedAddressTagLabel(address: SavedAddress): string {
+  const opt = ADDRESS_LABEL_OPTIONS.find((o) => o.value === address.label);
+  return address.customLabel?.trim() || opt?.label || 'Address';
+}
+
 export function formatAddressLabel(addressOrLabel: SavedAddress | string): string {
   if (typeof addressOrLabel === 'string') {
     const opt = ADDRESS_LABEL_OPTIONS.find((o) => o.value === addressOrLabel);
     return opt?.label || addressOrLabel || 'Address';
   }
   const address = addressOrLabel;
-  const opt = ADDRESS_LABEL_OPTIONS.find((o) => o.value === address.label);
-  const labelText = address.customLabel || opt?.label || 'Address';
+  const labelText = savedAddressTagLabel(address);
   const parts: string[] = [];
+  const skip = labelText.toLowerCase();
   if (address.flat) parts.push(address.flat);
-  if (address.street) parts.push(address.street);
-  if (address.area) parts.push(address.area);
+  if (address.street) {
+    const s = address.street.trim();
+    if (s && s.toLowerCase() !== skip) parts.push(s);
+  }
+  if (address.area) {
+    const s = address.area.trim();
+    if (s && s.toLowerCase() !== skip) parts.push(s);
+  }
   if (address.city) parts.push(address.city);
   if (parts.length === 0 && address.formattedAddress) {
-    return `${labelText} — ${address.formattedAddress}`;
+    const addr = address.formattedAddress.trim();
+    if (addr.toLowerCase().startsWith(`${skip} —`)) return addr;
+    if (addr.toLowerCase().startsWith(`${skip},`)) return addr;
+    return `${labelText} — ${addr}`;
   }
   return parts.length > 0 ? `${labelText} — ${parts.join(', ')}` : labelText;
 }

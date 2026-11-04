@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { useEffect, useRef } from 'react';
 
 import { addressApi } from '@/lib/address/api';
-import { formatAddressLabel } from '@/lib/address/types';
+import { formatAddressLabel, savedAddressTagLabel } from '@/lib/address/types';
 import {
   extractCityFromAddress,
   normalizeCityName,
@@ -81,7 +81,7 @@ export function useDeliveryLocationInit() {
         if (current) return;
 
         setLocation({
-          label: formatAddressLabel(preferred),
+          label: savedAddressTagLabel(preferred),
           formattedAddress: preferred.formattedAddress ?? '',
           city: normalizeCityName(
             extractCityFromAddress(preferred.formattedAddress ?? '') ||

@@ -24,7 +24,7 @@ import {
   useSetDefaultAddress,
 } from '@/lib/address/hooks';
 import type { SavedAddress } from '@/lib/address/types';
-import { formatAddressLabel } from '@/lib/address/types';
+import { formatAddressLabel, savedAddressTagLabel } from '@/lib/address/types';
 import {
   extractCityFromAddress,
   normalizeCityName,
@@ -41,7 +41,7 @@ export function SavedAddressesScreen() {
   const setDefault = useSetDefaultAddress();
 
   const applyAsDelivery = (address: SavedAddress) => {
-    const displayLabel = formatAddressLabel(address);
+    const displayLabel = savedAddressTagLabel(address);
     setDeliveryLocation({
       label: displayLabel,
       formattedAddress: address.formattedAddress,
@@ -155,7 +155,7 @@ export function SavedAddressesScreen() {
                 <View style={styles.cardTop}>
                   <View style={styles.labelPill}>
                     <Text style={styles.labelText}>
-                      {formatAddressLabel(item)}
+                      {savedAddressTagLabel(item)}
                     </Text>
                   </View>
                   {item.isDefault ? (

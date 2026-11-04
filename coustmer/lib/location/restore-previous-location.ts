@@ -1,5 +1,5 @@
 import { addressApi } from '@/lib/address/api';
-import { formatAddressLabel } from '@/lib/address/types';
+import { savedAddressTagLabel } from '@/lib/address/types';
 import { extractCityFromAddress, normalizeCityName } from '@/lib/location/format';
 import { useDeliveryLocationStore } from '@/store/delivery-location-store';
 
@@ -20,7 +20,7 @@ export async function restorePreviousDeliveryLocation(userId: string | null) {
 
   const formatted = preferred.formattedAddress || 'Saved address';
   store.setLocation({
-    label: formatAddressLabel(preferred.label) || 'Home',
+    label: savedAddressTagLabel(preferred),
     formattedAddress: formatted,
     city: normalizeCityName(extractCityFromAddress(formatted) || preferred.city),
     lat: preferred.lat,

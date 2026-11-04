@@ -72,7 +72,6 @@ export function parseDeliveryAddress(input: {
     'City';
 
   const street =
-    input.label?.trim() ||
     parts[0] ||
     formatted ||
     'Delivery location';

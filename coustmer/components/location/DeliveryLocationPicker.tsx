@@ -811,7 +811,7 @@ export function DeliveryLocationPicker({
   };
 
   const selectSavedAddress = (address: SavedAddress) => {
-    const displayLabel = formatAddressLabel(address.label) || 'Home';
+    const displayLabel = savedAddressTagLabel(address);
     onConfirm({
       lat: address.lat,
       lng: address.lng,
@@ -1125,7 +1125,7 @@ export function DeliveryLocationPicker({
                     </View>
                   ) : (
                     (savedAddresses.data ?? []).map((address, index, arr) => {
-                      const title = formatAddressLabel(address);
+                      const title = savedAddressTagLabel(address);
                       const selected =
                         activeSavedId === address.id ||
                         (!activeSavedId && address.isDefault && index === 0);

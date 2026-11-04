@@ -34,7 +34,7 @@ import { HOME_FEED_LIST } from '@/lib/motion/premium';
 import { setFeedScrolling } from '@/lib/motion/scroll-activity';
 import { addressApi } from '@/lib/address/api';
 import { addressKeys } from '@/lib/address/hooks';
-import { formatAddressLabel } from '@/lib/address/types';
+import { savedAddressTagLabel } from '@/lib/address/types';
 import { CUSTOMER_DISCOVERY_RADIUS_KM } from '@/lib/location/discovery-radius';
 import { openRestaurantMenu } from '@/lib/restaurant/open-restaurant';
 import { useAppConfig, useCustomerProfile, useHomeFeed } from '@/lib/customer/hooks';
@@ -458,7 +458,7 @@ export default function HomeScreen() {
         setDeliveryLocation({
           label:
             payload.displayLabel ||
-            formatAddressLabel(saved) ||
+            savedAddressTagLabel(saved) ||
             'Home',
           formattedAddress:
             saved.formattedAddress || applied.formattedAddress,

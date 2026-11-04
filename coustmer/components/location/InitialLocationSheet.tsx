@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fonts } from '@/constants/typography';
 import { useSavedAddresses } from '@/lib/address/hooks';
-import { formatAddressLabel } from '@/lib/address/types';
+import { formatAddressLabel, savedAddressTagLabel } from '@/lib/address/types';
 import type { SavedAddress } from '@/lib/address/types';
 import {
   useCities,
@@ -148,7 +148,7 @@ export function InitialLocationSheet({
       city: normalizeCityName(
         saved.city || extractCityFromAddress(saved.formattedAddress)
       ),
-      label: formatAddressLabel(saved),
+      label: savedAddressTagLabel(saved),
       source: 'saved',
       savedAddressId: saved.id,
       updatedAt: Date.now(),
@@ -303,7 +303,7 @@ export function InitialLocationSheet({
                   <Home color="#AC0F45" size={20} />
                   <View style={styles.savedTextCol}>
                     <Text style={styles.savedLabel}>
-                      {formatAddressLabel(addr.label) || 'Saved Address'}
+                      {savedAddressTagLabel(addr)}
                       {addr.isDefault ? ' · Default' : ''}
                     </Text>
                     <Text style={styles.savedAddress} numberOfLines={1}>

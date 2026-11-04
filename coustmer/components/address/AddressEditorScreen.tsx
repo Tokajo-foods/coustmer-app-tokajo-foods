@@ -154,7 +154,7 @@ export function AddressEditorScreen({ mode = 'create' }: Props) {
         : await create.mutateAsync(payload);
 
       setDeliveryLocation({
-        label: formatAddressLabel(saved) || displayLabel,
+        label: savedAddressTagLabel(saved) || displayLabel,
         formattedAddress: saved.formattedAddress || formattedAddress.trim(),
         city: normalizeCityName(
           saved.city || extractCityFromAddress(saved.formattedAddress)
