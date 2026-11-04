@@ -22,6 +22,7 @@ export function ActiveOrderSync() {
       queryClient.setQueryData(orderKeys.active(), []);
       return;
     }
+    queryClient.removeQueries({ queryKey: orderKeys.active() });
     void refetch();
   }, [loggedIn, queryClient, refetch, setOrder]);
 
