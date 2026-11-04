@@ -2,7 +2,7 @@ import { Pressable } from '@/components/common/Pressable';
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff, Lock, Mail, Smartphone } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
 import { AuthMessageBanner } from '@/components/auth/AuthMessageBanner';
 import { AuthRememberSwitch } from '@/components/auth/AuthRememberSwitch';
@@ -193,14 +193,16 @@ export function LoginPasswordSection({ onForgotPassword, onLoginSuccess }: Props
         </Pressable>
       </View>
 
-      <TouchableOpacity
+      <Pressable
         style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
         onPress={() => void handleLogin()}
         disabled={isLoading}
-        activeOpacity={0.8}
+        haptic
       >
-        <Text style={styles.submitBtnText}>{isLoading ? '...' : 'SIGN IN WITH PASSWORD'}</Text>
-      </TouchableOpacity>
+        <Text style={styles.submitBtnText} numberOfLines={1}>
+          {isLoading ? 'Signing in…' : 'SIGN IN'}
+        </Text>
+      </Pressable>
     </>
   );
 }
