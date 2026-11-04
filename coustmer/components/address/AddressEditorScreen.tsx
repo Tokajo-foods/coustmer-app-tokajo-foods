@@ -54,7 +54,7 @@ export function AddressEditorScreen({ mode = 'create' }: Props) {
   const setDeliveryLocation = useDeliveryLocationStore((s) => s.setLocation);
   const currentPin = useDeliveryLocationStore((s) => s.location);
 
-  const [label, setLabel] = useState<'home' | 'work' | 'other'>('home');
+  const [label, setLabel] = useState<AddressLabel>('home');
   const [customLabel, setCustomLabel] = useState('');
   const [formattedAddress, setFormattedAddress] = useState('');
   const [landmark, setLandmark] = useState('');
@@ -222,7 +222,7 @@ export function AddressEditorScreen({ mode = 'create' }: Props) {
                   <Text
                     style={[styles.chipText, active && styles.chipTextActive]}
                   >
-                    {item.title}
+                    {item.label}
                   </Text>
                 </Pressable>
               );

@@ -15,9 +15,10 @@ import { authTheme } from '@/constants/auth-theme';
 import {
   ADDRESS_LABEL_OPTIONS,
   formatAddressLabel,
+  type AddressLabel,
 } from '@/lib/address/types';
 
-export type SaveAddressLabelChoice = 'home' | 'work' | 'other';
+export type SaveAddressLabelChoice = AddressLabel;
 
 type Props = {
   visible: boolean;
@@ -98,7 +99,7 @@ export function SaveAddressLabelModal({
                   <Text
                     style={[styles.chipText, active && styles.chipTextActive]}
                   >
-                    {item.title}
+                    {item.label}
                   </Text>
                 </Pressable>
               );
