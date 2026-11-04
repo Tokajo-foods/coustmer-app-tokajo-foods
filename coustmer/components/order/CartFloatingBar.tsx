@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Pressable } from '@/components/common/Pressable';
 import { usePathname, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,6 +14,7 @@ import {
   isHomePath,
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
+import { openOrderTracking } from '@/lib/order/open-order-tracking';
 import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { useCartStore } from '@/store/cart-store';
 
@@ -27,6 +29,7 @@ type Props = {
 
 export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const navVisible = isAppTabRoot(pathname);
@@ -75,9 +78,8 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
 
   const onPress = () => {
     if (mode === 'track' && trackOrder) {
-      router.push({
-        pathname: '/orders/[orderId]/tracking',
-        params: { orderId: trackOrder.id },
+      void openOrderTracking(router, queryClient, trackOrder).then((ok) => {
+        if (!ok) void refetchActiveOrder();
       });
       return;
     }

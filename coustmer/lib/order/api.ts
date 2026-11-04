@@ -328,7 +328,7 @@ export function mapOrder(data: Record<string, unknown>): Order {
   const billLines = mapOrderBillLines(customerBill?.lines);
 
   return {
-    id: String(data._id ?? data.id ?? ''),
+    id: String(data._id ?? data.id ?? data.orderId ?? ''),
     orderNumber: String(
       data.orderNumber ?? data.orderNo ?? data.number ?? data.code ?? ''
     ) || undefined,

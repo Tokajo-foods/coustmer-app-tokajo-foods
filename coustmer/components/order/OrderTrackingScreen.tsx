@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,8 +20,13 @@ import { useLiveOrderTracking } from '@/components/order/tracking/use-live-order
 import { useDropOtp } from '@/lib/delivery/hooks';
 import { errorStatus } from '@/lib/delivery/http';
 import { resolveTrackingPins } from '@/lib/delivery/tracking-pins';
+import { orderApi } from '@/lib/order/api';
+import { orderKeys } from '@/lib/order/hooks';
+import { normalizeOrderIdParam } from '@/lib/order/order-route-id';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { PREMIUM_SCROLL } from '@/lib/motion/premium';
 import { useCartStore } from '@/store/cart-store';
+import { useQueryClient } from '@tanstack/react-query';
 
 function orderErrorMessage(error: unknown): string {
   const status = errorStatus(error);
@@ -32,13 +37,16 @@ function orderErrorMessage(error: unknown): string {
 
 export function OrderTrackingScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
-  const { orderId, newOrder } = useLocalSearchParams<{ orderId: string; newOrder?: string }>();
-  const id = String(orderId ?? '');
+  const params = useLocalSearchParams<{ orderId?: string | string[]; newOrder?: string }>();
+  const id = normalizeOrderIdParam(params.orderId);
+  const newOrder = params.newOrder;
   const clearCart = useCartStore((s) => s.clearCart);
   const live = useLiveOrderTracking(id);
-  const { order, o, t, phase, pickup } = live;
+  const { order, o, t, phase, pickup, refetchAll } = live;
   const leftAfterCancelRef = useRef(false);
+  const [recovering, setRecovering] = useState(false);
 
   useEffect(() => {
     if (leftAfterCancelRef.current) return;
@@ -64,6 +72,42 @@ export function OrderTrackingScreen() {
     return () => clearTimeout(timer);
   }, [newOrder, clearCart]);
 
+  useEffect(() => {
+    if (o || order.isLoading) return;
+    const missingId = !id;
+    const notFound = errorStatus(order.error) === 404;
+    if (!missingId && !notFound) return;
+
+    let cancelled = false;
+    setRecovering(true);
+    void (async () => {
+      try {
+        const active = await orderApi.getActiveOrders();
+        if (cancelled) return;
+        const hit =
+          (id ? active.find((row) => row.id === id && orderIsTrackable(row)) : null)
+          ?? active.find((row) => orderIsTrackable(row));
+        if (!hit?.id) return;
+        queryClient.setQueryData(orderKeys.detail(hit.id), hit);
+        queryClient.setQueryData(orderKeys.active(), active);
+        if (hit.id !== id) {
+          router.replace({
+            pathname: '/orders/[orderId]/tracking',
+            params: { orderId: hit.id },
+          });
+          return;
+        }
+        await refetchAll();
+      } finally {
+        if (!cancelled) setRecovering(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, o, order.error, order.isLoading, queryClient, refetchAll, router]);
+
   const goBack = () => {
     if (newOrder === 'true') {
       router.replace('/orders');
@@ -74,6 +118,10 @@ export function OrderTrackingScreen() {
   };
   const openHelp = () => router.push({ pathname: '/orders/[orderId]/issues', params: { orderId: id } });
 
+  if (!id && recovering) {
+    return <LoadingView label="Opening your order…" />;
+  }
+
   if (!id) {
     return (
       <View style={[styles.safe, { paddingTop: insets.top }]}>
@@ -82,7 +130,7 @@ export function OrderTrackingScreen() {
     );
   }
 
-  if (!o && order.isLoading) return <LoadingView label="Loading tracking…" />;
+  if ((!o && order.isLoading) || recovering) return <LoadingView label="Loading tracking…" />;
 
   if (!o) {
     const blocked = [403, 404].includes(errorStatus(order.error) ?? 0) || live.trackingForbidden;

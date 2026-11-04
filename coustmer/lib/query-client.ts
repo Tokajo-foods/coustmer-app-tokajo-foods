@@ -32,7 +32,7 @@ export function shouldPersistQuery(query: { queryKey: readonly unknown[] }): boo
   if (!Array.isArray(key)) return true;
   if (key[0] === 'cart') return false;
   if (key[0] === 'order') {
-    if (key[1] === 'active') return false;
+    if (key[1] === 'active' || key[1] === 'detail') return false;
   }
   if (key[0] === 'delivery') return false;
   if (key.includes('home-categories') || key.includes('mind-categories')) return false;
