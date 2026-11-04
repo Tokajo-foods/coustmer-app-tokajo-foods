@@ -11,17 +11,9 @@ import {
   APP_BOTTOM_NAV_HEIGHT,
   appBottomNavOffset,
   isAppTabRoot,
-  isHomePath,
 } from '@/components/navigation/AppBottomNav';
 import { usePrimaryActiveOrder } from '@/lib/order/use-primary-active-order';
 import { openOrderTracking } from '@/lib/order/open-order-tracking';
-import { orderDetailHref } from '@/lib/order/order-tracking-path';
-import {
-  orderAwaitingOnlinePayment,
-  orderIsLiveTrackable,
-  orderIsTrackable,
-} from '@/lib/order/trackable-order';
-import { resolveOrderRouteId } from '@/lib/order/order-route-id';
 import { useCartStore } from '@/store/cart-store';
 
 /** Extra scroll space a screen needs so its last row clears the cart pill. */
@@ -46,20 +38,17 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const restaurant = useCartStore((s) => s.restaurant);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const hasCart = totalItems > 0;
-  const { order: activeOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
-  const onHome = isHomePath(pathname);
-  const trackOrder = orderIsTrackable(activeOrder) ? activeOrder : null;
-  const liveTrack = trackOrder && orderIsLiveTrackable(trackOrder) ? trackOrder : null;
-  const paymentDue = trackOrder && orderAwaitingOnlinePayment(trackOrder) ? trackOrder : null;
+  const { liveOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
+  const onTabRoot = isAppTabRoot(pathname);
 
   useFocusEffect(
     useCallback(() => {
-      if (onHome) void refetchActiveOrder();
-    }, [onHome, refetchActiveOrder]),
+      if (onTabRoot) void refetchActiveOrder();
+    }, [onTabRoot, refetchActiveOrder]),
   );
 
   const mode: 'cart' | 'track' | null =
-    trackOrder && onHome ? 'track' : hasCart ? 'cart' : null;
+    liveOrder && onTabRoot ? 'track' : hasCart ? 'cart' : null;
   const visible = mode !== null;
 
   const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
@@ -85,36 +74,26 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   if (!visible) return null;
 
   const onPress = () => {
-    if (mode === 'track' && liveTrack) {
-      void openOrderTracking(router, queryClient, liveTrack).then((ok) => {
+    if (mode === 'track' && liveOrder) {
+      void openOrderTracking(router, queryClient, liveOrder).then((ok) => {
         if (!ok) void refetchActiveOrder();
       });
-      return;
-    }
-    if (mode === 'track' && paymentDue) {
-      const oid = resolveOrderRouteId(paymentDue);
-      if (oid) router.push(orderDetailHref(oid));
       return;
     }
     router.push('/cart');
   };
 
-  const title =
-    mode === 'track'
-      ? paymentDue && !liveTrack
-        ? 'Complete payment'
-        : 'Track order'
-      : 'View Cart';
+  const title = mode === 'track' ? 'Track order' : 'View Cart';
   const subtitle =
     mode === 'track'
-      ? trackOrder?.restaurantName ||
-        (paymentDue && !liveTrack ? 'Finish checkout' : 'On the way')
+      ? liveOrder?.restaurantName ||
+        (liveOrder?.orderNumber ? `#${liveOrder.orderNumber}` : 'On the way')
       : `${totalItems} item${totalItems > 1 ? 's' : ''}`;
 
   const imageUri =
     mode === 'track'
-      ? (trackOrder?.raw?.restaurantImage as string | undefined) ||
-        (trackOrder?.raw?.restaurantLogo as string | undefined)
+      ? (liveOrder?.raw?.restaurantImage as string | undefined) ||
+        (liveOrder?.raw?.restaurantLogo as string | undefined)
       : items[0]?.imageUrl || restaurant?.imageUrl;
 
   return (

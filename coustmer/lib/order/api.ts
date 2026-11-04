@@ -22,6 +22,7 @@ import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
 import { resolveEstimatedDeliveryAtIso } from '@/lib/order/estimated-delivery-at';
 import { orderIsLiveTrackable, orderIsTrackable } from '@/lib/order/trackable-order';
+import { sortActiveOrdersForCustomer } from '@/lib/order/ongoing-order';
 
 const ORDER_SERVICE = '/api/v1/order-service';
 const ORDERS_BASE = `${ORDER_SERVICE}/orders`;
@@ -586,12 +587,7 @@ export const orderApi = {
     const mapActive = (rows: Record<string, unknown>[]) =>
       rows.map(mapOrder).filter((o) => orderIsTrackable(o));
 
-    const sortLiveFirst = (orders: Order[]) =>
-      [...orders].sort((a, b) => {
-        const aLive = orderIsLiveTrackable(a) ? 0 : 1;
-        const bLive = orderIsLiveTrackable(b) ? 0 : 1;
-        return aLive - bLive;
-      });
+    const sortLiveFirst = (orders: Order[]) => sortActiveOrdersForCustomer(orders);
 
     if (list.length) return sortLiveFirst(mapActive(list));
 

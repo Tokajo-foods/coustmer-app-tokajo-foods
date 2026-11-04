@@ -108,7 +108,7 @@ export function isAppTabRoot(pathname: string): boolean {
   );
 }
 
-/** Home feed — only screen that shows the floating “Track order” pill. */
+/** Main tabs — floating “Track order” pill when a live order exists. */
 export function isHomePath(pathname: string): boolean {
   const path = (pathname.split('?')[0] ?? pathname).replace(/\/$/, '');
   return path === '/home' || path.endsWith('/home');

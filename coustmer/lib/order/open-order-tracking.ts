@@ -3,6 +3,7 @@ import type { Router } from 'expo-router';
 
 import { orderKeys } from '@/lib/order/hooks';
 import { orderApi } from '@/lib/order/api';
+import { pickRecentLiveActiveOrder } from '@/lib/order/ongoing-order';
 import { orderIsLiveTrackable } from '@/lib/order/trackable-order';
 import { orderTrackingHref } from '@/lib/order/order-tracking-path';
 import { isValidOrderRouteId, resolveOrderRouteId } from '@/lib/order/order-route-id';
@@ -17,10 +18,12 @@ async function resolveLiveTrackOrder(fallback?: Order | null): Promise<Order | n
     if (isValidOrderRouteId(id) && orderIsLiveTrackable(row)) return { ...row, id };
   }
   const active = await orderApi.getActiveOrders().catch(() => [] as Order[]);
-  return active.find((o) => isValidOrderRouteId(o.id) && orderIsLiveTrackable(o)) ?? null;
+  const hit = pickRecentLiveActiveOrder(active);
+  if (hit?.id && isValidOrderRouteId(hit.id)) return hit;
+  return null;
 }
 
-/** Home track pill — live kitchen / delivery map only (not awaiting payment). */
+/** Tab-bar track pill — opens live map for the newest in-kitchen / delivery order. */
 export async function openOrderTracking(
   nav: Router,
   queryClient: QueryClient,
