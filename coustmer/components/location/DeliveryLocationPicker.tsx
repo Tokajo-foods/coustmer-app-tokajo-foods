@@ -754,27 +754,11 @@ export function DeliveryLocationPicker({
     }
   };
 
-  const finishSearchSelection = useCallback(
-    (applied: {
-      lat: number;
-      lng: number;
-      formattedAddress: string;
-      source: 'gps' | 'search';
-    }) => {
-      if (pinOnly) {
-        setViewMode('map');
-        return;
-      }
-      onConfirm({
-        lat: applied.lat,
-        lng: applied.lng,
-        formattedAddress: applied.formattedAddress,
-        label: shortAddressLabel(applied.formattedAddress, applied.source),
-        source: applied.source,
-      });
-    },
-    [onConfirm, pinOnly],
-  );
+  /** After search pick: open map on that pin; user taps Confirm (no second search). */
+  const finishSearchSelection = useCallback(() => {
+    setSuggestions([]);
+    setViewMode('map');
+  }, []);
 
   const pickSuggestion = async (item: AddressSuggestion) => {
     Keyboard.dismiss();
@@ -797,8 +781,8 @@ export function DeliveryLocationPicker({
         Number.isFinite(lng)
       ) {
         userPlacedPinRef.current = true;
-        const applied = await applyCoords(lat, lng, 'search', item.description);
-        finishSearchSelection(applied);
+        await applyCoords(lat, lng, 'search', item.description);
+        finishSearchSelection();
         return;
       }
 
@@ -808,14 +792,14 @@ export function DeliveryLocationPicker({
         address: item.description,
       });
       userPlacedPinRef.current = true;
-      const applied = await applyCoords(
+      await applyCoords(
         geo.lat,
         geo.lng,
         'search',
         geo.formattedAddress ?? item.description,
       );
       if (geo.formattedAddress) setSearch(geo.formattedAddress);
-      finishSearchSelection(applied);
+      finishSearchSelection();
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to open this place on the map'));
     } finally {
@@ -837,14 +821,14 @@ export function DeliveryLocationPicker({
         // If a suggestion is already selected text, geocode it via Places New / fallbacks
         const geo = await geocodeAddress({ address: query });
         userPlacedPinRef.current = true;
-        const applied = await applyCoords(
+        await applyCoords(
           geo.lat,
           geo.lng,
           'search',
           geo.formattedAddress ?? query,
         );
         if (geo.formattedAddress) setSearch(geo.formattedAddress);
-        finishSearchSelection(applied);
+        finishSearchSelection();
       } catch (err) {
         setSearchError(getApiErrorMessage(err, 'No results for that address'));
       } finally {
