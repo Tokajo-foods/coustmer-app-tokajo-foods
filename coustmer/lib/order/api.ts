@@ -20,6 +20,7 @@ import { mapOrderBillLines } from '@/lib/order/bill-lines';
 import { createIdempotencyKey } from '@/lib/order/idempotency';
 import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
+import { resolveEstimatedDeliveryAtIso } from '@/lib/order/estimated-delivery-at';
 
 const ORDER_SERVICE = '/api/v1/order-service';
 const ORDERS_BASE = `${ORDER_SERVICE}/orders`;
@@ -377,11 +378,14 @@ export function mapOrder(data: Record<string, unknown>): Order {
     isScheduled: Boolean(
       data.isScheduled ?? data.scheduledFor ?? data.scheduledAt
     ),
-    estimatedDeliveryAt:
-      (data.estimatedDeliveryAt as string) ||
-      (data.eta as string) ||
-      (data.estimatedDeliveryTime as string) ||
-      undefined,
+    estimatedDeliveryAt: resolveEstimatedDeliveryAtIso(data),
+    promiseMinutes:
+      pickNum(data.promiseMinutes) ??
+      (typeof data.estimatedDeliveryTime === 'number' &&
+      data.estimatedDeliveryTime > 0 &&
+      data.estimatedDeliveryTime < 720
+        ? Math.round(data.estimatedDeliveryTime)
+        : undefined),
     promisedReadyAt:
       (data.promisedReadyAt as string) ||
       (data.promisedAt as string) ||

@@ -130,6 +130,8 @@ export type Order = {
   scheduledFor?: string;
   isScheduled?: boolean;
   estimatedDeliveryAt?: string;
+  /** Checkout promise (minutes) when the API only sends estimatedDeliveryTime. */
+  promiseMinutes?: number;
   /** Kitchen promised ready clock (ISO). */
   promisedReadyAt?: string;
   /** Minutes the restaurant set for prep. */

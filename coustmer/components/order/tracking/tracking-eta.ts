@@ -19,15 +19,32 @@ function minutesLabel(seconds: number): EtaLabel {
   return { value: String(Math.max(1, Math.ceil(seconds / 60))), unit: 'min' };
 }
 
+function etaSampleFromIso(iso?: string | null, now = Date.now()): EtaSample | null {
+  if (!iso) return null;
+  const atMs = Date.parse(iso);
+  if (!Number.isFinite(atMs)) return null;
+  const seconds = (atMs - now) / 1000;
+  return { seconds: Math.max(0, seconds), at: now };
+}
+
+function labelFromOrderEstimate(iso: string | undefined, now: number): EtaLabel | null {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  if (!Number.isFinite(at)) return null;
+  const seconds = (at - now) / 1000;
+  return seconds > 0 ? minutesLabel(seconds) : { value: 'Soon', unit: null };
+}
+
 /**
- * Before pickup the rider ETA points at the restaurant, so the order's promised time is used.
- * After pickup the live rider→home ETA wins. No server number means no ETA, never a guess.
+ * Before pickup the rider ETA points at the restaurant, so the order's promised time is preferred.
+ * After pickup the live rider→home ETA wins. Falls back to order promise when GPS ETA is not ready yet.
  */
 export function resolveEtaLabel(input: {
   phase: TrackingPhase;
   destination: 'restaurant' | 'customer' | null;
   socketEta: EtaSample | null;
   trackerEta: EtaSample | null;
+  trackerEtaAt?: string | null;
   orderEstimateIso?: string;
   now?: number;
 }): EtaLabel | null {
@@ -35,21 +52,26 @@ export function resolveEtaLabel(input: {
   const now = input.now ?? Date.now();
   if (!phase.active || !phase.showEta) return null;
 
+  const trackerIsoSample = etaSampleFromIso(input.trackerEtaAt, now);
+  const liveSamples = [input.socketEta, input.trackerEta, trackerIsoSample];
+
   if (phase.key === 'on_the_way') {
     const live = remainingSeconds(
-      [input.socketEta, destination === 'customer' ? input.trackerEta : null],
+      destination === 'customer' ? liveSamples : [input.socketEta, input.trackerEta, trackerIsoSample],
       now,
     );
     if (live != null) return minutesLabel(live);
+    return labelFromOrderEstimate(input.orderEstimateIso, now);
   }
 
-  if (input.orderEstimateIso) {
-    const at = Date.parse(input.orderEstimateIso);
-    if (Number.isFinite(at)) {
-      const seconds = (at - now) / 1000;
-      return seconds > 0 ? minutesLabel(seconds) : { value: 'Soon', unit: null };
-    }
+  const orderLabel = labelFromOrderEstimate(input.orderEstimateIso, now);
+  if (orderLabel) return orderLabel;
+
+  if (destination === 'restaurant') {
+    const riderLeg = remainingSeconds(liveSamples, now);
+    if (riderLeg != null) return minutesLabel(riderLeg);
   }
+
   return null;
 }
 

@@ -72,6 +72,7 @@ export function useLiveOrderTracking(orderId: string) {
   const [orderPush, setOrderPush] = useState<Push | null>(null);
   const [tripPush, setTripPush] = useState<Push | null>(null);
   const [socketEta, setSocketEta] = useState<EtaSample | null>(null);
+  const [etaClock, setEtaClock] = useState(() => Date.now());
 
   const refetchTracking = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: deliveryKeys.tracking(orderId) });
@@ -146,6 +147,12 @@ export function useLiveOrderTracking(orderId: string) {
     void getSocket();
   }, [orderId, phase.active]);
 
+  useEffect(() => {
+    if (!phase.active || !phase.showEta) return;
+    const id = setInterval(() => setEtaClock(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, [phase.active, phase.showEta]);
+
   const riderVisible =
     !pickup &&
     phase.active &&
@@ -173,8 +180,13 @@ export function useLiveOrderTracking(orderId: string) {
     phase,
     destination,
     socketEta,
-    trackerEta: typeof t?.etaSeconds === 'number' ? { seconds: t.etaSeconds, at: tracking.dataUpdatedAt } : null,
+    trackerEta:
+      typeof t?.etaSeconds === 'number' && t.etaSeconds >= 0
+        ? { seconds: t.etaSeconds, at: tracking.dataUpdatedAt }
+        : null,
+    trackerEtaAt: t?.etaAt,
     orderEstimateIso: o?.estimatedDeliveryAt,
+    now: etaClock,
   });
 
   return {
