@@ -21,7 +21,8 @@ import { createIdempotencyKey } from '@/lib/order/idempotency';
 import { toTenDigitIndianMobile } from '@/lib/order/phone';
 import { geoPointFromPin, parseDropPin } from '@/lib/location/drop-pin';
 import { resolveEstimatedDeliveryAtIso } from '@/lib/order/estimated-delivery-at';
-import { orderIsLiveTrackable, orderIsTrackable } from '@/lib/order/trackable-order';
+import { rawActiveOrderRows } from '@/lib/order/active-orders-response';
+import { orderIsTrackable } from '@/lib/order/trackable-order';
 import { sortActiveOrdersForCustomer } from '@/lib/order/ongoing-order';
 
 const ORDER_SERVICE = '/api/v1/order-service';
@@ -583,22 +584,10 @@ export const orderApi = {
   /** GET /orders/active */
   getActiveOrders: async (): Promise<Order[]> => {
     const res = await request<unknown>(`${ORDERS_BASE}/active`);
-    const list = extractList(res.data);
-    const mapActive = (rows: Record<string, unknown>[]) =>
-      rows.map(mapOrder).filter((o) => orderIsTrackable(o));
-
-    const sortLiveFirst = (orders: Order[]) => sortActiveOrdersForCustomer(orders);
-
-    if (list.length) return sortLiveFirst(mapActive(list));
-
-    // Backend may return a single active order object in `data`
-    const single = asRecord(res.data);
-    if (single._id || single.id || single.orderNumber) {
-      const one = mapOrder(single);
-      return orderIsTrackable(one) ? [one] : [];
-    }
-
-    return sortLiveFirst(mapActive(extractList(res)));
+    const mapped = rawActiveOrderRows(res.data)
+      .map(mapOrder)
+      .filter((o) => orderIsTrackable(o));
+    return sortActiveOrdersForCustomer(mapped);
   },
 
   /** GET /orders/scheduled */

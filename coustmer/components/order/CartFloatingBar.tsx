@@ -41,7 +41,6 @@ export function CartFloatingBar({ bottomOffset = 0 }: Props) {
   const hasCart = totalItems > 0;
   const { liveOrder, refetch: refetchActiveOrder } = usePrimaryActiveOrder();
   const barHidden = orderFloatingBarHidden(pathname);
-  const onTabRoot = isAppTabRoot(pathname);
 
   useFocusEffect(
     useCallback(() => {

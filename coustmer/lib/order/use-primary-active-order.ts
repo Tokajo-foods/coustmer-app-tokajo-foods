@@ -22,7 +22,9 @@ export function usePrimaryActiveOrder() {
     if (!loggedIn) return undefined;
     const fromApi = query.data ?? [];
     if (fromApi.length) return fromApi;
-    if (query.isFetching && storeOrder) return [storeOrder];
+    if (storeOrder && (orderIsTrackable(storeOrder) || query.isFetching)) {
+      return [storeOrder];
+    }
     return fromApi;
   }, [loggedIn, query.data, query.isFetching, storeOrder]);
 
