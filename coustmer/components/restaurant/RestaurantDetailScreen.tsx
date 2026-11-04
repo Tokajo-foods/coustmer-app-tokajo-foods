@@ -292,6 +292,7 @@ export function RestaurantDetailScreen() {
         />
       ) : null}
 
+      <RestaurantShareSheet
         visible={shareOpen}
         restaurant={id ? { id, slug: r.slug, name: restaurantName } : null}
         onClose={() => setShareOpen(false)}
