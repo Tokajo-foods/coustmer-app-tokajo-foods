@@ -163,16 +163,6 @@ export const deliveryApi = {
     await mutate<unknown>('POST', `${TRACKING}/${orderId}/nudge-partner`, {});
   },
 
-  /** POST /tracking/order/:orderId/contact-partner */
-  contactPartner: async (orderId: string): Promise<{ callId?: string; maskedPhone?: string }> => {
-    const raw = await mutate<unknown>('POST', `${TRACKING}/${orderId}/contact-partner`, {});
-    const r = asRecord(raw);
-    return {
-      callId: (r.callId as string) || undefined,
-      maskedPhone: (r.virtualNumber as string) || (r.maskedPhone as string) || undefined,
-    };
-  },
-
   /** POST /tracking/order/:orderId/contact-support — body `{ reason, message? }` */
   contactSupport: async (
     orderId: string,

@@ -22,15 +22,12 @@ export function mapDeliveryPartner(raw: unknown): DeliveryPartner | null {
       [nested.firstName, nested.lastName].filter(Boolean).join(' ') ??
       ''
   ).trim();
-  const phone = String(
-    nested.phone ?? nested.phoneMasked ?? nested.mobile ?? nested.phoneNumber ?? ''
-  ).trim();
-  if (!name && !phone && !id) return null;
+  if (!name && !id) return null;
 
   return {
-    id: id || phone || name,
+    id: id || name,
     name: name || 'Delivery partner',
-    phone,
+    phone: '',
     email: (nested.email as string) || undefined,
     vehicleType: mapVehicle(nested.vehicleType ?? nested.vehicle ?? nested.vehicleCategory),
     vehicleNumber: String(

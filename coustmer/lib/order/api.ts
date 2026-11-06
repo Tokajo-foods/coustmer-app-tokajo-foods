@@ -462,11 +462,6 @@ function mapTracking(data: Record<string, unknown>, orderId: string): OrderTrack
       (partner.fullName as string) ||
       (data.deliveryPartnerName as string) ||
       undefined,
-    deliveryPartnerPhone:
-      (partner.phone as string) ||
-      (partner.mobile as string) ||
-      (data.deliveryPartnerPhone as string) ||
-      undefined,
     deliveryPartnerLat:
       typeof partnerLoc.lat === 'number'
         ? partnerLoc.lat
@@ -485,8 +480,18 @@ function mapTracking(data: Record<string, unknown>, orderId: string): OrderTrack
       : Array.isArray(data.statusHistory)
         ? (data.statusHistory as OrderTracking['timeline'])
         : undefined,
-    ...data,
+    ...stripPartyPhones(data),
   };
+}
+
+/** Order payloads must not keep another person's mobile on the client. */
+function stripPartyPhones(data: Record<string, unknown>): Record<string, unknown> {
+  const rest = { ...data };
+  delete rest.deliveryPartnerPhone;
+  delete rest.deliveryPartner;
+  delete rest.rider;
+  delete rest.driver;
+  return rest;
 }
 
 export const orderApi = {

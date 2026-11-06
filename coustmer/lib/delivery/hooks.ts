@@ -178,12 +178,6 @@ export function useNudgePartner(orderId: string) {
   });
 }
 
-export function useContactPartner(orderId: string) {
-  return useMutation({
-    mutationFn: () => deliveryApi.contactPartner(orderId),
-  });
-}
-
 export function useContactSupport(orderId: string) {
   return useMutation({
     mutationFn: (input: { reason: TrackingSupportReason; message?: string }) =>

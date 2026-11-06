@@ -70,7 +70,6 @@ export type OrderTracking = {
   etaMinutes?: number;
   etaText?: string;
   deliveryPartnerName?: string;
-  deliveryPartnerPhone?: string;
   deliveryPartnerLat?: number;
   deliveryPartnerLng?: number;
   restaurantLat?: number;
