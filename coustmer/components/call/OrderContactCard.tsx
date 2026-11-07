@@ -3,7 +3,7 @@ import { Lock } from 'lucide-react-native';
 import { useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
-import { ContactCallRow, type ContactActionState } from '@/components/call/ContactCallRow';
+import { ContactCallRow, type ContactActionState, type PhoneActionState } from '@/components/call/ContactCallRow';
 import { Pressable } from '@/components/common/Pressable';
 import { fonts } from '@/constants/typography';
 import { useCallStore } from '@/lib/call/call-store';
@@ -28,6 +28,12 @@ const NOT_READY: Record<CallRole, string> = {
   customer: '',
 };
 
+const NO_MASK: Record<CallRole, string> = {
+  rider: 'A masked number is not ready yet. Try an in-app call or chat.',
+  restaurant: 'A masked number is not ready yet. Try an in-app call or chat.',
+  customer: '',
+};
+
 /** Rider and restaurant contacts on the track screen. Hidden once the order is closed. */
 export function OrderContactCard({ orderId, phase, partner, restaurantName, hideRider, omitRider }: Props) {
   const router = useRouter();
@@ -39,10 +45,28 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
   if (!phase.active && (phase.cancelled || hideRider !== true)) return null;
 
   const rowFor = (role: CallRole) => calls.rows.find((row) => row.role === role) ?? null;
+  const phoneState = (role: CallRole, row: CallRow | null): PhoneActionState => {
+    if (calls.busy === `cell:${role}`) return 'busy';
+    return row?.virtualNumber ? 'ready' : 'unavailable';
+  };
+
   const netState = (role: CallRole, row: CallRow | null): ContactActionState => {
     if (live?.peerRole === role) return 'on_call';
     if (calls.busy === `net:${role}`) return 'busy';
     return row?.internetAvailable ? 'ready' : 'unavailable';
+  };
+
+  const onPhone = (role: CallRole, row: CallRow | null) => {
+    setHint(null);
+    if (!row) {
+      setHint(NOT_READY[role]);
+      return;
+    }
+    if (!row.virtualNumber) {
+      setHint(NO_MASK[role]);
+      return;
+    }
+    void calls.dial(role);
   };
 
   const onInternet = (role: CallRole, row: CallRow | null, name: string) => {
@@ -84,6 +108,8 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
           caption={vehicle || 'Delivery partner'}
           imageUrl={partner.imageUrl}
           rating={rating}
+          phone={phoneState('rider', riderRow)}
+          onPhone={() => onPhone('rider', riderRow)}
           internet={netState('rider', riderRow)}
           onInternet={() => onInternet('rider', riderRow, partner.name || 'Delivery partner')}
           onChat={() =>
@@ -99,6 +125,8 @@ export function OrderContactCard({ orderId, phase, partner, restaurantName, hide
         role="restaurant"
         name={restaurantName}
         caption="Restaurant"
+        phone={phoneState('restaurant', restaurantRow)}
+        onPhone={() => onPhone('restaurant', restaurantRow)}
         internet={netState('restaurant', restaurantRow)}
         onInternet={() => onInternet('restaurant', restaurantRow, restaurantName)}
         onChat={() =>

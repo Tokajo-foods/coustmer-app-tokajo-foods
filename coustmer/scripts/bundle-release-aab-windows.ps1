@@ -1,4 +1,4 @@
-﻿# Local release AAB on Windows (Gradle). Use a short path — Ninja hits MAX_PATH under long project dirs.
+# Local release AAB on Windows (Gradle). Use a short path — Ninja hits MAX_PATH under long project dirs.
 # One-time: cmd /c mklink /J C:\tc "<full path to this coustmer folder>"
 $ErrorActionPreference = "Stop"
 $ProjectRoot = if (Test-Path "C:\tc\package.json") { "C:\tc" } else { Split-Path (Split-Path $PSScriptRoot -Parent) -Parent }

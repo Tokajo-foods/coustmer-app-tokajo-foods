@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Headset, MessageCircle, PhoneCall, Wifi } from 'lucide-react-native';
+import { Headset, MessageCircle, Phone, PhoneCall, Wifi } from 'lucide-react-native';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
@@ -15,33 +15,47 @@ type Props = {
   onHelp: () => void;
 };
 
-/** Primary partner actions on the tracking sheet — call, chat, help. */
+/** Partner strip: masked phone dialer + in-app internet + chat + help. */
 export function TrackingPartnerQuickActions({ orderId, partnerName, onHelp }: Props) {
   const router = useRouter();
   const calls = useOrderCalls(orderId, 'customer');
   const live = useCallStore((s) => (s.call?.orderId === orderId && s.call?.peerRole === 'rider' ? s.call : null));
-  const [busy, setBusy] = useState(false);
+  const [internetBusy, setInternetBusy] = useState(false);
   const riderRow = calls.rows.find((row) => row.role === 'rider') ?? null;
-  const onCall = live
-    ? 'on_call'
-    : calls.busy === 'net:rider' || busy
-      ? 'busy'
-      : riderRow?.internetAvailable
-        ? 'ready'
-        : 'idle';
+  const canDial = Boolean(riderRow?.virtualNumber);
+  const canInternet = Boolean(riderRow?.internetAvailable);
+  const onInternetCall = Boolean(live);
+  const phoneLineBusy = calls.busy === 'cell:rider';
+  const netLineBusy = calls.busy === 'net:rider' || internetBusy;
+  const phoneDisabled = onInternetCall || phoneLineBusy;
+  const internetDisabled = onInternetCall || netLineBusy;
 
-  const startCall = () => {
-    if (onCall === 'on_call') return;
-    if (!riderRow?.internetAvailable) {
+  const startPhone = () => {
+    if (phoneDisabled) return;
+    if (canDial) {
+      void calls.dial('rider');
+      return;
+    }
+    Alert.alert(
+      'Phone call not ready',
+      calls.notice ||
+        'A masked number opens after your delivery partner accepts. You can use internet call or chat.',
+    );
+  };
+
+  const startInternet = () => {
+    if (internetDisabled) return;
+    if (onInternetCall) return;
+    if (!canInternet) {
       Alert.alert(
-        'Call not ready',
+        'Internet call not ready',
         calls.notice ||
-          'Internet calling opens once your delivery partner accepts. You can message them in chat.',
+          'Internet calling opens once your delivery partner accepts. Try a phone call or chat.',
       );
       return;
     }
-    setBusy(true);
-    void calls.startInternet('rider', partnerName).finally(() => setBusy(false));
+    setInternetBusy(true);
+    void calls.startInternet('rider', partnerName).finally(() => setInternetBusy(false));
   };
 
   const openChat = () => {
@@ -52,25 +66,42 @@ export function TrackingPartnerQuickActions({ orderId, partnerName, onHelp }: Pr
   };
 
   return (
-    <View style={styles.row}>
-      <Action
-        label={onCall === 'on_call' ? 'On call' : 'Call'}
-        tint={ORANGE}
-        disabled={onCall === 'busy'}
-        onPress={startCall}
-        icon={
-          onCall === 'busy' ? (
-            <ActivityIndicator size="small" color={ORANGE} />
-          ) : onCall === 'on_call' ? (
-            <PhoneCall color={WHITE} size={18} strokeWidth={2.4} />
-          ) : (
-            <Wifi color={ORANGE} size={18} strokeWidth={2.4} />
-          )
-        }
-        filled={onCall === 'on_call'}
-      />
-      <Action label="Chat" tint="#2563EB" onPress={openChat} icon={<MessageCircle color="#2563EB" size={18} strokeWidth={2.4} />} />
-      <Action label="Help" tint={INK} onPress={onHelp} icon={<Headset color={INK} size={18} strokeWidth={2.4} />} />
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <Action
+          label="Phone"
+          tint={ORANGE}
+          disabled={phoneDisabled}
+          onPress={startPhone}
+          icon={
+            phoneLineBusy ? (
+              <ActivityIndicator size="small" color={ORANGE} />
+            ) : (
+              <Phone color={canDial && !phoneDisabled ? ORANGE : '#9CA3AF'} size={18} strokeWidth={2.4} />
+            )
+          }
+        />
+        <Action
+          label={onInternetCall ? 'On call' : 'Internet'}
+          tint={ORANGE}
+          disabled={internetDisabled}
+          onPress={startInternet}
+          filled={onInternetCall}
+          icon={
+            netLineBusy ? (
+              <ActivityIndicator size="small" color={onInternetCall ? WHITE : ORANGE} />
+            ) : onInternetCall ? (
+              <PhoneCall color={WHITE} size={18} strokeWidth={2.4} />
+            ) : (
+              <Wifi color={canInternet && !internetDisabled ? ORANGE : '#9CA3AF'} size={18} strokeWidth={2.4} />
+            )
+          }
+        />
+      </View>
+      <View style={styles.row}>
+        <Action label="Chat" tint="#2563EB" onPress={openChat} icon={<MessageCircle color="#2563EB" size={18} strokeWidth={2.4} />} />
+        <Action label="Help" tint={INK} onPress={onHelp} icon={<Headset color={INK} size={18} strokeWidth={2.4} />} />
+      </View>
     </View>
   );
 }
@@ -100,7 +131,8 @@ function Action(props: {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  wrap: { gap: 10, marginTop: 14 },
+  row: { flexDirection: 'row', gap: 10 },
   btn: {
     flex: 1,
     height: 72,

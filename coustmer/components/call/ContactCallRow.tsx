@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Bike, MessageCircle, PhoneCall, Star, Store, Wifi } from 'lucide-react-native';
+import { Bike, MessageCircle, Phone, PhoneCall, Star, Store, Wifi } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -12,6 +12,8 @@ const INK = '#111827';
 const MUTED = '#6B7280';
 
 export type ContactActionState = 'ready' | 'unavailable' | 'busy' | 'on_call';
+/** Masked PSTN: dialer opens with virtual number — no in-app “on call” state. */
+export type PhoneActionState = 'ready' | 'unavailable' | 'busy';
 
 type Props = {
   role: CallRole;
@@ -19,6 +21,8 @@ type Props = {
   caption: string;
   imageUrl?: string | null;
   rating?: string | null;
+  phone: PhoneActionState;
+  onPhone: () => void;
   internet: ContactActionState;
   onInternet: () => void;
   onChat?: () => void;
@@ -70,7 +74,7 @@ function RoundAction(props: {
 
 /** One person on the order: who they are, then an in-app internet call. */
 export function ContactCallRow(props: Props) {
-  const { role, name, caption, rating, internet } = props;
+  const { role, name, caption, rating, phone, internet } = props;
   const live = internet === 'on_call';
   return (
     <View style={styles.row}>
@@ -90,6 +94,14 @@ export function ContactCallRow(props: Props) {
         </View>
       </View>
       <View style={styles.actions}>
+        <RoundAction
+          label="Phone"
+          hint={`Phone call ${name} — masked number opens in your dialer`}
+          tint={ORANGE}
+          state={phone === 'busy' ? 'busy' : phone === 'unavailable' ? 'unavailable' : 'ready'}
+          icon={<Phone color={ORANGE} size={18} strokeWidth={2.4} />}
+          onPress={props.onPhone}
+        />
         {props.onChat ? (
           <RoundAction
             label="Chat"
