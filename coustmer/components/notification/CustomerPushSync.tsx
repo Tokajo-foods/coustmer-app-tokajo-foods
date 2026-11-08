@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { isCallPush } from '@/lib/call/call-push';
@@ -20,6 +20,8 @@ type NotificationResponse = import('expo-notifications').NotificationResponse;
 
 /** Survives re-mounts so a cold-start tap is not replayed when auth state changes. */
 const handledResponses = new Set<string>();
+/** One notification prompt per app open. A later open asks again only if it is still off. */
+let askedNotificationThisLaunch = false;
 
 /**
  * Registers the customer push token, keeps the inbox, badge and server pricing live,
@@ -27,8 +29,11 @@ const handledResponses = new Set<string>();
  */
 export function CustomerPushSync() {
   const token = useAuthStore((s) => s.token);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
   const router = useRouter();
   const queryClient = useQueryClient();
+  /** Sign-in during this session must land on Home, not the last tapped notification. */
+  const signedInDuringSession = useRef(false);
 
   useSocketEvent('notification:new', () => {
     void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
@@ -37,7 +42,12 @@ export function CustomerPushSync() {
   useBadgeSync(Boolean(token));
 
   useEffect(() => {
-    if (!token || Platform.OS === 'web') return;
+    if (!isHydrated) return;
+    if (!token || Platform.OS === 'web') {
+      if (!token) signedInDuringSession.current = true;
+      return;
+    }
+    const skipLaunchNotification = signedInDuringSession.current;
     let cancelled = false;
     const cleanups: Array<() => void> = [];
     const track = (sub: { remove: () => void }) => {
@@ -95,12 +105,16 @@ export function CustomerPushSync() {
         track(N.addNotificationResponseReceivedListener((res) => { open(res); }));
         track(N.addNotificationReceivedListener((n) => onReceived(n.request.content.data)));
         const last = await N.getLastNotificationResponseAsync().catch(() => null);
-        if (last && !cancelled && open(last)) {
+        if (last && !cancelled) {
+          if (!skipLaunchNotification) open(last);
           await N.clearLastNotificationResponseAsync?.().catch(() => undefined);
         }
 
         let status = (await N.getPermissionsAsync()).status;
-        if (status !== 'granted') status = (await N.requestPermissionsAsync()).status;
+        if (status !== 'granted' && !askedNotificationThisLaunch) {
+          askedNotificationThisLaunch = true;
+          status = (await N.requestPermissionsAsync()).status;
+        }
         if (status !== 'granted' || cancelled) return;
 
         await registerCustomerPushDevice(N);
@@ -135,7 +149,7 @@ export function CustomerPushSync() {
       cancelled = true;
       cleanups.forEach((fn) => fn());
     };
-  }, [queryClient, router, token]);
+  }, [isHydrated, queryClient, router, token]);
 
   return null;
 }
