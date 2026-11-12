@@ -37,6 +37,14 @@
         "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "548207254197",
         "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "tokajofoods.firebasestorage.app"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "environment": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
