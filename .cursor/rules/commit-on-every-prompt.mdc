@@ -20,6 +20,6 @@ At the **end of every user prompt** that changes files in **coustmer-app-tokajo-
 
 1. `git status`, `git diff`, `git log -5 --oneline`
 2. Stage only this prompt’s work.
-3. Concise why-focused commit message.
+3. One short subject line (~50–72 chars), plain English. No body paragraph, no `Co-authored-by`.
 4. `git status` after commit.
 5. Hook failure → fix → **new** commit (no amend of failed commits).
